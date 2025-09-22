@@ -1,0 +1,21 @@
+/* Global font styles */
+:root {
+  --main-font: 'Times New Roman', Times, serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--main-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-weight: normal;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Apply Times New Roman font to all elements */
+* {
+  font-family: var(--main-font) !important;
+}

@@ -1,0 +1,14 @@
+# services/urls.py
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.select_service_category, name='select_service_category'),
+    path('request/<int:category_id>/', views.create_service_request, name='create_service_request'),
+    path('request/successful/', views.request_successful, name='request_successful'),
+    path('payment/<int:request_id>/', views.service_payment_page, name='service_payment_page'),
+    path('confirm-request/<int:request_id>/', views.confirm_service_request, name='confirm_service_request'),
+    path('rate/order/<int:order_id>/', views.rate_order, name='rate_order'),
+    path('update-service-status/<int:request_id>/', views.update_service_status, name='update_service_status'),
+]
