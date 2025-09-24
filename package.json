@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "@react-spring/three": "^10.0.3"
+    "@react-spring/three": "^10.0.3",
+    "notistack": "^3.0.2"
   }
 }

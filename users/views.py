@@ -6,8 +6,13 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Avg
 from .forms import CustomerRegistrationForm, AddressForm
 from store.models import Order
-# Add TechnicianRating to this import
-from services.models import ServiceRequest, TechnicianRating 
+from services.models import ServiceRequest, TechnicianRating
+from django.http import JsonResponse
+from django.middleware.csrf import get_token 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
+from .serializers import UserSerializer
 
 def customer_registration(request):
     if request.method == 'POST':
@@ -64,3 +69,13 @@ def technician_dashboard(request):
         'ratings': ratings,
     }
     return render(request, 'users/technician_dashboard.html', context)
+
+def csrf_token_view(request):
+    return JsonResponse({'csrfToken': get_token(request)})
+
+class CurrentUserView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)

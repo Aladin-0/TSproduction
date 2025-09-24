@@ -7,9 +7,13 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('accounts/', include('users.urls')),
+    path('api/auth/', include('dj_rest_auth.urls')),
+    path('accounts/', include('allauth.urls')),
     path('', include('store.urls')),
     path('services/', include('services.urls')),
+    path('api/users/', include('users.urls')),
+    
+    
 ]
 
 if settings.DEBUG:

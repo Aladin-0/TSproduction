@@ -1,6 +1,6 @@
 # store/serializers.py
 from rest_framework import serializers
-from .models import Product, ProductCategory
+from .models import Product, ProductCategory , Address 
 
 class ProductCategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,3 +14,8 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ['id', 'name', 'slug', 'description', 'price', 'image', 'category']
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ['id', 'street_address', 'city', 'state', 'pincode', 'is_default']

@@ -11,4 +11,6 @@ urlpatterns = [
     path('confirm-request/<int:request_id>/', views.confirm_service_request, name='confirm_service_request'),
     path('rate/order/<int:order_id>/', views.rate_order, name='rate_order'),
     path('update-service-status/<int:request_id>/', views.update_service_status, name='update_service_status'),
+    path('api/categories/', views.ServiceCategoryListAPIView.as_view(), name='api_service_category_list'),
+    path('api/requests/create/', views.ServiceRequestCreateAPIView.as_view(), name='api_service_request_create'),
 ]

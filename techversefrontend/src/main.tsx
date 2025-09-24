@@ -3,9 +3,10 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { BrowserRouter } from 'react-router-dom'; // Import BrowserRouter
+import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { SnackbarProvider } from 'notistack';
 
 const darkTheme = createTheme({
   palette: {
@@ -15,10 +16,12 @@ const darkTheme = createTheme({
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter> {/* Wrap App with the Router */}
+    <BrowserRouter>
       <ThemeProvider theme={darkTheme}>
-        <CssBaseline />
-        <App />
+        <SnackbarProvider> {/* Add the provider */}
+          <CssBaseline />
+          <App />
+        </SnackbarProvider>
       </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>,

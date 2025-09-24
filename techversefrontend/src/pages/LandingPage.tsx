@@ -8,6 +8,7 @@ import { useSpring as useSpringWeb, animated as a } from '@react-spring/web';
 import { useSpring as useSpring3d, animated as a3 } from '@react-spring/three';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import { LoginSuccessHandler } from '../components/LoginSuccessHandler'; // <-- 1. IMPORT ADDED HERE
 
 // A single theme for consistent breakpoints
 const theme = createTheme();
@@ -778,7 +779,7 @@ const AnimatedCategoryCard = ({ category }) => {
         // TODO: Add your navigation logic here
         // Example: navigate(`/store/${category.name.toLowerCase().replace(/\s+/g, '-')}`);
         // Or: window.location.href = `/store/${category.name.toLowerCase().replace(/\s+/g, '-')}`;
-        console.log(`Navigate to: ${category.name} category page`);
+        console.log(`Maps to: ${category.name} category page`);
     };
 
     return (

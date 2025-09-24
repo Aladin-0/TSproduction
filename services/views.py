@@ -7,6 +7,10 @@ from .forms import ServiceRequestForm
 from .models import ServiceCategory, ServiceRequest, TechnicianRating
 from store.models import Order
 from .forms import ServiceRequestForm, RatingForm
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import generics, permissions
+from .serializers import ServiceCategorySerializer, ServiceRequestSerializer
 
 @login_required
 def select_service_category(request):
@@ -115,3 +119,21 @@ def update_service_status(request, request_id):
         service_request.save()
     # Redirect back to the dashboard
     return redirect('technician_dashboard')
+
+class ServiceCategoryListAPIView(APIView):
+    """
+    API view to list all service categories and their nested issues.
+    """
+    def get(self, request, format=None):
+        categories = ServiceCategory.objects.all()
+        serializer = ServiceCategorySerializer(categories, many=True)
+        return Response(serializer.data)
+
+class ServiceRequestCreateAPIView(generics.CreateAPIView):
+    queryset = ServiceRequest.objects.all()
+    serializer_class = ServiceRequestSerializer
+    permission_classes = [permissions.IsAuthenticated] # Only logged-in users can create
+
+    def perform_create(self, serializer):
+        # Automatically assign the logged-in user as the customer
+        serializer.save(customer=self.request.user)

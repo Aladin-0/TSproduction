@@ -6,6 +6,9 @@ from .models import Product, Order, OrderItem, Address
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import ProductSerializer
+from rest_framework import generics, permissions # Add generics and permissions
+from .serializers import ProductSerializer, AddressSerializer # Add AddressSerializer
+from .models import Address
 
 def product_list(request):
     products = Product.objects.all()
@@ -99,4 +102,20 @@ class ProductListAPIView(APIView):
         products = Product.objects.all()
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data)
-    
+
+class AddressListAPIView(generics.ListAPIView):
+    serializer_class = AddressSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Return only the addresses for the currently logged-in user
+        return Address.objects.filter(user=self.request.user)
+
+class AddressCreateAPIView(generics.CreateAPIView):
+    queryset = Address.objects.all()
+    serializer_class = AddressSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        # Automatically assign the logged-in user to the new address
+        serializer.save(user=self.request.user)
