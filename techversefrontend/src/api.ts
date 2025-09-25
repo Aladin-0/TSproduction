@@ -1,27 +1,10 @@
-// src/api.ts
 import axios from 'axios';
-
-// Function to get the CSRF token from the cookie
-function getCookie(name: string) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
 
 const apiClient = axios.create({
     baseURL: 'http://127.0.0.1:8000',
 });
 
-// This adds the token to every request
+// This interceptor adds the auth token to every request
 apiClient.interceptors.request.use((config) => {
     const token = localStorage.getItem('access_token');
     if (token) {
@@ -29,5 +12,19 @@ apiClient.interceptors.request.use((config) => {
     }
     return config;
 });
+
+// This interceptor handles token errors globally
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // If token is invalid or expired, log the user out
+            localStorage.removeItem('access_token');
+            // We can optionally refresh the page to reset the app state
+            // window.location.reload(); 
+        }
+        return Promise.reject(error);
+    }
+);
 
 export default apiClient;

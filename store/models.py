@@ -40,43 +40,6 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-class Address(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    street_address = models.CharField(max_length=255)
-    city = models.CharField(max_length=100)
-    state = models.CharField(max_length=100)
-    pincode = models.CharField(max_length=6)
-    is_default = models.BooleanField(default=False)
-
-    class Meta:
-        verbose_name_plural = 'Addresses'
-
-    def __str__(self):
-        return f"{self.user.name}'s Address in {self.city}"
-
-class ProductCategory(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    slug = models.SlugField(max_length=255, unique=True, help_text="A unique, URL-friendly name for the category.")
-
-    class Meta:
-        verbose_name_plural = 'Product Categories'
-
-    def __str__(self):
-        return self.name
-
-class Product(models.Model):
-    category = models.ForeignKey(ProductCategory, related_name='products', on_delete=models.CASCADE)
-    name = models.CharField(max_length=255)
-    slug = models.SlugField(max_length=255, unique=True, help_text="A unique, URL-friendly name for the product.")
-    description = models.TextField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    image = models.ImageField(upload_to='products/')
-    stock = models.PositiveIntegerField(default=0)
-    delivery_time_info = models.CharField(max_length=255, help_text="e.g., 'Delivered within 2-3 business days'")
-
-    def __str__(self):
-        return self.name
-
 class Order(models.Model):
     STATUS_CHOICES = (
         ('PENDING', 'Pending'),

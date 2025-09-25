@@ -29,9 +29,9 @@ INSTALLED_APPS = [
     
     # Third-party Apps
     'rest_framework',
-    'rest_framework.authtoken', # Add this
-    'dj_rest_auth',             # Add this
-    'dj_rest_auth.registration',# Add this
+    'rest_framework.authtoken',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
     'corsheaders',
     'django.contrib.sites',
     'allauth',
@@ -115,17 +115,24 @@ AUTH_USER_MODEL = 'users.CustomUser'
 # Site ID for Allauth
 SITE_ID = 1
 
+# Updated allauth settings (fixing deprecation warnings)
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_LOGOUT_ON_GET = True
+ACCOUNT_ADAPTER = 'users.adapter.CustomAccountAdapter'
 
-# ecom_project/settings.py
+# REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
 }
 
-# CORS Settings
+# CORS Settings - FIXED to allow both localhost and 127.0.0.1
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
+    "http://localhost:5173",  # Added this line
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -134,10 +141,13 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
-LOGIN_REDIRECT_URL = 'http://127.0.0.1:5173/'
+
+# UPDATED: Change login redirect to React frontend
+LOGIN_REDIRECT_URL = 'http://127.0.0.1:5173/?login=success'
 ACCOUNT_LOGOUT_ON_GET = True
 ACCOUNT_LOGIN_BY_EMAIL = True
 ACCOUNT_ADAPTER = 'users.adapter.CustomAccountAdapter'
+
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': ['profile', 'email'],
@@ -148,10 +158,8 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-
 REST_AUTH = {
     'USE_JWT': True,
     'REGISTER_SERIALIZER': 'users.serializers.CustomRegisterSerializer',
-    # ADD THIS LINE
     'REGISTER_PERMISSION_CLASSES': ('rest_framework.permissions.AllowAny',),
 }

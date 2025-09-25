@@ -639,7 +639,9 @@ interface Product {
 }
 
 export const StorePage: React.FC = () => {
-  const { products, fetchProducts } = useProductStore();
+  // FIXED: Use correct Zustand hook pattern
+  const products = useProductStore((state) => state.products);
+  const fetchProducts = useProductStore((state) => state.fetchProducts);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Products');
@@ -671,16 +673,27 @@ export const StorePage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
+        console.log('Starting to fetch products...');
         await fetchProducts();
+        console.log('Products fetched successfully');
       } catch (err) {
         console.error('Error fetching products:', err);
         setError('Failed to load products. Please check your connection.');
       } finally {
-        setTimeout(() => setLoading(false), 500);
+        setTimeout(() => {
+          setLoading(false);
+          console.log('Loading state set to false');
+        }, 500);
       }
     };
     loadProducts();
   }, [fetchProducts]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Products state changed:', products);
+    console.log('Products length:', products.length);
+  }, [products]);
 
   const handleBuyNow = (productSlug: string) => {
     // Connect to your Django buy-now endpoint
@@ -982,7 +995,6 @@ export const StorePage: React.FC = () => {
                         width: '350px',
                         height: '350px',
                         objectFit: 'contain',
-                        // objectFit: 'cover',
                         opacity: '0',
                         transform: 'scale(0.9)',
                         transition: 'all 0.3s ease'

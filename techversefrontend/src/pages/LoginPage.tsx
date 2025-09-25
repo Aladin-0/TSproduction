@@ -17,7 +17,7 @@ export const LoginPage = () => {
     const [password2, setPassword2] = useState('');
     const [error, setError] = useState('');
 
-    const { login } = useUserStore(); // Get the login function
+    const login = useUserStore((state) => state.login); // Get the login function
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();

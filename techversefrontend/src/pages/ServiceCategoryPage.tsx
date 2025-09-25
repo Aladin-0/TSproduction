@@ -463,7 +463,8 @@ interface ServiceCategory {
 
 export const ServiceCategoryPage: React.FC = () => {
   const navigate = useNavigate();
-  const { categories, fetchCategories } = useServiceStore();
+  const categories = useServiceStore((state) => state.categories);
+  const fetchCategories = useServiceStore((state) => state.fetchCategories);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);

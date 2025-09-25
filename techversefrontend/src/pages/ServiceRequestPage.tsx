@@ -2,17 +2,17 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useServiceStore } from '../stores/serviceStore';
-import { useProductStore } from '../stores/productStore'; // Using this for addresses
+import { useProductStore } from '../stores/productStore'; // Import the real store for addresses
 import { Container, Typography, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, TextField, Button, Select, MenuItem, InputLabel, Box, Collapse } from '@mui/material';
-import axios from 'axios';
+import apiClient from '../api'; // Use our central API client for submissions
 
 export const ServiceRequestPage = () => {
     const { categoryId } = useParams<{ categoryId: string }>();
     const navigate = useNavigate();
 
-    // State from Zustand stores
+    // State from our real Zustand stores
     const { categories } = useServiceStore();
-    const { addresses, fetchAddresses } = useProductStore();
+    const { addresses, fetchAddresses } = useProductStore(); // Using the real store now
 
     // State for the main service request form
     const [selectedIssue, setSelectedIssue] = useState<string>('');
@@ -27,13 +27,11 @@ export const ServiceRequestPage = () => {
     const [pincode, setPincode] = useState('');
 
     useEffect(() => {
-        const initializeAddresses = async () => {
-            await fetchAddresses();
-        };
-        initializeAddresses();
+        // Fetch real addresses when the component loads
+        fetchAddresses();
     }, [fetchAddresses]);
 
-    // Pre-select the default address once addresses are loaded
+    // Pre-select the default address once real addresses are loaded
     useEffect(() => {
         const defaultAddress = addresses.find(addr => addr.is_default);
         if (defaultAddress) {
@@ -47,9 +45,8 @@ export const ServiceRequestPage = () => {
         event.preventDefault();
         const newAddress = { street_address: street, city, state, pincode };
         try {
-            const response = await axios.post('http://127.0.0.1:8000/api/addresses/create/', newAddress);
-            // After creating, refresh the address list and select the new one
-            await fetchAddresses();
+            const response = await apiClient.post('/api/addresses/create/', newAddress);
+            await fetchAddresses(); // Refresh the address list
             setSelectedAddress(response.data.id.toString());
             setShowNewAddressForm(false); // Hide the form
         } catch (error) {
@@ -59,8 +56,23 @@ export const ServiceRequestPage = () => {
 
     const handleServiceRequestSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        // ... (This logic will be used to submit the final request to payment) ...
-        alert('Main form submitted! (Redirect to payment pending)');
+
+        const requestData = {
+            service_category: categoryId,
+            issue: selectedIssue !== 'other' ? selectedIssue : null,
+            custom_description: selectedIssue === 'other' ? customDescription : '',
+            service_location: selectedAddress,
+        };
+
+        try {
+            const response = await apiClient.post('/services/api/requests/create/', requestData);
+            console.log('Service request created:', response.data);
+            alert('Request Submitted Successfully! (Redirect to payment pending)');
+            // navigate(`/services/payment/${response.data.id}`);
+        } catch (error) {
+            console.error('Failed to submit service request:', error);
+            alert('Failed to submit request.');
+        }
     };
 
     if (!category) {
@@ -75,12 +87,26 @@ export const ServiceRequestPage = () => {
             <form onSubmit={handleServiceRequestSubmit}>
                 {/* Issue Selection */}
                 <FormControl component="fieldset" margin="normal" fullWidth>
-                    {/* ... (Radio Group for issues - no changes here) ... */}
+                    <FormLabel component="legend">Select an Issue</FormLabel>
+                    <RadioGroup value={selectedIssue} onChange={(e) => setSelectedIssue(e.target.value)}>
+                        {category.issues.map((issue) => (
+                            <FormControlLabel key={issue.id} value={issue.id.toString()} control={<Radio />} label={`${issue.description} - ₹${issue.price}`} />
+                        ))}
+                        <FormControlLabel value="other" control={<Radio />} label="Other..." />
+                    </RadioGroup>
                 </FormControl>
 
                 {/* Custom Description */}
                 {selectedIssue === 'other' && (
-                    <TextField label="Describe your issue" /* ... (no changes here) ... */ />
+                    <TextField
+                        label="Describe your issue"
+                        multiline
+                        rows={4}
+                        fullWidth
+                        margin="normal"
+                        value={customDescription}
+                        onChange={(e) => setCustomDescription(e.target.value)}
+                    />
                 )}
 
                 {/* Address Selection */}

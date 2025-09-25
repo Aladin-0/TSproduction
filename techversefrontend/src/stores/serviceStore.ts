@@ -23,10 +23,17 @@ export const useServiceStore = create<ServiceState>((set) => ({
   categories: [],
   fetchCategories: async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/services/api/categories/');
+      console.log('Fetching service categories...');
+      // Use direct axios for public endpoints
+      const response = await axios.get('http://127.0.0.1:8000/services/api/categories/', {
+        timeout: 5000
+      });
+      console.log('Service categories response:', response.data);
       set({ categories: response.data });
     } catch (error) {
       console.error("Failed to fetch service categories:", error);
+      // Set empty array on error
+      set({ categories: [] });
     }
   },
 }));

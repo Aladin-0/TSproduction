@@ -1,4 +1,4 @@
-// src/main.tsx
+// src/main.tsx - Adding SnackbarProvider
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
@@ -18,7 +18,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <ThemeProvider theme={darkTheme}>
-        <SnackbarProvider> {/* Add the provider */}
+        <SnackbarProvider>
           <CssBaseline />
           <App />
         </SnackbarProvider>

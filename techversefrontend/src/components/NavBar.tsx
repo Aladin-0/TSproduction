@@ -137,10 +137,12 @@ const DrawerItem = styled(ListItem)(({ theme }) => ({
 }));
 
 export const NavBar = () => {
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   // Get state and actions from the user store
-  const { isAuthenticated, user, logout } = useUserStore();
+  const isAuthenticated = useUserStore((state) => state.isAuthenticated);
+  const user = useUserStore((state) => state.user);
+  const logout = useUserStore((state) => state.logout);
   const navigate = useNavigate();
 
   useEffect(() => {
