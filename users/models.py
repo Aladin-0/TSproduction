@@ -3,9 +3,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 
-# ------------------------------------------------------------------
-# STEP 1: CREATE THE CUSTOM MANAGER
-# ------------------------------------------------------------------
 class CustomUserManager(BaseUserManager):
     """
     Custom user model manager where email is the unique identifier
@@ -30,7 +27,7 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
-        extra_fields.setdefault('role', 'ADMIN') # Set the role to ADMIN for superusers
+        extra_fields.setdefault('role', 'ADMIN')
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
@@ -38,10 +35,6 @@ class CustomUserManager(BaseUserManager):
             raise ValueError('Superuser must have is_superuser=True.')
         return self.create_user(email, password, **extra_fields)
 
-
-# ------------------------------------------------------------------
-# STEP 2: UPDATE THE CUSTOM USER MODEL
-# ------------------------------------------------------------------
 class CustomUser(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = "ADMIN", "Admin"
@@ -51,13 +44,17 @@ class CustomUser(AbstractUser):
 
     name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
+    phone = models.CharField(max_length=15, blank=True, null=True)  # NEW FIELD
     role = models.CharField(max_length=50, choices=Role.choices, default=Role.CUSTOMER)
     username = None
+
+    # NEW NOTIFICATION PREFERENCES
+    email_notifications = models.BooleanField(default=True)
+    sms_notifications = models.BooleanField(default=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name']
 
-    # This is the line that plugs in our custom manager
     objects = CustomUserManager()
 
     def __str__(self):

@@ -7,7 +7,13 @@ from .models import CustomUser
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'email', 'name', 'role']
+        fields = ['id', 'email', 'name', 'phone', 'role', 'email_notifications', 'sms_notifications']
+        read_only_fields = ['id', 'email', 'role']
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['name', 'phone', 'email_notifications', 'sms_notifications']
 
 class CustomRegisterSerializer(RegisterSerializer):
     name = serializers.CharField(required=True, write_only=True)

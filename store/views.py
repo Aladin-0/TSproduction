@@ -5,9 +5,8 @@ from django.contrib.auth.decorators import login_required
 from .models import Product, Order, OrderItem, Address
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import ProductSerializer
-from rest_framework import generics, permissions # Add generics and permissions
-from .serializers import ProductSerializer, AddressSerializer # Add AddressSerializer
+from .serializers import ProductSerializer, AddressSerializer, AddressCreateUpdateSerializer
+from rest_framework import generics, permissions, status
 from .models import Address
 
 def product_list(request):
@@ -66,16 +65,13 @@ def payment_page(request, order_id):
     }
     return render(request, 'store/payment_page.html', context)
 
-# NEW VIEW TO SIMULATE PAYMENT
 @login_required
 def confirm_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, customer=request.user)
-    # Change the order status to 'PROCESSING' to simulate a successful payment
     order.status = 'PROCESSING'
     order.save()
     return redirect('order_successful', order_id=order.id)
 
-# NEW VIEW FOR THE "THANK YOU" PAGE
 @login_required
 def order_successful(request, order_id):
     order = get_object_or_404(Order, id=order_id, customer=request.user)
@@ -87,11 +83,9 @@ def order_successful(request, order_id):
 @login_required
 def update_order_status(request, order_id):
     if request.method == 'POST':
-        # Security check: ensure the current user is the assigned technician
         order = get_object_or_404(Order, id=order_id, technician=request.user)
         order.status = 'DELIVERED'
         order.save()
-    # Redirect back to the dashboard
     return redirect('technician_dashboard')
 
 class ProductListAPIView(APIView):
@@ -108,14 +102,52 @@ class AddressListAPIView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Return only the addresses for the currently logged-in user
         return Address.objects.filter(user=self.request.user)
 
 class AddressCreateAPIView(generics.CreateAPIView):
     queryset = Address.objects.all()
-    serializer_class = AddressSerializer
+    serializer_class = AddressCreateUpdateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
-        # Automatically assign the logged-in user to the new address
-        serializer.save(user=self.request.user)
+class AddressUpdateAPIView(generics.RetrieveUpdateAPIView):
+    serializer_class = AddressCreateUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return Address.objects.filter(user=self.request.user)
+    
+    def get_object(self):
+        queryset = self.get_queryset()
+        address_id = self.kwargs.get('pk')
+        return get_object_or_404(queryset, id=address_id)
+
+class AddressDeleteAPIView(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return Address.objects.filter(user=self.request.user)
+    
+    def get_object(self):
+        queryset = self.get_queryset()
+        address_id = self.kwargs.get('pk')
+        return get_object_or_404(queryset, id=address_id)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # Don't allow deletion of default address if it's the only one
+        if instance.is_default:
+            user_addresses = Address.objects.filter(user=request.user)
+            if user_addresses.count() == 1:
+                return Response(
+                    {'error': 'Cannot delete the only address'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            elif user_addresses.count() > 1:
+                # Set another address as default before deleting
+                next_address = user_addresses.exclude(id=instance.id).first()
+                next_address.is_default = True
+                next_address.save()
+        
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
