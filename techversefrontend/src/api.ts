@@ -1,9 +1,12 @@
-// src/api.ts - Updated to support both JWT and session auth
+// src/api.ts - Updated to properly handle sessions
 import axios from 'axios';
 
 const apiClient = axios.create({
     baseURL: 'http://127.0.0.1:8000',
-    withCredentials: true, // Always include cookies for session auth
+    withCredentials: true, // CRITICAL: Include cookies for session auth
+    headers: {
+        'Content-Type': 'application/json',
+    },
 });
 
 // This interceptor adds the auth token to every request

@@ -688,7 +688,7 @@ function MechanicalKeyboard(props) {
 }
 
 function GamingHeadphone(props) {
-  const { scene } = useGLTF('/gaming_headphone.compressed.glb');
+  const { scene } = useGLTF('/gaming_headphone.glb');
   return <primitive object={scene} scale={20.0} position={[0, -1, 0]} {...props} />;
 }
 

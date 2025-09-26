@@ -1,4 +1,4 @@
-// src/App.tsx - Updated with Profile Route
+// src/App.tsx - Updated with Checkout Route
 import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useUserStore } from './stores/userStore';
@@ -10,6 +10,8 @@ import { ServiceCategoryPage } from './pages/ServiceCategoryPage';
 import { ServiceRequestPage } from './pages/ServiceRequestPage';
 import { LoginPage } from './pages/LoginPage';
 import { UserProfilePage } from './pages/UserProfilePage';
+import { OrdersPage } from './pages/OrdersPage';
+import CheckoutPage from './pages/CheckoutPage';
 
 function App() {
   const checkAuthStatus = useUserStore((state) => state.checkAuthStatus);
@@ -30,6 +32,8 @@ function App() {
           <Route path="/services/request/:categoryId" element={<ServiceRequestPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/profile" element={<UserProfilePage />} />
+          <Route path="/my-orders" element={<OrdersPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
         </Routes>
       </main>
     </>

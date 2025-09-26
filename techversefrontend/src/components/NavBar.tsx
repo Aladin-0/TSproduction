@@ -1,4 +1,4 @@
-// src/components/NavBar.tsx
+// src/components/NavBar.tsx - Updated with Cart Integration
 import { useState, useEffect } from 'react';
 import { 
   AppBar, 
@@ -15,7 +15,8 @@ import {
   Menu,
   MenuItem,
   Divider,
-  Chip
+  Chip,
+  Badge
 } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
@@ -26,6 +27,8 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import HistoryIcon from '@mui/icons-material/History';
 import { useUserStore } from '../stores/userStore'; 
+import { useCartStore } from '../stores/cartStore';
+import { ShoppingCart } from './ShoppingCart';
 import logoImage from '../components/Tlogo.png';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
@@ -138,6 +141,20 @@ const ProfileButton = styled(Button)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
+  '&:hover': {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    transform: 'translateY(-1px)',
+  },
+}));
+
+const CartButton = styled(IconButton)(({ theme }) => ({
+  color: 'var(--text-color, #FAFAFA)',
+  backgroundColor: 'transparent',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  borderRadius: '12px',
+  padding: '12px',
+  transition: 'all 0.3s ease',
   '&:hover': {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -262,6 +279,11 @@ export const NavBar = () => {
   const isAuthenticated = useUserStore((state) => state.isAuthenticated);
   const user = useUserStore((state) => state.user);
   const logout = useUserStore((state) => state.logout);
+  
+  // Cart store hooks
+  const { openCart, getTotalItems } = useCartStore();
+  const totalItems = getTotalItems();
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -299,6 +321,10 @@ export const NavBar = () => {
   const handleOrdersClick = () => {
     navigate('/my-orders');
     handleProfileMenuClose();
+  };
+
+  const handleCartClick = () => {
+    openCart();
   };
 
   const getUserInitials = (name: string) => {
@@ -361,6 +387,13 @@ export const NavBar = () => {
         <RouterLink to="/contact" onClick={handleDrawerToggle}>Contact</RouterLink>
       </DrawerItem>
 
+      {/* Mobile Cart */}
+      <DrawerItem>
+        <button onClick={() => { handleCartClick(); handleDrawerToggle(); }}>
+          Cart ({totalItems})
+        </button>
+      </DrawerItem>
+
       {isAuthenticated ? (
         <>
           <DrawerItem>
@@ -400,6 +433,23 @@ export const NavBar = () => {
               <NavLink component={RouterLink} to="/services">Services</NavLink>
               <NavLink component={RouterLink} to="/about">About</NavLink>
               <NavLink component={RouterLink} to="/contact">Contact</NavLink>
+
+              {/* Cart Button */}
+              <CartButton onClick={handleCartClick}>
+                <Badge
+                  badgeContent={totalItems}
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      backgroundColor: '#60a5fa',
+                      color: 'white',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                    },
+                  }}
+                >
+                  <ShoppingCartIcon />
+                </Badge>
+              </CartButton>
 
               {isAuthenticated ? (
                 <ProfileButton onClick={handleProfileMenuOpen}>
@@ -472,9 +522,9 @@ export const NavBar = () => {
           Order History
         </MenuItem>
         
-        <MenuItem>
+        <MenuItem onClick={handleCartClick}>
           <ShoppingCartIcon sx={{ mr: 2, fontSize: '18px' }} />
-          My Cart
+          My Cart ({totalItems})
         </MenuItem>
         
         <MenuItem>
@@ -509,6 +559,9 @@ export const NavBar = () => {
           {drawer}
         </Drawer>
       </Box>
+      
+      {/* Shopping Cart Component */}
+      <ShoppingCart />
       
       <Toolbar sx={{ mb: 2 }} />
     </>

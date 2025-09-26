@@ -1,0 +1,6 @@
+dj_rest_auth==7.0.1
+Django==5.2.6
+django_allauth==65.11.0
+djangorestframework==3.16.1
+djangorestframework_simplejwt==5.5.1
+Requests==2.32.5

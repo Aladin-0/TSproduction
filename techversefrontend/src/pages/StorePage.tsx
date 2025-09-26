@@ -1,4 +1,4 @@
-// src/pages/StorePage.tsx
+// src/pages/StorePage.tsx - Updated with Cart Integration
 import React, { useEffect, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { 
@@ -17,8 +17,12 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import InstagramIcon from '@mui/icons-material/Instagram';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
 import { useSpring, animated, useTrail } from '@react-spring/web';
 import { useProductStore } from '../stores/productStore';
+import { useCartStore } from '../stores/cartStore';
+import { useSnackbar } from 'notistack';
 
 // Main page wrapper with exact black background
 const PageWrapper = styled(Box)({
@@ -474,23 +478,35 @@ const ProductDescription = styled(Typography)({
   overflow: 'hidden',
 });
 
-const AddToCartButton = styled(Button)({
+const ActionButton = styled(Button)({
   backgroundColor: 'rgba(255, 255, 255, 0.08)',
   color: '#ffffff',
   border: '1px solid rgba(255, 255, 255, 0.15)',
   borderRadius: '12px',
-  padding: '12px 24px',
+  padding: '12px 20px',
   fontSize: '13px',
   fontWeight: 500,
   textTransform: 'none',
-  width: '100%',
   backdropFilter: 'blur(10px)',
   transition: 'all 0.3s cubic-bezier(0.23, 1, 0.320, 1)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
   '&:hover': {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderColor: 'rgba(255, 255, 255, 0.25)',
     transform: 'translateY(-2px)',
     boxShadow: '0 8px 20px rgba(255, 255, 255, 0.1)',
+  },
+  '&.buy-now': {
+    backgroundColor: 'rgba(96, 165, 250, 0.15)',
+    borderColor: 'rgba(96, 165, 250, 0.3)',
+    color: '#60a5fa',
+    '&:hover': {
+      backgroundColor: 'rgba(96, 165, 250, 0.25)',
+      borderColor: 'rgba(96, 165, 250, 0.4)',
+    },
   },
 });
 
@@ -639,9 +655,15 @@ interface Product {
 }
 
 export const StorePage: React.FC = () => {
-  // FIXED: Use correct Zustand hook pattern
+  const { enqueueSnackbar } = useSnackbar();
+  
+  // Product store
   const products = useProductStore((state) => state.products);
   const fetchProducts = useProductStore((state) => state.fetchProducts);
+  
+  // Cart store
+  const addToCart = useCartStore((state) => state.addToCart);
+  
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Products');
@@ -695,9 +717,18 @@ export const StorePage: React.FC = () => {
     console.log('Products length:', products.length);
   }, [products]);
 
-  const handleBuyNow = (productSlug: string) => {
-    // Connect to your Django buy-now endpoint
-    window.location.href = `/buy-now/${productSlug}/`;
+  const handleAddToCart = (product: Product) => {
+    addToCart(product, 1);
+    enqueueSnackbar(`${product.name} added to cart!`, { 
+      variant: 'success',
+      anchorOrigin: { vertical: 'bottom', horizontal: 'right' }
+    });
+  };
+
+  const handleBuyNow = (product: Product) => {
+    addToCart(product, 1);
+    // Navigate to checkout
+    window.location.href = '/checkout';
   };
 
   const loadMoreProducts = () => {
@@ -723,7 +754,7 @@ export const StorePage: React.FC = () => {
         <animated.div style={heroAnimation}>
           <HeroContent>
             <HeroTitle>Experience Sound.</HeroTitle>
-            <HeroSubtitle>Refurblined.</HeroSubtitle>
+            <HeroSubtitle>Refurbished.</HeroSubtitle>
             <HeroDescription>UltraMesh Headphones</HeroDescription>
             <LearnMoreButton>Learn More</LearnMoreButton>
           </HeroContent>
@@ -974,7 +1005,6 @@ export const StorePage: React.FC = () => {
                       alt={product.name || 'Product'}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        // Try different image URL formats
                         if (!target.src.includes('placeholder')) {
                           if (product.image && !product.image.startsWith('/media/')) {
                             target.src = `http://127.0.0.1:8000/media/${product.image}`;
@@ -986,7 +1016,6 @@ export const StorePage: React.FC = () => {
                         }
                       }}
                       onLoad={(e) => {
-                        // Add subtle animation when image loads
                         const target = e.target as HTMLImageElement;
                         target.style.opacity = '1';
                         target.style.transform = 'scale(1)';
@@ -1037,11 +1066,25 @@ export const StorePage: React.FC = () => {
                         {product.category?.name ? String(product.category.name).trim() : 'General'}
                       </Typography>
                     </Box>
-                    <AddToCartButton 
-                      onClick={() => handleBuyNow(product.slug || product.name?.toLowerCase().replace(/\s+/g, '-') || 'product')}
-                    >
-                      Add to Cart
-                    </AddToCartButton>
+                    
+                    {/* Action Buttons - Add to Cart and Buy Now */}
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <ActionButton 
+                        onClick={() => handleAddToCart(product)}
+                        sx={{ flex: 1 }}
+                      >
+                        <ShoppingCartIcon sx={{ fontSize: '16px' }} />
+                        Add to Cart
+                      </ActionButton>
+                      <ActionButton 
+                        onClick={() => handleBuyNow(product)}
+                        className="buy-now"
+                        sx={{ flex: 1 }}
+                      >
+                        <FlashOnIcon sx={{ fontSize: '16px' }} />
+                        Buy Now
+                      </ActionButton>
+                    </Box>
                   </ProductInfo>
                 </ProductCard>
               );

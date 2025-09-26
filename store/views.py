@@ -8,6 +8,11 @@ from rest_framework.response import Response
 from .serializers import ProductSerializer, AddressSerializer, AddressCreateUpdateSerializer
 from rest_framework import generics, permissions, status
 from .models import Address
+from rest_framework import generics, permissions
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from .models import Order
+from .serializers import OrderSerializer
 
 def product_list(request):
     products = Product.objects.all()
@@ -151,3 +156,98 @@ class AddressDeleteAPIView(generics.DestroyAPIView):
         
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class UserOrdersListView(generics.ListAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return Order.objects.filter(
+            customer=self.request.user
+        ).select_related(
+            'shipping_address', 'technician'
+        ).prefetch_related(
+            'items__product'
+        ).order_by('-order_date')
+
+class OrderDetailView(generics.RetrieveAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return Order.objects.filter(customer=self.request.user)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def create_order(request):
+    """
+    Create a new order from cart/buy-now
+    """
+    try:
+        # Get data from request
+        product_slug = request.data.get('product_slug')
+        quantity = request.data.get('quantity', 1)
+        address_id = request.data.get('address_id')
+        
+        if not all([product_slug, address_id]):
+            return Response(
+                {'error': 'Product and address are required'}, 
+                status=400
+            )
+        
+        # Get product and address
+        from .models import Product, Address
+        product = Product.objects.get(slug=product_slug)
+        address = Address.objects.get(id=address_id, user=request.user)
+        
+        # Create order
+        order = Order.objects.create(
+            customer=request.user,
+            status='PENDING',
+            shipping_address=address
+        )
+        
+        # Create order item
+        OrderItem.objects.create(
+            order=order,
+            product=product,
+            quantity=quantity,
+            price=product.price
+        )
+        
+        # Serialize and return
+        serializer = OrderSerializer(order)
+        return Response(serializer.data, status=201)
+        
+    except Product.DoesNotExist:
+        return Response({'error': 'Product not found'}, status=404)
+    except Address.DoesNotExist:
+        return Response({'error': 'Address not found'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def cancel_order(request, order_id):
+    """
+    Cancel an order (only if pending/processing)
+    """
+    try:
+        order = Order.objects.get(id=order_id, customer=request.user)
+        
+        if order.status not in ['PENDING', 'PROCESSING']:
+            return Response(
+                {'error': 'Order cannot be cancelled'}, 
+                status=400
+            )
+        
+        order.status = 'CANCELLED'
+        order.save()
+        
+        serializer = OrderSerializer(order)
+        return Response(serializer.data)
+        
+    except Order.DoesNotExist:
+        return Response({'error': 'Order not found'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)

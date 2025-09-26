@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from datetime import timedelta
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -32,7 +33,7 @@ INSTALLED_APPS = [
     # Third-party Apps
     'rest_framework',
     'rest_framework.authtoken',
-    'rest_framework_simplejwt',  # Add this
+    'rest_framework_simplejwt',
     'dj_rest_auth',
     'dj_rest_auth.registration',
     'corsheaders',
@@ -44,9 +45,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    # CorsMiddleware must be as high as possible
     'corsheaders.middleware.CorsMiddleware',
-    
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -54,8 +53,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
-    # Allauth middleware
     'allauth.account.middleware.AccountMiddleware',
 ]
 
@@ -118,14 +115,25 @@ AUTH_USER_MODEL = 'users.CustomUser'
 # Site ID for Allauth
 SITE_ID = 1
 
-# Updated allauth settings (fixing deprecation warnings)
+# Account settings
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
-ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_LOGOUT_ON_GET = True
-ACCOUNT_ADAPTER = 'users.adapter.CustomAccountAdapter'
 
-# REST Framework - UPDATED
+# Account adapters
+ACCOUNT_ADAPTER = 'users.adapter.CustomAccountAdapter'
+SOCIALACCOUNT_ADAPTER = 'users.adapter.CustomSocialAccountAdapter'
+
+# Social account settings
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_REQUIRED = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+
+# REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -140,13 +148,13 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
 }
 
-# CORS Settings - UPDATED
+# CORS Settings
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
 ]
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = False  # Keep this False for security
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_HEADERS = [
     'accept',
     'accept-encoding',
@@ -157,6 +165,8 @@ CORS_ALLOWED_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'x-csrftoken',
+    'cache-control',
 ]
 
 # Allauth Settings
@@ -165,23 +175,27 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-# UPDATED: Change login redirect to React frontend
+# Redirect URLs
 LOGIN_REDIRECT_URL = 'http://localhost:5173/?login=success'
-ACCOUNT_LOGOUT_ON_GET = True
-ACCOUNT_LOGIN_BY_EMAIL = True
-ACCOUNT_ADAPTER = 'users.adapter.CustomAccountAdapter'
+ACCOUNT_LOGOUT_REDIRECT_URL = 'http://localhost:5173/'
 
+# Google OAuth Provider - No hardcoded credentials
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
-        'SCOPE': ['profile', 'email'],
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
         'AUTH_PARAMS': {
             'access_type': 'online',
-            'prompt': 'select_account',
-        }
+        },
+        'OAUTH_PKCE_ENABLED': True,
+        'VERIFIED_EMAIL': True,
+        'VERSION': 'v2',
     }
 }
 
-# REST_AUTH SETTINGS - UPDATED
+# REST_AUTH SETTINGS
 REST_AUTH = {
     'USE_JWT': True,
     'JWT_AUTH_COOKIE': 'techverse-auth',
@@ -191,14 +205,16 @@ REST_AUTH = {
 }
 
 # Session settings
-SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
-SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = None  # Changed to None for cross-origin
+SESSION_COOKIE_SECURE = False   # False for development (HTTP)
+SESSION_COOKIE_HTTPONLY = False # False so JavaScript can access
+SESSION_COOKIE_DOMAIN = None    # Don't restrict domain
 SESSION_SAVE_EVERY_REQUEST = True
 
 # CSRF settings
-CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
+CSRF_COOKIE_SAMESITE = None     # Changed to None for cross-origin  
+CSRF_COOKIE_SECURE = False      # False for development
+CSRF_COOKIE_HTTPONLY = False    # False so JavaScript can access
 CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
