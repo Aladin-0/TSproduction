@@ -22,8 +22,8 @@ urlpatterns = [
     path('api/addresses/<int:pk>/delete/', views.AddressDeleteAPIView.as_view(), name='api_address_delete'),
     
     # Order API endpoints (if you want them here, but they should be separate)
-    # path('api/orders/', views.UserOrdersListView.as_view(), name='api_orders_list'),
-    # path('api/orders/<int:pk>/', views.OrderDetailView.as_view(), name='api_order_detail'),
-    # path('api/orders/create/', views.create_order, name='api_create_order'),
-    # path('api/orders/<int:order_id>/cancel/', views.cancel_order, name='api_cancel_order'),
+    path('api/orders/', views.UserOrdersListView.as_view(), name='api_orders_list'),
+    path('api/orders/<int:pk>/', views.OrderDetailView.as_view(), name='api_order_detail'),
+    path('api/orders/create/', views.create_order, name='api_create_order'),
+    path('api/orders/<int:order_id>/cancel/', views.cancel_order, name='api_cancel_order'),
 ]
