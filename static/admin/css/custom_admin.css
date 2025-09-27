@@ -1,0 +1,53 @@
+/* static/admin/css/custom_admin.css */
+
+/* Improve product image display in admin */
+.field-image_preview img {
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.field-image_preview img:hover {
+    transform: scale(1.1);
+    z-index: 999;
+    position: relative;
+}
+
+/* Style for inline product images */
+.inline-group .field-image_preview {
+    text-align: center;
+}
+
+/* Make delete buttons more visible */
+.inline-deletelink {
+    background-color: #dc3545 !important;
+    color: white !important;
+    padding: 4px 8px;
+    border-radius: 3px;
+    text-decoration: none;
+    font-size: 11px;
+}
+
+.inline-deletelink:hover {
+    background-color: #c82333 !important;
+}
+
+/* Improve the main image preview */
+.field-main_image_preview {
+    text-align: center;
+}
+
+.field-main_image_preview img {
+    max-width: 150px;
+    height: auto;
+}
+
+/* Style for product image ordering */
+.field-order input {
+    width: 60px !important;
+}
+
+/* Make alt text field wider */
+.field-alt_text input {
+    width: 200px !important;
+}

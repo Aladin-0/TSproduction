@@ -1,0 +1,50 @@
+<!-- templates/admin/index.html - Simplified admin dashboard -->
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans 'TechVerse Admin Dashboard' %}{% endblock %}
+
+{% block content %}
+<div style="padding: 20px;">
+    <h1>{% trans 'TechVerse Admin Dashboard' %}</h1>
+    <p>Welcome to the TechVerse administration panel.</p>
+    
+    <!-- Quick Stats -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
+        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; text-align: center;">
+            <h3>📦 Orders</h3>
+            <p><strong>Total:</strong> {{ total_orders|default:0 }}</p>
+            <p><strong>Unassigned:</strong> {{ unassigned_orders|default:0 }}</p>
+        </div>
+        
+        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; text-align: center;">
+            <h3>🔧 Services</h3>
+            <p><strong>Total:</strong> {{ total_services|default:0 }}</p>
+            <p><strong>Unassigned:</strong> {{ unassigned_services|default:0 }}</p>
+        </div>
+        
+        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; text-align: center;">
+            <h3>👨‍🔧 Technicians</h3>
+            <p><strong>Total:</strong> {{ total_technicians|default:0 }}</p>
+            <p><strong>Active:</strong> {{ active_technicians|default:0 }}</p>
+        </div>
+        
+        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; text-align: center;">
+            <h3>📱 Products</h3>
+            <p><strong>Total:</strong> {{ total_products|default:0 }}</p>
+            <p><strong>Active:</strong> {{ active_products|default:0 }}</p>
+        </div>
+    </div>
+    
+    <!-- Quick Links -->
+    <div style="margin-top: 30px;">
+        <h2>Quick Actions</h2>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="/admin/store/order/" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 3px;">Manage Orders</a>
+            <a href="/admin/services/servicerequest/" style="background: #28a745; color: white; padding: 10px 15px; text-decoration: none; border-radius: 3px;">Manage Services</a>
+            <a href="/admin/users/customuser/" style="background: #ffc107; color: #212529; padding: 10px 15px; text-decoration: none; border-radius: 3px;">Manage Users</a>
+            <a href="/admin/store/product/" style="background: #17a2b8; color: white; padding: 10px 15px; text-decoration: none; border-radius: 3px;">Manage Products</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

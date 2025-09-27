@@ -1,4 +1,4 @@
-# store/models.py - Updated with multiple images support
+# store/models.py - Fixed with proper image handling
 
 from django.db import models
 from django.conf import settings # To get the CustomUser model
@@ -75,11 +75,25 @@ class Product(models.Model):
     
     @property
     def all_images(self):
-        """Get all images including main image and additional images"""
+        """Get all images including main image and additional images - FIXED to avoid duplicates"""
         images = []
+        seen_urls = set()
+        
+        # Add main image first if it exists
         if self.image:
-            images.append(self.image.url)
-        images.extend([img.image.url for img in self.additional_images.all()])
+            main_url = self.image.url
+            images.append(main_url)
+            seen_urls.add(main_url)
+        
+        # Add additional images, avoiding duplicates
+        additional_images = self.additional_images.all().order_by('order', 'id')
+        for img_obj in additional_images:
+            if img_obj.image:
+                img_url = img_obj.image.url
+                if img_url not in seen_urls:
+                    images.append(img_url)
+                    seen_urls.add(img_url)
+        
         return images
 
 class ProductImage(models.Model):
@@ -97,6 +111,27 @@ class ProductImage(models.Model):
     
     def __str__(self):
         return f"{self.product.name} - Image {self.order}"
+    
+    def save(self, *args, **kwargs):
+        """Override save to ensure only one primary image per product"""
+        if self.is_primary:
+            # Set all other images for this product to not primary
+            ProductImage.objects.filter(
+                product=self.product, 
+                is_primary=True
+            ).exclude(pk=self.pk).update(is_primary=False)
+        super().save(*args, **kwargs)
+    
+    def delete(self, *args, **kwargs):
+        """Override delete to remove image file from filesystem"""
+        if self.image:
+            try:
+                import os
+                if os.path.isfile(self.image.path):
+                    os.remove(self.image.path)
+            except (ValueError, OSError):
+                pass  # Handle cases where file doesn't exist
+        super().delete(*args, **kwargs)
 
 class ProductSpecification(models.Model):
     """Technical specifications for products"""

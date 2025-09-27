@@ -1,7 +1,14 @@
-# store/urls.py - Updated with product detail endpoint
+# store/urls.py - Updated with technician API endpoints
 
 from django.urls import path
 from . import views
+from .technician_views import (
+    TechnicianAssignedOrdersView,
+    TechnicianAssignedServicesView, 
+    TechnicianStatsView,
+    CompleteOrderView,
+    CompleteServiceView
+)
 
 urlpatterns = [
     # Existing store URLs
@@ -27,5 +34,13 @@ urlpatterns = [
     path('api/orders/<int:pk>/', views.OrderDetailView.as_view(), name='api_order_detail'),
     path('api/orders/create/', views.create_order, name='api_create_order'),
     path('api/orders/<int:order_id>/cancel/', views.cancel_order, name='api_cancel_order'),
+    
+    # Technician API endpoints
+    path('api/technician/assigned-orders/', TechnicianAssignedOrdersView.as_view(), name='api_technician_orders'),
+    path('api/technician/assigned-services/', TechnicianAssignedServicesView.as_view(), name='api_technician_services'),
+    path('api/technician/stats/', TechnicianStatsView.as_view(), name='api_technician_stats'),
+    path('api/technician/complete-order/<int:order_id>/', CompleteOrderView.as_view(), name='api_complete_order'),
+    path('api/technician/complete-service/<int:service_id>/', CompleteServiceView.as_view(), name='api_complete_service'),
+    
     path('admin/delete-product-image/<int:image_id>/', views.delete_product_image, name='delete_product_image'),
 ]

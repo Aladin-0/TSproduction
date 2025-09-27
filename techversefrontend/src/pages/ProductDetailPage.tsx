@@ -308,38 +308,18 @@ export const ProductDetailPage: React.FC = () => {
   
   // Get all available images (fixed to avoid duplicates)
   const getAllImages = () => {
-    const images = [];
-    const seenImages = new Set(); // Track seen images to avoid duplicates
-    
-    // Add main image first
-    if (product.image) {
-      const mainImg = product.image;
-      images.push(mainImg);
-      seenImages.add(mainImg);
-    }
-    
-    // Add additional images from all_images array (avoid duplicates)
+    // Use the all_images property from backend which already handles duplicates
     if (product.all_images && product.all_images.length > 0) {
-      product.all_images.forEach(img => {
-        if (img && !seenImages.has(img)) {
-          images.push(img);
-          seenImages.add(img);
-        }
-      });
+      return product.all_images;
     }
     
-    // Add additional images from additional_images array (avoid duplicates)
-    if (product.additional_images && product.additional_images.length > 0) {
-      product.additional_images.forEach(imgObj => {
-        if (imgObj.image && !seenImages.has(imgObj.image)) {
-          images.push(imgObj.image);
-          seenImages.add(imgObj.image);
-        }
-      });
+    // Fallback to main image if no all_images
+    if (product.image) {
+      return [product.image];
     }
     
-    // Return at least one image (main image or placeholder)
-    return images.length > 0 ? images : [product.image || ''];
+    // Return empty array if no images
+    return [];
   };
   
   const displayImages = getAllImages();

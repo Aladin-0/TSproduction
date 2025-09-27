@@ -1,4 +1,4 @@
-// src/App.tsx - Updated with ProductDetailPage route
+// src/App.tsx - Updated with TechnicianDashboard route
 import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useUserStore } from './stores/userStore';
@@ -12,6 +12,7 @@ import { ServiceRequestPage } from './pages/ServiceRequestPage';
 import { LoginPage } from './pages/LoginPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import { OrdersPage } from './pages/OrdersPage';
+import { TechnicianDashboard } from './pages/TechnicianDashboard';
 import CheckoutPage from './pages/CheckoutPage';
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/profile" element={<UserProfilePage />} />
           <Route path="/my-orders" element={<OrdersPage />} />
+          <Route path="/technician/dashboard" element={<TechnicianDashboard />} />
           <Route path="/checkout" element={<CheckoutPage />} />
         </Routes>
       </main>

@@ -1,4 +1,4 @@
-# store/serializers.py - Updated with enhanced product support
+# store/serializers.py - Fixed with proper image handling
 from rest_framework import serializers
 from .models import Product, ProductCategory, ProductImage, ProductSpecification, Address, Order, OrderItem
 
@@ -39,6 +39,7 @@ class ProductSerializer(serializers.ModelSerializer):
         return obj.get_features_list()
     
     def get_all_images(self, obj):
+        """Return all images avoiding duplicates - uses the fixed model property"""
         return obj.all_images
 
 class ProductDetailSerializer(ProductSerializer):
