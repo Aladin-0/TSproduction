@@ -1,4 +1,4 @@
-# users/forms.py - Enhanced with better technician creation
+# users/forms.py - Fixed version
 
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import CustomUser
@@ -46,9 +46,9 @@ class CustomUserChangeForm(UserChangeForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Don't show password field in change form
+        # Safely remove password field if it exists
         if 'password' in self.fields:
-            del self.fields['password']
+            self.fields.pop('password')
 
 class TechnicianCreationForm(UserCreationForm):
     """Simplified form specifically for creating technicians"""

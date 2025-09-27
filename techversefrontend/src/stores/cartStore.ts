@@ -1,4 +1,4 @@
-// src/stores/cartStore.ts
+// src/stores/cartStore.ts - Fixed to be user-specific
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -21,6 +21,7 @@ interface CartItem {
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
+  currentUserId: string | null;
   addToCart: (product: Product, quantity?: number) => void;
   removeFromCart: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
@@ -29,6 +30,8 @@ interface CartState {
   closeCart: () => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
+  setCurrentUser: (userId: string | null) => void;
+  switchUser: (userId: string | null) => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -36,25 +39,63 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       isOpen: false,
+      currentUserId: null,
 
-      addToCart: (product, quantity = 1) => {
-        const items = get().items;
-        const existingItem = items.find(item => item.product.id === product.id);
-
-        if (existingItem) {
+      setCurrentUser: (userId) => {
+        const state = get();
+        
+        // If switching to a different user, clear current cart and load user's cart
+        if (state.currentUserId !== userId) {
+          console.log('Switching cart user from', state.currentUserId, 'to', userId);
+          
+          // Get the stored cart data for this user
+          const storedData = localStorage.getItem('cart-storage');
+          let userCarts = {};
+          
+          if (storedData) {
+            try {
+              const parsed = JSON.parse(storedData);
+              userCarts = parsed.userCarts || {};
+            } catch (error) {
+              console.error('Error parsing stored cart data:', error);
+            }
+          }
+          
+          // Load this user's cart items
+          const userCart = userId ? userCarts[userId] || [] : [];
+          
           set({
-            items: items.map(item =>
-              item.product.id === product.id
-                ? { ...item, quantity: item.quantity + quantity }
-                : item
-            )
-          });
-        } else {
-          set({
-            items: [...items, { product, quantity }]
+            currentUserId: userId,
+            items: userCart,
+            isOpen: false // Close cart when switching users
           });
         }
-        set({ isOpen: true });
+      },
+
+      switchUser: (userId) => {
+        get().setCurrentUser(userId);
+      },
+
+      addToCart: (product, quantity = 1) => {
+        const state = get();
+        const items = state.items;
+        const existingItem = items.find(item => item.product.id === product.id);
+
+        let newItems;
+        if (existingItem) {
+          newItems = items.map(item =>
+            item.product.id === product.id
+              ? { ...item, quantity: item.quantity + quantity }
+              : item
+          );
+        } else {
+          newItems = [...items, { product, quantity }];
+        }
+
+        set({
+          items: newItems,
+          isOpen: true
+        });
       },
 
       removeFromCart: (productId) => {
@@ -97,7 +138,38 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'cart-storage',
-      partialize: (state) => ({ items: state.items }) // Only persist cart items
+      partialize: (state) => {
+        // Store cart data per user
+        const storedData = localStorage.getItem('cart-storage');
+        let userCarts = {};
+        
+        if (storedData) {
+          try {
+            const parsed = JSON.parse(storedData);
+            userCarts = parsed.userCarts || {};
+          } catch (error) {
+            console.error('Error parsing stored cart data:', error);
+          }
+        }
+        
+        // Update the current user's cart
+        if (state.currentUserId) {
+          userCarts[state.currentUserId] = state.items;
+        }
+        
+        return {
+          userCarts,
+          currentUserId: state.currentUserId
+        };
+      },
+      onRehydrateStorage: () => (state) => {
+        // When rehydrating, we need to restore the correct user's cart
+        console.log('Rehydrating cart storage');
+        if (state) {
+          // The items will be set when setCurrentUser is called
+          state.items = [];
+        }
+      }
     }
   )
 );

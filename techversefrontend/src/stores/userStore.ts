@@ -1,4 +1,4 @@
-// src/stores/userStore.ts - Enhanced with proper profile management
+// src/stores/userStore.ts - Enhanced with cart sync
 import { create } from 'zustand';
 import apiClient from '../api';
 
@@ -36,6 +36,10 @@ export const useUserStore = create<UserState>((set, get) => ({
     // Clear both JWT token and session
     localStorage.removeItem('access_token');
     
+    // Sync cart - clear cart when logging out
+    const { useCartStore } = require('./cartStore');
+    useCartStore.getState().switchUser(null);
+    
     // Also logout from Django session
     fetch('http://127.0.0.1:8000/api/auth/logout/', {
       method: 'POST',
@@ -58,6 +62,11 @@ export const useUserStore = create<UserState>((set, get) => ({
       try {
         const response = await apiClient.get('/api/auth/user/');
         console.log('JWT auth successful:', response.data.email);
+        
+        // Sync cart for this user
+        const { useCartStore } = require('./cartStore');
+        useCartStore.getState().setCurrentUser(response.data.id.toString());
+        
         set({ user: response.data, isAuthenticated: true });
         return;
       } catch (error) {
@@ -80,6 +89,11 @@ export const useUserStore = create<UserState>((set, get) => ({
       if (response.ok) {
         const userData = await response.json();
         console.log('Session auth successful:', userData.email);
+        
+        // Sync cart for this user
+        const { useCartStore } = require('./cartStore');
+        useCartStore.getState().setCurrentUser(userData.id.toString());
+        
         set({ user: userData, isAuthenticated: true });
         return;
       } else {
@@ -91,6 +105,11 @@ export const useUserStore = create<UserState>((set, get) => ({
     
     // If both fail, user is not authenticated
     console.log('Authentication failed, setting unauthenticated state');
+    
+    // Clear cart when auth fails
+    const { useCartStore } = require('./cartStore');
+    useCartStore.getState().switchUser(null);
+    
     set({ user: null, isAuthenticated: false });
   },
   

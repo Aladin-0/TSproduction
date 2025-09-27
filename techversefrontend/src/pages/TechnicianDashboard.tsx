@@ -1,4 +1,4 @@
-// src/pages/TechnicianDashboard.tsx - Complete Technician Dashboard
+// src/pages/TechnicianDashboard.tsx - Fixed version with better auth handling
 import React, { useEffect, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { 
@@ -35,6 +35,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { useSpring, animated } from '@react-spring/web';
 import { useUserStore } from '../stores/userStore';
 import { useSnackbar } from 'notistack';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../api';
 
 // Page wrapper matching your design system
@@ -227,8 +228,9 @@ interface TechnicianStats {
 }
 
 export const TechnicianDashboard: React.FC = () => {
-  const { user } = useUserStore();
+  const { user, isAuthenticated, checkAuthStatus } = useUserStore();
   const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
   
   const [currentTab, setCurrentTab] = useState(0);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -242,6 +244,8 @@ export const TechnicianDashboard: React.FC = () => {
     this_month_completed: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     type: 'order' | 'service';
@@ -257,15 +261,75 @@ export const TechnicianDashboard: React.FC = () => {
     delay: 200,
   });
 
+  // Enhanced authentication check
   useEffect(() => {
-    if (user?.role !== 'TECHNICIAN') {
-      enqueueSnackbar('Access denied. Technician role required.', { variant: 'error' });
-      window.location.href = '/';
-      return;
-    }
-    
-    fetchDashboardData();
-  }, [user]);
+    const checkTechnicianAccess = async () => {
+      try {
+        console.log('Checking technician access...');
+        console.log('Current user:', user);
+        console.log('Is authenticated:', isAuthenticated);
+        
+        // If not authenticated, check auth status first
+        if (!isAuthenticated || !user) {
+          console.log('User not authenticated, checking auth status...');
+          await checkAuthStatus();
+          
+          // Wait a moment for state to update
+          setTimeout(() => {
+            const currentState = useUserStore.getState();
+            console.log('Auth state after check:', currentState);
+            
+            if (!currentState.isAuthenticated || !currentState.user) {
+              console.log('Still not authenticated, redirecting to login');
+              enqueueSnackbar('Please login to access the dashboard', { variant: 'error' });
+              navigate('/login');
+              return;
+            }
+            
+            // Check role after authentication is confirmed
+            if (currentState.user.role !== 'TECHNICIAN') {
+              console.log('User role is not TECHNICIAN:', currentState.user.role);
+              setAccessDenied(true);
+              enqueueSnackbar('Access denied. Technician role required.', { variant: 'error' });
+              setTimeout(() => {
+                navigate('/');
+              }, 2000);
+              return;
+            }
+            
+            // User is authenticated and has correct role
+            console.log('Access granted, fetching dashboard data');
+            setAuthChecking(false);
+            fetchDashboardData();
+          }, 1000);
+        } else {
+          // User is already authenticated, check role
+          if (user.role !== 'TECHNICIAN') {
+            console.log('User role is not TECHNICIAN:', user.role);
+            setAccessDenied(true);
+            enqueueSnackbar('Access denied. Technician role required.', { variant: 'error' });
+            setTimeout(() => {
+              navigate('/');
+            }, 2000);
+            return;
+          }
+          
+          // User has correct role, proceed
+          console.log('User authenticated with TECHNICIAN role');
+          setAuthChecking(false);
+          fetchDashboardData();
+        }
+        
+      } catch (error) {
+        console.error('Error checking technician access:', error);
+        setAuthChecking(false);
+        enqueueSnackbar('Authentication error', { variant: 'error' });
+        navigate('/login');
+      }
+    };
+
+    checkTechnicianAccess();
+  }, []); // Remove user dependency to avoid infinite loop
 
   const fetchDashboardData = async () => {
     try {
@@ -334,6 +398,44 @@ export const TechnicianDashboard: React.FC = () => {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  // Show loading while checking auth
+  if (authChecking) {
+    return (
+      <PageWrapper>
+        <DashboardHero>
+          <Typography sx={{ mb: 2 }}>Verifying access...</Typography>
+          <LinearProgress sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
+        </DashboardHero>
+      </PageWrapper>
+    );
+  }
+
+  // Show access denied
+  if (accessDenied) {
+    return (
+      <PageWrapper>
+        <DashboardHero>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              backgroundColor: 'rgba(239, 68, 68, 0.15)',
+              color: '#ef4444',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              maxWidth: '500px',
+              margin: '0 auto'
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: 1 }}>Access Denied</Typography>
+            <Typography>
+              This dashboard is only accessible to users with TECHNICIAN role.
+              Redirecting to homepage...
+            </Typography>
+          </Alert>
+        </DashboardHero>
+      </PageWrapper>
+    );
+  }
 
   if (loading) {
     return (
@@ -526,96 +628,6 @@ export const TechnicianDashboard: React.FC = () => {
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                   <PersonIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
                                   <Typography sx={{ color: 'white', fontSize: '14px' }}>
-                                    {order.customer_name}
-                                  </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <PhoneIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
-                                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '14px' }}>
-                                    {order.customer_phone}
-                                  </Typography>
-                                </Box>
-                              </Grid>
-                              <Grid item xs={12} md={6}>
-                                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                                  <LocationOnIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)', mt: 0.2 }} />
-                                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '14px' }}>
-                                    {order.shipping_address_details.street_address}, {order.shipping_address_details.city}
-                                  </Typography>
-                                </Box>
-                              </Grid>
-                            </Grid>
-
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                              <CalendarTodayIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
-                              <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px' }}>
-                                Ordered: {new Date(order.order_date).toLocaleDateString()}
-                              </Typography>
-                            </Box>
-
-                            <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', my: 2 }} />
-
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px' }}>
-                                Items: {order.items.map(item => item.product_name).join(', ')}
-                              </Typography>
-                              
-                              {order.status !== 'DELIVERED' && (
-                                <PremiumButton 
-                                  className="success"
-                                  onClick={() => openConfirmDialog('order', order.id, `Order #${order.id}`)}
-                                >
-                                  <CheckCircleIcon sx={{ mr: 1, fontSize: '16px' }} />
-                                  Mark Delivered
-                                </PremiumButton>
-                              )}
-                            </Box>
-                          </CardContent>
-                        </TaskCard>
-                      ))
-                    )}
-                  </Box>
-                )}
-
-                {currentTab === 1 && (
-                  <Box>
-                    {serviceRequests.filter(service => service.status !== 'COMPLETED').length === 0 ? (
-                      <Alert 
-                        severity="info" 
-                        sx={{ 
-                          backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                          color: '#3b82f6',
-                          border: '1px solid rgba(59, 130, 246, 0.3)',
-                        }}
-                      >
-                        No pending service requests assigned to you.
-                      </Alert>
-                    ) : (
-                      serviceRequests.filter(service => service.status !== 'COMPLETED').map((service) => (
-                        <TaskCard key={service.id}>
-                          <CardContent sx={{ p: 3 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                              <Box>
-                                <Typography sx={{ color: 'white', fontWeight: 600, fontSize: '16px', mb: 1 }}>
-                                  Service Request #{service.id}
-                                </Typography>
-                                <StatusChip label={service.status} status={service.status} size="small" />
-                              </Box>
-                              <Chip 
-                                label={service.service_category.name}
-                                sx={{
-                                  backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                                  color: '#8b5cf6',
-                                  border: '1px solid rgba(139, 92, 246, 0.3)',
-                                }}
-                              />
-                            </Box>
-
-                            <Grid container spacing={2} sx={{ mb: 2 }}>
-                              <Grid item xs={12} md={6}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                  <PersonIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
-                                  <Typography sx={{ color: 'white', fontSize: '14px' }}>
                                     {service.customer.name}
                                   </Typography>
                                 </Box>
@@ -718,4 +730,94 @@ export const TechnicianDashboard: React.FC = () => {
       </Dialog>
     </PageWrapper>
   );
-};
+}; 1, mb: 1 }}>
+                                  <PersonIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
+                                  <Typography sx={{ color: 'white', fontSize: '14px' }}>
+                                    {order.customer_name}
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <PhoneIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
+                                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '14px' }}>
+                                    {order.customer_phone}
+                                  </Typography>
+                                </Box>
+                              </Grid>
+                              <Grid item xs={12} md={6}>
+                                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                                  <LocationOnIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)', mt: 0.2 }} />
+                                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '14px' }}>
+                                    {order.shipping_address_details.street_address}, {order.shipping_address_details.city}
+                                  </Typography>
+                                </Box>
+                              </Grid>
+                            </Grid>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                              <CalendarTodayIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
+                              <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px' }}>
+                                Ordered: {new Date(order.order_date).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+
+                            <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', my: 2 }} />
+
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px' }}>
+                                Items: {order.items.map(item => item.product_name).join(', ')}
+                              </Typography>
+                              
+                              {order.status !== 'DELIVERED' && (
+                                <PremiumButton 
+                                  className="success"
+                                  onClick={() => openConfirmDialog('order', order.id, `Order #${order.id}`)}
+                                >
+                                  <CheckCircleIcon sx={{ mr: 1, fontSize: '16px' }} />
+                                  Mark Delivered
+                                </PremiumButton>
+                              )}
+                            </Box>
+                          </CardContent>
+                        </TaskCard>
+                      ))
+                    )}
+                  </Box>
+                )}
+
+                {currentTab === 1 && (
+                  <Box>
+                    {serviceRequests.filter(service => service.status !== 'COMPLETED').length === 0 ? (
+                      <Alert 
+                        severity="info" 
+                        sx={{ 
+                          backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                          color: '#3b82f6',
+                          border: '1px solid rgba(59, 130, 246, 0.3)',
+                        }}
+                      >
+                        No pending service requests assigned to you.
+                      </Alert>
+                    ) : (
+                      serviceRequests.filter(service => service.status !== 'COMPLETED').map((service) => (
+                        <TaskCard key={service.id}>
+                          <CardContent sx={{ p: 3 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                              <Box>
+                                <Typography sx={{ color: 'white', fontWeight: 600, fontSize: '16px', mb: 1 }}>
+                                  Service Request #{service.id}
+                                </Typography>
+                                <StatusChip label={service.status} status={service.status} size="small" />
+                              </Box>
+                              <Chip 
+                                label={service.service_category.name}
+                                sx={{
+                                  backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                                  color: '#8b5cf6',
+                                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                                }}
+                              />
+                            </Box>
+
+                            <Grid container spacing={2} sx={{ mb: 2 }}>
+                              <Grid item xs={12} md={6}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap:

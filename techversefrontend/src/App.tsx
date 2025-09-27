@@ -1,7 +1,8 @@
-// src/App.tsx - Updated with TechnicianDashboard route
+// src/App.tsx - Updated with cart initialization
 import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useUserStore } from './stores/userStore';
+import { useCartStore } from './stores/cartStore';
 import { LoginSuccessHandler } from './components/LoginSuccessHandler';
 import { NavBar } from './components/NavBar';
 import { LandingPage } from './pages/LandingPage';
@@ -17,10 +18,25 @@ import CheckoutPage from './pages/CheckoutPage';
 
 function App() {
   const checkAuthStatus = useUserStore((state) => state.checkAuthStatus);
+  const user = useUserStore((state) => state.user);
+  const isAuthenticated = useUserStore((state) => state.isAuthenticated);
+  const setCurrentUser = useCartStore((state) => state.setCurrentUser);
 
   useEffect(() => {
+    // Check authentication status on app start
     checkAuthStatus();
   }, [checkAuthStatus]);
+
+  // Sync cart with user authentication state
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('User authenticated, syncing cart for user:', user.id);
+      setCurrentUser(user.id.toString());
+    } else {
+      console.log('User not authenticated, clearing cart');
+      setCurrentUser(null);
+    }
+  }, [isAuthenticated, user, setCurrentUser]);
 
   return (
     <>
