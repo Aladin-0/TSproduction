@@ -5,10 +5,35 @@ from django.utils.html import format_html
 from .models import Address, ProductCategory, Product, ProductImage, ProductSpecification, Order, OrderItem
 
 # To show order items within the order detail page in admin
-class OrderItemInline(admin.TabularInline):
-    model = OrderItem
-    readonly_fields = ('product', 'quantity', 'price')
-    extra = 0
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
+    extra = 1
+    fields = ('image', 'alt_text', 'is_primary', 'order', 'image_preview', 'delete_image')
+    readonly_fields = ('image_preview', 'delete_image')
+    ordering = ['order']
+
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />',
+                obj.image.url
+            )
+        return "No image"
+    image_preview.short_description = "Preview"
+
+    def delete_image(self, obj):
+        if obj.pk:  # Only show for saved objects
+            return format_html(
+                '<button type="button" onclick="if(confirm(\'Delete this image?\')) {{ '
+                'fetch(\'/admin/delete-product-image/{}/\', {{method: \'POST\', '
+                'headers: {{\'X-CSRFToken\': document.querySelector(\'[name=csrfmiddlewaretoken]\').value}}}})'
+                '.then(() => location.reload()); }}" '
+                'style="background: #dc3545; color: white; border: none; padding: 5px 10px; '
+                'border-radius: 3px; cursor: pointer;">Delete</button>'
+                , obj.pk
+            )
+        return "Save to enable deletion"
+    delete_image.short_description = "Actions"
 
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('id', 'customer', 'order_date', 'status', 'total_amount', 'technician')
@@ -46,18 +71,18 @@ class ProductSpecificationInline(admin.TabularInline):
 
 # Enhanced Product admin
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'brand', 'price', 'stock', 'is_featured', 'is_active', 'image_preview')
+    list_display = ('name', 'category', 'brand', 'price', 'stock', 'is_featured', 'is_active', 'main_image_preview')
     list_filter = ('category', 'brand', 'is_featured', 'is_active', 'created_at')
     search_fields = ('name', 'description', 'brand', 'model_number')
     prepopulated_fields = {'slug': ('name',)}
-    readonly_fields = ('created_at', 'updated_at', 'image_preview')
+    readonly_fields = ('created_at', 'updated_at', 'main_image_preview')
     
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'slug', 'category', 'brand', 'model_number')
         }),
         ('Description & Media', {
-            'fields': ('description', 'image', 'image_preview', 'features')
+            'fields': ('description', 'image', 'main_image_preview', 'features')
         }),
         ('Pricing & Inventory', {
             'fields': ('price', 'stock', 'delivery_time_info')
@@ -74,39 +99,16 @@ class ProductAdmin(admin.ModelAdmin):
         }),
     )
     
-    inlines = [ProductImageInline, ProductSpecificationInline]
+    inlines = [ProductImageInline]
     
-    def image_preview(self, obj):
+    def main_image_preview(self, obj):
         if obj.image:
             return format_html(
                 '<img src="{}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;" />',
                 obj.image.url
             )
         return "No image"
-    image_preview.short_description = "Image Preview"
-    
-    # Custom actions
-    actions = ['mark_as_featured', 'mark_as_not_featured', 'mark_as_active', 'mark_as_inactive']
-    
-    def mark_as_featured(self, request, queryset):
-        updated = queryset.update(is_featured=True)
-        self.message_user(request, f'{updated} products marked as featured.')
-    mark_as_featured.short_description = "Mark selected products as featured"
-    
-    def mark_as_not_featured(self, request, queryset):
-        updated = queryset.update(is_featured=False)
-        self.message_user(request, f'{updated} products unmarked as featured.')
-    mark_as_not_featured.short_description = "Unmark selected products as featured"
-    
-    def mark_as_active(self, request, queryset):
-        updated = queryset.update(is_active=True)
-        self.message_user(request, f'{updated} products marked as active.')
-    mark_as_active.short_description = "Mark selected products as active"
-    
-    def mark_as_inactive(self, request, queryset):
-        updated = queryset.update(is_active=False)
-        self.message_user(request, f'{updated} products marked as inactive.')
-    mark_as_inactive.short_description = "Mark selected products as inactive"
+    main_image_preview.short_description = "Main Image Preview"
 
 class ProductImageAdmin(admin.ModelAdmin):
     list_display = ('product', 'alt_text', 'is_primary', 'order', 'image_preview')

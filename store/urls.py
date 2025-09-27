@@ -27,4 +27,5 @@ urlpatterns = [
     path('api/orders/<int:pk>/', views.OrderDetailView.as_view(), name='api_order_detail'),
     path('api/orders/create/', views.create_order, name='api_create_order'),
     path('api/orders/<int:order_id>/cancel/', views.cancel_order, name='api_cancel_order'),
+    path('admin/delete-product-image/<int:image_id>/', views.delete_product_image, name='delete_product_image'),
 ]

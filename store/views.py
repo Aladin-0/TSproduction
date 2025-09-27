@@ -11,6 +11,11 @@ from .serializers import (
 )
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.contrib.admin.views.decorators import staff_member_required
+from django.views.decorators.csrf import csrf_exempt
+import os
 
 def product_list(request):
     products = Product.objects.filter(is_active=True)
@@ -290,3 +295,25 @@ def cancel_order(request, order_id):
         
     except Exception as e:
         return Response({'error': str(e)}, status=500)
+
+@staff_member_required
+@require_http_methods(["POST"])
+@csrf_exempt
+def delete_product_image(request, image_id):
+    try:
+        from .models import ProductImage
+        image = ProductImage.objects.get(id=image_id)
+        
+        # Delete the actual file
+        if image.image:
+            if os.path.isfile(image.image.path):
+                os.remove(image.image.path)
+        
+        # Delete the database record
+        image.delete()
+        
+        return JsonResponse({'success': True})
+    except ProductImage.DoesNotExist:
+        return JsonResponse({'error': 'Image not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
