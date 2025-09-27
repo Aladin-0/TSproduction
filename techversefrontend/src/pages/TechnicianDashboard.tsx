@@ -1,4 +1,4 @@
-// src/pages/TechnicianDashboard.tsx - Fixed version with better auth handling
+// src/pages/TechnicianDashboard.tsx - Updated with integrated NavBar
 import React, { useEffect, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { 
@@ -18,7 +18,6 @@ import {
   DialogActions,
   Tab,
   Tabs,
-  IconButton,
   Alert
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
@@ -31,11 +30,11 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PhoneIcon from '@mui/icons-material/Phone';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import { useSpring, animated } from '@react-spring/web';
 import { useUserStore } from '../stores/userStore';
 import { useSnackbar } from 'notistack';
 import { useNavigate } from 'react-router-dom';
+import { TechnicianNavBar } from '../components/TechnicianNavBar';
 import apiClient from '../api';
 
 // Page wrapper matching your design system
@@ -175,6 +174,7 @@ const StatusChip = styled(Chip)<{ status: string }>(({ status }) => {
   };
 });
 
+// Interface definitions
 interface Order {
   id: number;
   customer_name: string;
@@ -266,18 +266,13 @@ export const TechnicianDashboard: React.FC = () => {
     const checkTechnicianAccess = async () => {
       try {
         console.log('Checking technician access...');
-        console.log('Current user:', user);
-        console.log('Is authenticated:', isAuthenticated);
         
-        // If not authenticated, check auth status first
         if (!isAuthenticated || !user) {
           console.log('User not authenticated, checking auth status...');
           await checkAuthStatus();
           
-          // Wait a moment for state to update
           setTimeout(() => {
             const currentState = useUserStore.getState();
-            console.log('Auth state after check:', currentState);
             
             if (!currentState.isAuthenticated || !currentState.user) {
               console.log('Still not authenticated, redirecting to login');
@@ -286,35 +281,31 @@ export const TechnicianDashboard: React.FC = () => {
               return;
             }
             
-            // Check role after authentication is confirmed
             if (currentState.user.role !== 'TECHNICIAN') {
               console.log('User role is not TECHNICIAN:', currentState.user.role);
               setAccessDenied(true);
               enqueueSnackbar('Access denied. Technician role required.', { variant: 'error' });
               setTimeout(() => {
-                navigate('/');
+                navigate('/login');
               }, 2000);
               return;
             }
             
-            // User is authenticated and has correct role
             console.log('Access granted, fetching dashboard data');
             setAuthChecking(false);
             fetchDashboardData();
           }, 1000);
         } else {
-          // User is already authenticated, check role
           if (user.role !== 'TECHNICIAN') {
             console.log('User role is not TECHNICIAN:', user.role);
             setAccessDenied(true);
             enqueueSnackbar('Access denied. Technician role required.', { variant: 'error' });
             setTimeout(() => {
-              navigate('/');
+              navigate('/login');
             }, 2000);
             return;
           }
           
-          // User has correct role, proceed
           console.log('User authenticated with TECHNICIAN role');
           setAuthChecking(false);
           fetchDashboardData();
@@ -329,7 +320,7 @@ export const TechnicianDashboard: React.FC = () => {
     };
 
     checkTechnicianAccess();
-  }, []); // Remove user dependency to avoid infinite loop
+  }, []);
 
   const fetchDashboardData = async () => {
     try {
@@ -403,6 +394,7 @@ export const TechnicianDashboard: React.FC = () => {
   if (authChecking) {
     return (
       <PageWrapper>
+        <TechnicianNavBar onRefresh={fetchDashboardData} />
         <DashboardHero>
           <Typography sx={{ mb: 2 }}>Verifying access...</Typography>
           <LinearProgress sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
@@ -415,6 +407,7 @@ export const TechnicianDashboard: React.FC = () => {
   if (accessDenied) {
     return (
       <PageWrapper>
+        <TechnicianNavBar />
         <DashboardHero>
           <Alert 
             severity="error" 
@@ -429,7 +422,7 @@ export const TechnicianDashboard: React.FC = () => {
             <Typography variant="h6" sx={{ mb: 1 }}>Access Denied</Typography>
             <Typography>
               This dashboard is only accessible to users with TECHNICIAN role.
-              Redirecting to homepage...
+              Redirecting to login...
             </Typography>
           </Alert>
         </DashboardHero>
@@ -440,6 +433,7 @@ export const TechnicianDashboard: React.FC = () => {
   if (loading) {
     return (
       <PageWrapper>
+        <TechnicianNavBar onRefresh={fetchDashboardData} />
         <DashboardHero>
           <Typography>Loading dashboard...</Typography>
           <LinearProgress sx={{ mt: 2, backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
@@ -450,6 +444,9 @@ export const TechnicianDashboard: React.FC = () => {
 
   return (
     <PageWrapper>
+      {/* Technician-specific NavBar */}
+      <TechnicianNavBar onRefresh={fetchDashboardData} />
+      
       {/* Hero Section */}
       <DashboardHero>
         <animated.div style={heroAnimation}>
@@ -467,7 +464,7 @@ export const TechnicianDashboard: React.FC = () => {
               <HeroTitle>Welcome back, {user?.name || 'Technician'}</HeroTitle>
               <HeroSubtitle>Your technician dashboard</HeroSubtitle>
               <Chip 
-                label="TECHNICIAN" 
+                label="TECHNICIAN DASHBOARD" 
                 sx={{ 
                   backgroundColor: 'rgba(96, 165, 250, 0.15)',
                   color: '#60a5fa',
@@ -476,24 +473,6 @@ export const TechnicianDashboard: React.FC = () => {
                 }}
               />
             </Box>
-          </Box>
-          
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
-            <Button
-              onClick={fetchDashboardData}
-              sx={{
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                color: 'white',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                borderRadius: '12px',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                }
-              }}
-            >
-              <RefreshIcon sx={{ mr: 1, fontSize: '16px' }} />
-              Refresh
-            </Button>
           </Box>
         </animated.div>
       </DashboardHero>
@@ -628,6 +607,96 @@ export const TechnicianDashboard: React.FC = () => {
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                   <PersonIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
                                   <Typography sx={{ color: 'white', fontSize: '14px' }}>
+                                    {order.customer_name}
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <PhoneIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
+                                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '14px' }}>
+                                    {order.customer_phone}
+                                  </Typography>
+                                </Box>
+                              </Grid>
+                              <Grid item xs={12} md={6}>
+                                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                                  <LocationOnIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)', mt: 0.2 }} />
+                                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '14px' }}>
+                                    {order.shipping_address_details.street_address}, {order.shipping_address_details.city}
+                                  </Typography>
+                                </Box>
+                              </Grid>
+                            </Grid>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                              <CalendarTodayIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
+                              <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px' }}>
+                                Ordered: {new Date(order.order_date).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+
+                            <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', my: 2 }} />
+
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px' }}>
+                                Items: {order.items.map(item => item.product_name).join(', ')}
+                              </Typography>
+                              
+                              {order.status !== 'DELIVERED' && (
+                                <PremiumButton 
+                                  className="success"
+                                  onClick={() => openConfirmDialog('order', order.id, `Order #${order.id}`)}
+                                >
+                                  <CheckCircleIcon sx={{ mr: 1, fontSize: '16px' }} />
+                                  Mark Delivered
+                                </PremiumButton>
+                              )}
+                            </Box>
+                          </CardContent>
+                        </TaskCard>
+                      ))
+                    )}
+                  </Box>
+                )}
+
+                {currentTab === 1 && (
+                  <Box>
+                    {serviceRequests.filter(service => service.status !== 'COMPLETED').length === 0 ? (
+                      <Alert 
+                        severity="info" 
+                        sx={{ 
+                          backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                          color: '#3b82f6',
+                          border: '1px solid rgba(59, 130, 246, 0.3)',
+                        }}
+                      >
+                        No pending service requests assigned to you.
+                      </Alert>
+                    ) : (
+                      serviceRequests.filter(service => service.status !== 'COMPLETED').map((service) => (
+                        <TaskCard key={service.id}>
+                          <CardContent sx={{ p: 3 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                              <Box>
+                                <Typography sx={{ color: 'white', fontWeight: 600, fontSize: '16px', mb: 1 }}>
+                                  Service Request #{service.id}
+                                </Typography>
+                                <StatusChip label={service.status} status={service.status} size="small" />
+                              </Box>
+                              <Chip 
+                                label={service.service_category.name}
+                                sx={{
+                                  backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                                  color: '#8b5cf6',
+                                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                                }}
+                              />
+                            </Box>
+
+                            <Grid container spacing={2} sx={{ mb: 2 }}>
+                              <Grid item xs={12} md={6}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                  <PersonIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
+                                  <Typography sx={{ color: 'white', fontSize: '14px' }}>
                                     {service.customer.name}
                                   </Typography>
                                 </Box>
@@ -730,94 +799,4 @@ export const TechnicianDashboard: React.FC = () => {
       </Dialog>
     </PageWrapper>
   );
-}; 1, mb: 1 }}>
-                                  <PersonIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
-                                  <Typography sx={{ color: 'white', fontSize: '14px' }}>
-                                    {order.customer_name}
-                                  </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <PhoneIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
-                                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '14px' }}>
-                                    {order.customer_phone}
-                                  </Typography>
-                                </Box>
-                              </Grid>
-                              <Grid item xs={12} md={6}>
-                                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                                  <LocationOnIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)', mt: 0.2 }} />
-                                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '14px' }}>
-                                    {order.shipping_address_details.street_address}, {order.shipping_address_details.city}
-                                  </Typography>
-                                </Box>
-                              </Grid>
-                            </Grid>
-
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                              <CalendarTodayIcon sx={{ fontSize: '16px', color: 'rgba(255, 255, 255, 0.6)' }} />
-                              <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px' }}>
-                                Ordered: {new Date(order.order_date).toLocaleDateString()}
-                              </Typography>
-                            </Box>
-
-                            <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', my: 2 }} />
-
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px' }}>
-                                Items: {order.items.map(item => item.product_name).join(', ')}
-                              </Typography>
-                              
-                              {order.status !== 'DELIVERED' && (
-                                <PremiumButton 
-                                  className="success"
-                                  onClick={() => openConfirmDialog('order', order.id, `Order #${order.id}`)}
-                                >
-                                  <CheckCircleIcon sx={{ mr: 1, fontSize: '16px' }} />
-                                  Mark Delivered
-                                </PremiumButton>
-                              )}
-                            </Box>
-                          </CardContent>
-                        </TaskCard>
-                      ))
-                    )}
-                  </Box>
-                )}
-
-                {currentTab === 1 && (
-                  <Box>
-                    {serviceRequests.filter(service => service.status !== 'COMPLETED').length === 0 ? (
-                      <Alert 
-                        severity="info" 
-                        sx={{ 
-                          backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                          color: '#3b82f6',
-                          border: '1px solid rgba(59, 130, 246, 0.3)',
-                        }}
-                      >
-                        No pending service requests assigned to you.
-                      </Alert>
-                    ) : (
-                      serviceRequests.filter(service => service.status !== 'COMPLETED').map((service) => (
-                        <TaskCard key={service.id}>
-                          <CardContent sx={{ p: 3 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                              <Box>
-                                <Typography sx={{ color: 'white', fontWeight: 600, fontSize: '16px', mb: 1 }}>
-                                  Service Request #{service.id}
-                                </Typography>
-                                <StatusChip label={service.status} status={service.status} size="small" />
-                              </Box>
-                              <Chip 
-                                label={service.service_category.name}
-                                sx={{
-                                  backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                                  color: '#8b5cf6',
-                                  border: '1px solid rgba(139, 92, 246, 0.3)',
-                                }}
-                              />
-                            </Box>
-
-                            <Grid container spacing={2} sx={{ mb: 2 }}>
-                              <Grid item xs={12} md={6}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap:
+};

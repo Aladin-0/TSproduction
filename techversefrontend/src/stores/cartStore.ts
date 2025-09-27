@@ -1,4 +1,4 @@
-// src/stores/cartStore.ts - Fixed to be user-specific
+// src/stores/cartStore.ts - Fixed to avoid circular dependency
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 

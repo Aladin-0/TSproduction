@@ -1,4 +1,4 @@
-// src/stores/userStore.ts - Enhanced with cart sync
+// src/stores/userStore.ts - Fixed version without require()
 import { create } from 'zustand';
 import apiClient from '../api';
 
@@ -36,9 +36,12 @@ export const useUserStore = create<UserState>((set, get) => ({
     // Clear both JWT token and session
     localStorage.removeItem('access_token');
     
-    // Sync cart - clear cart when logging out
-    const { useCartStore } = require('./cartStore');
-    useCartStore.getState().switchUser(null);
+    // Import cart store dynamically to avoid circular dependency
+    import('./cartStore').then(({ useCartStore }) => {
+      useCartStore.getState().switchUser(null);
+    }).catch(() => {
+      // Ignore errors during dynamic import
+    });
     
     // Also logout from Django session
     fetch('http://127.0.0.1:8000/api/auth/logout/', {
@@ -63,9 +66,12 @@ export const useUserStore = create<UserState>((set, get) => ({
         const response = await apiClient.get('/api/auth/user/');
         console.log('JWT auth successful:', response.data.email);
         
-        // Sync cart for this user
-        const { useCartStore } = require('./cartStore');
-        useCartStore.getState().setCurrentUser(response.data.id.toString());
+        // Sync cart for this user - dynamic import to avoid circular dependency
+        import('./cartStore').then(({ useCartStore }) => {
+          useCartStore.getState().setCurrentUser(response.data.id.toString());
+        }).catch(() => {
+          // Ignore errors during dynamic import
+        });
         
         set({ user: response.data, isAuthenticated: true });
         return;
@@ -90,9 +96,12 @@ export const useUserStore = create<UserState>((set, get) => ({
         const userData = await response.json();
         console.log('Session auth successful:', userData.email);
         
-        // Sync cart for this user
-        const { useCartStore } = require('./cartStore');
-        useCartStore.getState().setCurrentUser(userData.id.toString());
+        // Sync cart for this user - dynamic import to avoid circular dependency
+        import('./cartStore').then(({ useCartStore }) => {
+          useCartStore.getState().setCurrentUser(userData.id.toString());
+        }).catch(() => {
+          // Ignore errors during dynamic import
+        });
         
         set({ user: userData, isAuthenticated: true });
         return;
@@ -106,9 +115,12 @@ export const useUserStore = create<UserState>((set, get) => ({
     // If both fail, user is not authenticated
     console.log('Authentication failed, setting unauthenticated state');
     
-    // Clear cart when auth fails
-    const { useCartStore } = require('./cartStore');
-    useCartStore.getState().switchUser(null);
+    // Clear cart when auth fails - dynamic import to avoid circular dependency
+    import('./cartStore').then(({ useCartStore }) => {
+      useCartStore.getState().switchUser(null);
+    }).catch(() => {
+      // Ignore errors during dynamic import
+    });
     
     set({ user: null, isAuthenticated: false });
   },

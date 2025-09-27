@@ -1,6 +1,6 @@
-// src/App.tsx - Updated with cart initialization
+// src/App.tsx - Updated with technician redirect logic
 import { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useUserStore } from './stores/userStore';
 import { useCartStore } from './stores/cartStore';
 import { LoginSuccessHandler } from './components/LoginSuccessHandler';
@@ -15,6 +15,55 @@ import { UserProfilePage } from './pages/UserProfilePage';
 import { OrdersPage } from './pages/OrdersPage';
 import { TechnicianDashboard } from './pages/TechnicianDashboard';
 import CheckoutPage from './pages/CheckoutPage';
+
+// Protected Route Component for Technicians
+const TechnicianRoute = ({ children }: { children: React.ReactNode }) => {
+  const user = useUserStore((state) => state.user);
+  const isAuthenticated = useUserStore((state) => state.isAuthenticated);
+  
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (user.role !== 'TECHNICIAN') {
+    return <Navigate to="/" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Protected Route Component for Non-Technicians
+const CustomerRoute = ({ children }: { children: React.ReactNode }) => {
+  const user = useUserStore((state) => state.user);
+  const isAuthenticated = useUserStore((state) => state.isAuthenticated);
+  
+  // If user is a technician, redirect to their dashboard
+  if (isAuthenticated && user && user.role === 'TECHNICIAN') {
+    return <Navigate to="/technician/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Component that handles initial redirect for technicians
+const TechnicianRedirect = () => {
+  const user = useUserStore((state) => state.user);
+  const isAuthenticated = useUserStore((state) => state.isAuthenticated);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // If user is authenticated and is a technician, redirect to dashboard
+    if (isAuthenticated && user && user.role === 'TECHNICIAN') {
+      // Only redirect if not already on technician dashboard
+      if (!location.pathname.startsWith('/technician')) {
+        navigate('/technician/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, navigate, location.pathname]);
+
+  return null;
+};
 
 function App() {
   const checkAuthStatus = useUserStore((state) => state.checkAuthStatus);
@@ -41,19 +90,101 @@ function App() {
   return (
     <>
       <LoginSuccessHandler />
-      <NavBar />
+      <TechnicianRedirect />
+      
+      {/* Show NavBar only for non-technicians or on login page */}
+      {(!isAuthenticated || !user || user.role !== 'TECHNICIAN') && <NavBar />}
+      
       <main>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/store" element={<StorePage />} />
-          <Route path="/product/:slug" element={<ProductDetailPage />} />
-          <Route path="/services" element={<ServiceCategoryPage />} />
-          <Route path="/services/request/:categoryId" element={<ServiceRequestPage />} />
+          {/* Login Route - Accessible to all */}
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/profile" element={<UserProfilePage />} />
-          <Route path="/my-orders" element={<OrdersPage />} />
-          <Route path="/technician/dashboard" element={<TechnicianDashboard />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
+          
+          {/* Technician Routes - Only for technicians */}
+          <Route 
+            path="/technician/dashboard" 
+            element={
+              <TechnicianRoute>
+                <TechnicianDashboard />
+              </TechnicianRoute>
+            } 
+          />
+          
+          {/* Customer Routes - Redirect technicians away */}
+          <Route 
+            path="/" 
+            element={
+              <CustomerRoute>
+                <LandingPage />
+              </CustomerRoute>
+            } 
+          />
+          <Route 
+            path="/store" 
+            element={
+              <CustomerRoute>
+                <StorePage />
+              </CustomerRoute>
+            } 
+          />
+          <Route 
+            path="/product/:slug" 
+            element={
+              <CustomerRoute>
+                <ProductDetailPage />
+              </CustomerRoute>
+            } 
+          />
+          <Route 
+            path="/services" 
+            element={
+              <CustomerRoute>
+                <ServiceCategoryPage />
+              </CustomerRoute>
+            } 
+          />
+          <Route 
+            path="/services/request/:categoryId" 
+            element={
+              <CustomerRoute>
+                <ServiceRequestPage />
+              </CustomerRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <CustomerRoute>
+                <UserProfilePage />
+              </CustomerRoute>
+            } 
+          />
+          <Route 
+            path="/my-orders" 
+            element={
+              <CustomerRoute>
+                <OrdersPage />
+              </CustomerRoute>
+            } 
+          />
+          <Route 
+            path="/checkout" 
+            element={
+              <CustomerRoute>
+                <CheckoutPage />
+              </CustomerRoute>
+            } 
+          />
+          
+          {/* Catch all route - redirect based on user role */}
+          <Route 
+            path="*" 
+            element={
+              isAuthenticated && user && user.role === 'TECHNICIAN' 
+                ? <Navigate to="/technician/dashboard" replace />
+                : <Navigate to="/" replace />
+            } 
+          />
         </Routes>
       </main>
     </>

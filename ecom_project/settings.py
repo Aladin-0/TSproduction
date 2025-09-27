@@ -139,7 +139,11 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }
+
 
 # SIMPLE JWT SETTINGS
 SIMPLE_JWT = {
@@ -202,13 +206,14 @@ REST_AUTH = {
     'JWT_AUTH_REFRESH_COOKIE': 'techverse-refresh',
     'REGISTER_SERIALIZER': 'users.serializers.CustomRegisterSerializer',
     'REGISTER_PERMISSION_CLASSES': ('rest_framework.permissions.AllowAny',),
+    'USER_DETAILS_SERIALIZER': 'users.serializers.UserSerializer',  # Add this line
 }
 
 # Session settings
-SESSION_COOKIE_SAMESITE = None  # Changed to None for cross-origin
-SESSION_COOKIE_SECURE = False   # False for development (HTTP)
-SESSION_COOKIE_HTTPONLY = False # False so JavaScript can access
-SESSION_COOKIE_DOMAIN = None    # Don't restrict domain
+SESSION_COOKIE_SAMESITE = None
+SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_HTTPONLY = False
+SESSION_COOKIE_DOMAIN = None
 SESSION_SAVE_EVERY_REQUEST = True
 
 # CSRF settings

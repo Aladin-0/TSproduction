@@ -1,7 +1,7 @@
-# ecom_project/urls.py - Updated with custom admin dashboard
+# Add this to your main ecom_project/urls.py file
 
 from django.contrib import admin
-from django.urls import path, include  # <-- Add include
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from users.admin_views import admin_dashboard
@@ -17,7 +17,11 @@ admin.site.index_template = 'admin/index.html'
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
-    path('api/auth/', include('dj_rest_auth.urls')),
+    
+    # AUTH ENDPOINTS - Make sure these are included
+    path('api/auth/', include('dj_rest_auth.urls')),  # This provides /api/auth/user/ and /api/auth/login/
+    path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
+    
     path('accounts/', include('allauth.urls')),
     path('', include('store.urls')),
     path('services/', include('services.urls')),
