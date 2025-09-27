@@ -1,6 +1,7 @@
-// src/pages/StorePage.tsx - Updated with Cart Integration
+// src/pages/StorePage.tsx - Updated with product links and shortened descriptions
 import React, { useEffect, useState } from 'react';
 import { styled } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
 import { 
   Box, 
   Typography, 
@@ -19,6 +20,7 @@ import TwitterIcon from '@mui/icons-material/Twitter';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import FlashOnIcon from '@mui/icons-material/FlashOn';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useSpring, animated, useTrail } from '@react-spring/web';
 import { useProductStore } from '../stores/productStore';
 import { useCartStore } from '../stores/cartStore';
@@ -466,6 +468,7 @@ const ProductName = styled(Typography)({
   lineHeight: 1.3,
 });
 
+// Shortened description - only one line
 const ProductDescription = styled(Typography)({
   fontSize: '13px',
   color: 'rgba(255, 255, 255, 0.6)',
@@ -473,9 +476,10 @@ const ProductDescription = styled(Typography)({
   lineHeight: 1.5,
   fontWeight: 300,
   display: '-webkit-box',
-  WebkitLineClamp: 3,
+  WebkitLineClamp: 1, // Only show 1 line
   WebkitBoxOrient: 'vertical',
   overflow: 'hidden',
+  height: '18px', // Fixed height for consistency
 });
 
 const ActionButton = styled(Button)({
@@ -506,6 +510,15 @@ const ActionButton = styled(Button)({
     '&:hover': {
       backgroundColor: 'rgba(96, 165, 250, 0.25)',
       borderColor: 'rgba(96, 165, 250, 0.4)',
+    },
+  },
+  '&.view-details': {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    color: 'rgba(255, 255, 255, 0.8)',
+    '&:hover': {
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      borderColor: 'rgba(255, 255, 255, 0.2)',
     },
   },
 });
@@ -621,13 +634,33 @@ const ProductSkeleton = () => (
       />
       <Skeleton 
         variant="text" 
-        height={60} 
+        height={18} 
         sx={{ 
           backgroundColor: 'rgba(255, 255, 255, 0.05)', 
           marginBottom: '20px',
           borderRadius: '4px'
         }} 
       />
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <Skeleton 
+          variant="rectangular" 
+          height={48} 
+          sx={{ 
+            backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+            borderRadius: '12px',
+            flex: 1
+          }} 
+        />
+        <Skeleton 
+          variant="rectangular" 
+          height={48} 
+          sx={{ 
+            backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+            borderRadius: '12px',
+            flex: 1
+          }} 
+        />
+      </Box>
       <Skeleton 
         variant="rectangular" 
         height={48} 
@@ -655,6 +688,7 @@ interface Product {
 }
 
 export const StorePage: React.FC = () => {
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   
   // Product store
@@ -728,7 +762,11 @@ export const StorePage: React.FC = () => {
   const handleBuyNow = (product: Product) => {
     addToCart(product, 1);
     // Navigate to checkout
-    window.location.href = '/checkout';
+    navigate('/checkout');
+  };
+
+  const handleViewDetails = (product: Product) => {
+    navigate(`/product/${product.slug}`);
   };
 
   const loadMoreProducts = () => {
@@ -993,7 +1031,7 @@ export const StorePage: React.FC = () => {
                     transform: 'translateY(0px) scale(1)'
                   }}
                 >
-                  <ProductImageArea>
+                  <ProductImageArea onClick={() => handleViewDetails(product)}>
                     <img 
                       src={
                         product.image 
@@ -1037,7 +1075,7 @@ export const StorePage: React.FC = () => {
                     <ProductDescription>
                       {product.description && String(product.description).trim() 
                         ? String(product.description).trim()
-                        : 'Premium technology product with advanced features and superior build quality. Experience excellence in every detail.'
+                        : 'Premium technology product with advanced features.'
                       }
                     </ProductDescription>
                     <Box sx={{ 
@@ -1067,22 +1105,33 @@ export const StorePage: React.FC = () => {
                       </Typography>
                     </Box>
                     
-                    {/* Action Buttons - Add to Cart and Buy Now */}
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                    {/* Action Buttons */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <ActionButton 
+                          onClick={() => handleAddToCart(product)}
+                          sx={{ flex: 1 }}
+                        >
+                          <ShoppingCartIcon sx={{ fontSize: '16px' }} />
+                          Add to Cart
+                        </ActionButton>
+                        <ActionButton 
+                          onClick={() => handleBuyNow(product)}
+                          className="buy-now"
+                          sx={{ flex: 1 }}
+                        >
+                          <FlashOnIcon sx={{ fontSize: '16px' }} />
+                          Buy Now
+                        </ActionButton>
+                      </Box>
+                      
                       <ActionButton 
-                        onClick={() => handleAddToCart(product)}
-                        sx={{ flex: 1 }}
+                        onClick={() => handleViewDetails(product)}
+                        className="view-details"
+                        fullWidth
                       >
-                        <ShoppingCartIcon sx={{ fontSize: '16px' }} />
-                        Add to Cart
-                      </ActionButton>
-                      <ActionButton 
-                        onClick={() => handleBuyNow(product)}
-                        className="buy-now"
-                        sx={{ flex: 1 }}
-                      >
-                        <FlashOnIcon sx={{ fontSize: '16px' }} />
-                        Buy Now
+                        <VisibilityIcon sx={{ fontSize: '16px' }} />
+                        View Details
                       </ActionButton>
                     </Box>
                   </ProductInfo>

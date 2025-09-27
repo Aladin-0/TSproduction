@@ -1,4 +1,4 @@
-// src/App.tsx - Updated with Debug Component
+// src/App.tsx - Updated with ProductDetailPage route
 import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useUserStore } from './stores/userStore';
@@ -6,6 +6,7 @@ import { LoginSuccessHandler } from './components/LoginSuccessHandler';
 import { NavBar } from './components/NavBar';
 import { LandingPage } from './pages/LandingPage';
 import { StorePage } from './pages/StorePage';
+import { ProductDetailPage } from './pages/ProductDetailPage';
 import { ServiceCategoryPage } from './pages/ServiceCategoryPage';
 import { ServiceRequestPage } from './pages/ServiceRequestPage';
 import { LoginPage } from './pages/LoginPage';
@@ -28,6 +29,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/store" element={<StorePage />} />
+          <Route path="/product/:slug" element={<ProductDetailPage />} />
           <Route path="/services" element={<ServiceCategoryPage />} />
           <Route path="/services/request/:categoryId" element={<ServiceRequestPage />} />
           <Route path="/login" element={<LoginPage />} />

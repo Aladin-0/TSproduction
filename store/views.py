@@ -1,28 +1,26 @@
-# store/views.py
+# store/views.py - Updated with ProductDetailAPIView
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .models import Product, Order, OrderItem, Address
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import ProductSerializer, AddressSerializer, AddressCreateUpdateSerializer
+from .serializers import (
+    ProductSerializer, ProductDetailSerializer, AddressSerializer, 
+    AddressCreateUpdateSerializer, OrderSerializer
+)
 from rest_framework import generics, permissions, status
-from .models import Address
-from rest_framework import generics, permissions
-from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
-from .models import Order
-from .serializers import OrderSerializer
 
 def product_list(request):
-    products = Product.objects.all()
+    products = Product.objects.filter(is_active=True)
     context = {
         'products': products
     }
     return render(request, 'store/product_list.html', context)
 
 def product_detail(request, slug):
-    product = get_object_or_404(Product, slug=slug)
+    product = get_object_or_404(Product, slug=slug, is_active=True)
     context = {
         'product': product
     }
@@ -30,7 +28,11 @@ def product_detail(request, slug):
 
 @login_required
 def buy_now(request, slug):
-    product = get_object_or_404(Product, slug=slug)
+    product = get_object_or_404(Product, slug=slug, is_active=True)
+    
+    # Check stock
+    if product.stock <= 0:
+        return redirect('product_detail', slug=slug)
     
     order = Order.objects.create(customer=request.user, status='PENDING')
     
@@ -73,6 +75,16 @@ def payment_page(request, order_id):
 @login_required
 def confirm_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, customer=request.user)
+    
+    # Reduce stock for each item
+    for item in order.items.all():
+        if item.product.stock >= item.quantity:
+            item.product.stock -= item.quantity
+            item.product.save()
+        else:
+            # Handle insufficient stock
+            return redirect('payment_page', order_id=order.id)
+    
     order.status = 'PROCESSING'
     order.save()
     return redirect('order_successful', order_id=order.id)
@@ -93,14 +105,33 @@ def update_order_status(request, order_id):
         order.save()
     return redirect('technician_dashboard')
 
+# API Views
 class ProductListAPIView(APIView):
     """
-    API view to list all products.
+    API view to list all active products.
     """
     def get(self, request, format=None):
-        products = Product.objects.all()
+        products = Product.objects.filter(is_active=True).select_related('category').prefetch_related('additional_images', 'specifications')
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data)
+
+class ProductDetailAPIView(generics.RetrieveAPIView):
+    """
+    API view to get detailed product information by slug.
+    """
+    serializer_class = ProductDetailSerializer
+    lookup_field = 'slug'
+    
+    def get_queryset(self):
+        return Product.objects.filter(is_active=True).select_related('category').prefetch_related('additional_images', 'specifications')
+    
+    def get_object(self):
+        slug = self.kwargs.get('slug')
+        try:
+            return self.get_queryset().get(slug=slug)
+        except Product.DoesNotExist:
+            from django.http import Http404
+            raise Http404("Product not found")
 
 class AddressListAPIView(generics.ListAPIView):
     serializer_class = AddressSerializer
@@ -196,9 +227,15 @@ def create_order(request):
             )
         
         # Get product and address
-        from .models import Product, Address
-        product = Product.objects.get(slug=product_slug)
-        address = Address.objects.get(id=address_id, user=request.user)
+        product = get_object_or_404(Product, slug=product_slug, is_active=True)
+        address = get_object_or_404(Address, id=address_id, user=request.user)
+        
+        # Check stock
+        if product.stock < quantity:
+            return Response(
+                {'error': f'Only {product.stock} items available in stock'}, 
+                status=400
+            )
         
         # Create order
         order = Order.objects.create(
@@ -215,14 +252,12 @@ def create_order(request):
             price=product.price
         )
         
+        # Don't reduce stock until order is confirmed
+        
         # Serialize and return
         serializer = OrderSerializer(order)
         return Response(serializer.data, status=201)
         
-    except Product.DoesNotExist:
-        return Response({'error': 'Product not found'}, status=404)
-    except Address.DoesNotExist:
-        return Response({'error': 'Address not found'}, status=404)
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 
@@ -233,7 +268,7 @@ def cancel_order(request, order_id):
     Cancel an order (only if pending/processing)
     """
     try:
-        order = Order.objects.get(id=order_id, customer=request.user)
+        order = get_object_or_404(Order, id=order_id, customer=request.user)
         
         if order.status not in ['PENDING', 'PROCESSING']:
             return Response(
@@ -241,13 +276,17 @@ def cancel_order(request, order_id):
                 status=400
             )
         
+        # If order was processing, restore stock
+        if order.status == 'PROCESSING':
+            for item in order.items.all():
+                item.product.stock += item.quantity
+                item.product.save()
+        
         order.status = 'CANCELLED'
         order.save()
         
         serializer = OrderSerializer(order)
         return Response(serializer.data)
         
-    except Order.DoesNotExist:
-        return Response({'error': 'Order not found'}, status=404)
     except Exception as e:
         return Response({'error': str(e)}, status=500)

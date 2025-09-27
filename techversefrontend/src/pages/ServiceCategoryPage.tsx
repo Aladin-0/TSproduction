@@ -1,4 +1,4 @@
-// src/pages/ServiceCategoryPage.tsx
+// src/pages/ServiceCategoryPage.tsx - Updated to show only service names
 import React, { useEffect, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,6 @@ import {
   InputAdornment,
   Card,
   CardContent,
-  Chip,
   Skeleton
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
@@ -32,7 +31,7 @@ const PageWrapper = styled(Box)({
   fontFamily: "'Segoe UI', 'Roboto', sans-serif",
   minHeight: '100vh',
   width: '100%',
-  paddingTop: '80px', // Account for navbar
+  paddingTop: '80px',
 });
 
 // Premium hero section for services
@@ -47,19 +46,6 @@ const ServiceHero = styled(Box)({
   position: 'relative',
   overflow: 'hidden',
   borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: `
-      radial-gradient(circle 600px at 75% 30%, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
-      radial-gradient(circle 400px at 25% 70%, rgba(255, 255, 255, 0.02) 0%, transparent 50%)
-    `,
-    pointerEvents: 'none',
-  },
 });
 
 const ServiceTitle = styled(Typography)({
@@ -150,19 +136,6 @@ const CategoriesSection = styled(Box)({
     linear-gradient(135deg, #000000 0%, #0a0a0a 25%, #111111 50%, #0a0a0a 75%, #000000 100%)
   `,
   position: 'relative',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: `
-      radial-gradient(ellipse 1000px 300px at 50% 0%, rgba(255, 255, 255, 0.02) 0%, transparent 50%),
-      radial-gradient(ellipse 800px 200px at 50% 100%, rgba(255, 255, 255, 0.01) 0%, transparent 50%)
-    `,
-    pointerEvents: 'none',
-  },
 });
 
 const CategoriesContainer = styled(Box)({
@@ -202,7 +175,7 @@ const SectionDescription = styled(Typography)({
 // Premium category grid
 const CategoryGrid = styled(Box)({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
   gap: '32px',
   '@media (max-width: 768px)': {
     gridTemplateColumns: '1fr',
@@ -238,42 +211,22 @@ const CategoryCard = styled(AnimatedCategoryCard)({
       inset 0 1px 0 rgba(255, 255, 255, 0.1)
     `,
   },
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: `
-      linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.1) 0%, 
-        transparent 50%, 
-        rgba(255, 255, 255, 0.05) 100%
-      )
-    `,
-    opacity: 0,
-    transition: 'opacity 0.3s ease',
-    pointerEvents: 'none',
-  },
-  '&:hover::before': {
-    opacity: 1,
-  },
 });
 
 const CategoryHeader = styled(Box)({
-  padding: '32px 32px 24px',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+  padding: '40px 32px',
+  textAlign: 'center',
   display: 'flex',
+  flexDirection: 'column',
   alignItems: 'center',
-  gap: '16px',
+  gap: '20px',
 });
 
 const CategoryIcon = styled(Box)({
-  width: '56px',
-  height: '56px',
+  width: '80px',
+  height: '80px',
   background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
-  borderRadius: '16px',
+  borderRadius: '20px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -285,7 +238,7 @@ const CategoryIcon = styled(Box)({
     transform: 'scale(1.1)',
   },
   '& .MuiSvgIcon-root': {
-    fontSize: '28px',
+    fontSize: '40px',
     color: 'rgba(255, 255, 255, 0.8)',
   },
 });
@@ -295,56 +248,14 @@ const CategoryName = styled(Typography)({
   fontWeight: 600,
   color: 'rgba(255, 255, 255, 0.95)',
   letterSpacing: '0.3px',
-  flex: 1,
+  textAlign: 'center',
 });
 
-const CategoryContent = styled(CardContent)({
-  padding: '24px 32px 32px',
-});
-
-const IssuesCount = styled(Typography)({
+const CategoryCount = styled(Typography)({
   fontSize: '14px',
   color: 'rgba(255, 255, 255, 0.5)',
-  marginBottom: '20px',
   fontWeight: 400,
-});
-
-const IssuesList = styled(Box)({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '12px',
-  marginBottom: '24px',
-});
-
-const IssueItem = styled(Box)({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '12px 16px',
-  background: 'rgba(255, 255, 255, 0.02)',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.05)',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    background: 'rgba(255, 255, 255, 0.05)',
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-});
-
-const IssueDescription = styled(Typography)({
-  fontSize: '14px',
-  color: 'rgba(255, 255, 255, 0.8)',
-  fontWeight: 400,
-  flex: 1,
-});
-
-const IssuePrice = styled(Chip)({
-  backgroundColor: 'rgba(96, 165, 250, 0.15)',
-  color: '#60a5fa',
-  border: '1px solid rgba(96, 165, 250, 0.3)',
-  fontSize: '12px',
-  fontWeight: 600,
-  height: '28px',
+  textAlign: 'center',
 });
 
 const RequestServiceButton = styled(Button)({
@@ -359,6 +270,7 @@ const RequestServiceButton = styled(Button)({
   textTransform: 'none',
   backdropFilter: 'blur(10px)',
   transition: 'all 0.3s cubic-bezier(0.23, 1, 0.320, 1)',
+  marginTop: '20px',
   '&:hover': {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderColor: 'rgba(255, 255, 255, 0.25)',
@@ -376,54 +288,44 @@ const CategorySkeleton = () => (
     overflow: 'hidden',
     backdropFilter: 'blur(20px)'
   }}>
-    <Box sx={{ p: 4, borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Skeleton 
-          variant="rectangular" 
-          width={56} 
-          height={56} 
-          sx={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            borderRadius: '16px'
-          }}
-        />
-        <Skeleton 
-          variant="text" 
-          width={200} 
-          height={32} 
-          sx={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
-        />
-      </Box>
-    </Box>
-    <CardContent sx={{ p: 4 }}>
+    <Box sx={{ p: 5, textAlign: 'center' }}>
+      <Skeleton 
+        variant="rectangular" 
+        width={80} 
+        height={80} 
+        sx={{ 
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: '20px',
+          margin: '0 auto 20px'
+        }}
+      />
       <Skeleton 
         variant="text" 
-        width={120} 
-        height={20} 
-        sx={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', mb: 2 }}
+        width={150} 
+        height={32} 
+        sx={{ 
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          margin: '0 auto 10px'
+        }}
       />
-      {Array.from({ length: 3 }).map((_, index) => (
-        <Box key={index} sx={{ mb: 1.5 }}>
-          <Skeleton 
-            variant="rectangular" 
-            height={48} 
-            sx={{ 
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              borderRadius: '12px'
-            }}
-          />
-        </Box>
-      ))}
+      <Skeleton 
+        variant="text" 
+        width={100} 
+        height={20} 
+        sx={{ 
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          margin: '0 auto 20px'
+        }}
+      />
       <Skeleton 
         variant="rectangular" 
         height={56} 
         sx={{ 
           backgroundColor: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '16px',
-          mt: 3
+          borderRadius: '16px'
         }}
       />
-    </CardContent>
+    </Box>
   </Card>
 );
 
@@ -479,10 +381,7 @@ export const ServiceCategoryPage: React.FC = () => {
 
   // Filter categories based on search
   const filteredCategories = categories.filter(category => 
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.issues.some(issue => 
-      issue.description.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   useEffect(() => {
@@ -522,7 +421,7 @@ export const ServiceCategoryPage: React.FC = () => {
       <SearchSection>
         <SearchContainer>
           <PremiumSearchField
-            placeholder="Search services or issues..."
+            placeholder="Search services..."
             variant="outlined"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -543,8 +442,8 @@ export const ServiceCategoryPage: React.FC = () => {
           <SectionHeader>
             <SectionTitle>Service Categories</SectionTitle>
             <SectionDescription>
-              Choose from our comprehensive range of repair services. Each category includes 
-              various common issues with transparent pricing.
+              Choose from our comprehensive range of repair services. Select a category 
+              to see available repair options.
             </SectionDescription>
           </SectionHeader>
 
@@ -623,37 +522,16 @@ export const ServiceCategoryPage: React.FC = () => {
                     <CategoryIcon>
                       {getCategoryIcon(category.name)}
                     </CategoryIcon>
-                    <CategoryName>{category.name}</CategoryName>
-                  </CategoryHeader>
-                  
-                  <CategoryContent>
-                    <IssuesCount>
-                      {category.issues.length} available service{category.issues.length !== 1 ? 's' : ''}
-                    </IssuesCount>
-                    
-                    <IssuesList>
-                      {category.issues.slice(0, 3).map((issue) => (
-                        <IssueItem key={issue.id}>
-                          <IssueDescription>{issue.description}</IssueDescription>
-                          <IssuePrice label={`₹${issue.price}`} />
-                        </IssueItem>
-                      ))}
-                      {category.issues.length > 3 && (
-                        <Typography sx={{ 
-                          fontSize: '12px', 
-                          color: 'rgba(255, 255, 255, 0.4)',
-                          textAlign: 'center',
-                          mt: 1
-                        }}>
-                          +{category.issues.length - 3} more services available
-                        </Typography>
-                      )}
-                    </IssuesList>
-                    
+                    <Box>
+                      <CategoryName>{category.name}</CategoryName>
+                      <CategoryCount>
+                        {category.issues.length} repair option{category.issues.length !== 1 ? 's' : ''} available
+                      </CategoryCount>
+                    </Box>
                     <RequestServiceButton>
-                      Request Service
+                      View Repair Options
                     </RequestServiceButton>
-                  </CategoryContent>
+                  </CategoryHeader>
                 </CategoryCard>
               ))
             )}

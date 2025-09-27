@@ -1,4 +1,4 @@
-# store/urls.py - Remove the my_orders line since it belongs in users URLs
+# store/urls.py - Updated with product detail endpoint
 
 from django.urls import path
 from . import views
@@ -16,12 +16,13 @@ urlpatterns = [
 
     # API endpoints
     path('api/products/', views.ProductListAPIView.as_view(), name='api_product_list'),
+    path('api/products/<slug:slug>/', views.ProductDetailAPIView.as_view(), name='api_product_detail'),
     path('api/addresses/', views.AddressListAPIView.as_view(), name='api_address_list'),
     path('api/addresses/create/', views.AddressCreateAPIView.as_view(), name='api_address_create'),
     path('api/addresses/<int:pk>/update/', views.AddressUpdateAPIView.as_view(), name='api_address_update'),
     path('api/addresses/<int:pk>/delete/', views.AddressDeleteAPIView.as_view(), name='api_address_delete'),
     
-    # Order API endpoints (if you want them here, but they should be separate)
+    # Order API endpoints
     path('api/orders/', views.UserOrdersListView.as_view(), name='api_orders_list'),
     path('api/orders/<int:pk>/', views.OrderDetailView.as_view(), name='api_order_detail'),
     path('api/orders/create/', views.create_order, name='api_create_order'),

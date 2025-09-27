@@ -1,21 +1,77 @@
-# store/serializers.py
+# store/serializers.py - Updated with enhanced product support
 from rest_framework import serializers
-from .models import Product, ProductCategory, Address 
-from rest_framework import serializers
-from .models import Order, OrderItem
+from .models import Product, ProductCategory, ProductImage, ProductSpecification, Address, Order, OrderItem
 
 class ProductCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductCategory
         fields = ['id', 'name', 'slug']
 
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ['id', 'image', 'alt_text', 'is_primary', 'order']
+
+class ProductSpecificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductSpecification
+        fields = ['id', 'name', 'value', 'order']
+
 class ProductSerializer(serializers.ModelSerializer):
     # To show the category name instead of just its ID
     category = ProductCategorySerializer(read_only=True)
+    additional_images = ProductImageSerializer(many=True, read_only=True)
+    specifications = ProductSpecificationSerializer(many=True, read_only=True)
+    features_list = serializers.SerializerMethodField()
+    all_images = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'slug', 'description', 'price', 'image', 'category']
+        fields = [
+            'id', 'name', 'slug', 'description', 'price', 'image', 'category', 
+            'stock', 'delivery_time_info', 'brand', 'model_number', 'weight', 
+            'dimensions', 'warranty_period', 'features', 'features_list', 
+            'is_featured', 'is_active', 'additional_images', 'specifications',
+            'all_images', 'created_at', 'updated_at'
+        ]
+
+    def get_features_list(self, obj):
+        return obj.get_features_list()
+    
+    def get_all_images(self, obj):
+        return obj.all_images
+
+class ProductDetailSerializer(ProductSerializer):
+    """Extended serializer for product detail view with all related data"""
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        
+        # Add computed fields for frontend
+        data['specifications_dict'] = {
+            spec['name']: spec['value'] 
+            for spec in data.get('specifications', [])
+        }
+        
+        # Add default specifications if none exist
+        if not data['specifications_dict']:
+            data['specifications_dict'] = {
+                'Brand': data.get('brand', 'TechVerse'),
+                'Model': data.get('model_number', data.get('name', '')),
+                'Warranty': data.get('warranty_period', '1 Year'),
+                'Stock': str(data.get('stock', 0)) + ' units'
+            }
+        
+        # Add default features if none exist
+        if not data['features_list']:
+            data['features_list'] = [
+                'High Quality Materials',
+                'Expert Installation Available',
+                f"{data.get('warranty_period', '1 Year')} Warranty",
+                '24/7 Customer Support'
+            ]
+        
+        return data
 
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
@@ -83,5 +139,3 @@ class OrderSerializer(serializers.ModelSerializer):
             obj.status == 'DELIVERED' and 
             not hasattr(obj, 'rating')
         )
-
-
