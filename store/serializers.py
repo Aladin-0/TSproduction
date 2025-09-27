@@ -63,6 +63,9 @@ class OrderSerializer(serializers.ModelSerializer):
     shipping_address_details = AddressSerializer(source='shipping_address', read_only=True)
     technician_name = serializers.CharField(source='technician.name', read_only=True)
     technician_phone = serializers.CharField(source='technician.phone', read_only=True)
+    customer_name = serializers.CharField(source='customer.name', read_only=True)
+    customer_phone = serializers.CharField(source='customer.phone', read_only=True)
+    customer_email = serializers.CharField(source='customer.email', read_only=True)
     can_rate = serializers.SerializerMethodField()
     
     class Meta:
@@ -70,7 +73,8 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'order_date', 'status', 'total_amount',
             'items', 'shipping_address_details', 'technician_name', 
-            'technician_phone', 'can_rate'
+            'technician_phone', 'customer_name', 'customer_phone', 
+            'customer_email', 'can_rate'
         ]
     
     def get_can_rate(self, obj):
@@ -79,4 +83,5 @@ class OrderSerializer(serializers.ModelSerializer):
             obj.status == 'DELIVERED' and 
             not hasattr(obj, 'rating')
         )
+
 

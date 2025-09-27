@@ -1,4 +1,4 @@
-// src/pages/OrdersPage.tsx
+// src/pages/OrdersPage.tsx - Fixed version
 import React, { useEffect, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { 
@@ -163,12 +163,17 @@ const StatusIcon = ({ status }: { status: string }) => {
 
 interface OrderItem {
   id: number;
-  product: {
-    name: string;
-    image: string;
-  };
+  product_name: string;
+  product_image?: string;
   quantity: number;
   price: string;
+}
+
+interface ShippingAddress {
+  street_address: string;
+  city: string;
+  state: string;
+  pincode: string;
 }
 
 interface Order {
@@ -176,17 +181,10 @@ interface Order {
   order_date: string;
   status: string;
   total_amount: string;
-  shipping_address: {
-    street_address: string;
-    city: string;
-    state: string;
-    pincode: string;
-  };
+  shipping_address_details?: ShippingAddress | null;
   items: OrderItem[];
-  technician?: {
-    name: string;
-    phone?: string;
-  };
+  technician_name?: string;
+  technician_phone?: string;
   can_rate?: boolean;
 }
 
@@ -205,6 +203,7 @@ export const OrdersPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await apiClient.get('/api/orders/');
+      console.log('Orders response:', response.data);
       setOrders(response.data);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -219,9 +218,17 @@ export const OrdersPage: React.FC = () => {
     setOrderDetailsOpen(true);
   };
 
-  const handleRateOrder = (orderId: number) => {
-    // Navigate to rating page
-    window.location.href = `/rate-order/${orderId}`;
+  const handleCancelOrder = async (orderId: number) => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    
+    try {
+      await apiClient.post(`/api/orders/${orderId}/cancel/`);
+      enqueueSnackbar('Order cancelled successfully', { variant: 'success' });
+      fetchOrders(); // Refresh orders
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      enqueueSnackbar('Failed to cancel order', { variant: 'error' });
+    }
   };
 
   if (loading) {
@@ -312,48 +319,73 @@ export const OrdersPage: React.FC = () => {
                       <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '12px', mb: 1 }}>
                         SHIPPING ADDRESS
                       </Typography>
-                      <Typography sx={{ color: 'white', fontWeight: 400, fontSize: '14px', lineHeight: 1.5 }}>
-                        {order.shipping_address.street_address}<br />
-                        {order.shipping_address.city}, {order.shipping_address.state} - {order.shipping_address.pincode}
-                      </Typography>
+                      {order.shipping_address_details ? (
+                        <Typography sx={{ color: 'white', fontWeight: 400, fontSize: '14px', lineHeight: 1.5 }}>
+                          {order.shipping_address_details.street_address}<br />
+                          {order.shipping_address_details.city}, {order.shipping_address_details.state} - {order.shipping_address_details.pincode}
+                        </Typography>
+                      ) : (
+                        <Typography sx={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '14px', fontStyle: 'italic' }}>
+                          No address provided
+                        </Typography>
+                      )}
                     </Grid>
 
-                    {order.technician && (
+                    {order.technician_name && (
                       <Grid item xs={12}>
                         <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', my: 2 }} />
                         <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '12px', mb: 1 }}>
                           ASSIGNED TECHNICIAN
                         </Typography>
                         <Typography sx={{ color: 'white', fontWeight: 500 }}>
-                          {order.technician.name}
-                          {order.technician.phone && (
+                          {order.technician_name}
+                          {order.technician_phone && (
                             <Typography component="span" sx={{ color: 'rgba(255, 255, 255, 0.6)', ml: 2 }}>
-                              {order.technician.phone}
+                              {order.technician_phone}
                             </Typography>
                           )}
                         </Typography>
                       </Grid>
                     )}
 
-                    {order.status === 'DELIVERED' && order.can_rate && (
-                      <Grid item xs={12}>
-                        <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', my: 2 }} />
-                        <PremiumButton 
-                          onClick={() => handleRateOrder(order.id)}
-                          sx={{ 
-                            backgroundColor: 'rgba(251, 191, 36, 0.15)',
-                            borderColor: 'rgba(251, 191, 36, 0.3)',
-                            color: '#fbbf24',
-                            '&:hover': {
-                              backgroundColor: 'rgba(251, 191, 36, 0.25)',
-                            }
-                          }}
-                        >
-                          <StarIcon sx={{ mr: 1, fontSize: '16px' }} />
-                          Rate Service
-                        </PremiumButton>
-                      </Grid>
-                    )}
+                    {/* Action buttons */}
+                    <Grid item xs={12}>
+                      <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', my: 2 }} />
+                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                        {order.status === 'DELIVERED' && order.can_rate && (
+                          <PremiumButton 
+                            onClick={() => window.location.href = `/rate-order/${order.id}`}
+                            sx={{ 
+                              backgroundColor: 'rgba(251, 191, 36, 0.15)',
+                              borderColor: 'rgba(251, 191, 36, 0.3)',
+                              color: '#fbbf24',
+                              '&:hover': {
+                                backgroundColor: 'rgba(251, 191, 36, 0.25)',
+                              }
+                            }}
+                          >
+                            <StarIcon sx={{ mr: 1, fontSize: '16px' }} />
+                            Rate Service
+                          </PremiumButton>
+                        )}
+                        
+                        {(['PENDING', 'PROCESSING'].includes(order.status)) && (
+                          <PremiumButton 
+                            onClick={() => handleCancelOrder(order.id)}
+                            sx={{ 
+                              backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                              borderColor: 'rgba(239, 68, 68, 0.3)',
+                              color: '#ef4444',
+                              '&:hover': {
+                                backgroundColor: 'rgba(239, 68, 68, 0.25)',
+                              }
+                            }}
+                          >
+                            Cancel Order
+                          </PremiumButton>
+                        )}
+                      </Box>
+                    </Grid>
                   </Grid>
                 </CardContent>
               </OrderCard>
@@ -388,42 +420,56 @@ export const OrdersPage: React.FC = () => {
                 <Typography variant="h6" sx={{ mb: 2, color: 'rgba(255, 255, 255, 0.9)' }}>
                   Order Items
                 </Typography>
-                {selectedOrder.items?.map((item) => (
-                  <Box key={item.id} sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 2, 
-                    p: 2,
-                    mb: 1,
-                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                    borderRadius: '12px'
-                  }}>
-                    <Box sx={{ 
-                      width: '60px', 
-                      height: '60px', 
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
+                {selectedOrder.items?.length > 0 ? (
+                  selectedOrder.items.map((item) => (
+                    <Box key={item.id} sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 2, 
+                      p: 2,
+                      mb: 1,
+                      backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                      borderRadius: '12px'
                     }}>
-                      <Typography sx={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '12px' }}>
-                        IMG
+                      <Box sx={{ 
+                        width: '60px', 
+                        height: '60px', 
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        {item.product_image ? (
+                          <img 
+                            src={item.product_image.startsWith('http') ? item.product_image : `http://127.0.0.1:8000${item.product_image}`}
+                            alt={item.product_name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                          />
+                        ) : (
+                          <Typography sx={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '12px' }}>
+                            IMG
+                          </Typography>
+                        )}
+                      </Box>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography sx={{ color: 'white', fontWeight: 500 }}>
+                          {item.product_name}
+                        </Typography>
+                        <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px' }}>
+                          Quantity: {item.quantity}
+                        </Typography>
+                      </Box>
+                      <Typography sx={{ color: '#60a5fa', fontWeight: 600 }}>
+                        ₹{item.price}
                       </Typography>
                     </Box>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography sx={{ color: 'white', fontWeight: 500 }}>
-                        {item.product.name}
-                      </Typography>
-                      <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px' }}>
-                        Quantity: {item.quantity}
-                      </Typography>
-                    </Box>
-                    <Typography sx={{ color: '#60a5fa', fontWeight: 600 }}>
-                      ₹{item.price}
-                    </Typography>
-                  </Box>
-                ))}
+                  ))
+                ) : (
+                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                    No items found
+                  </Typography>
+                )}
               </Grid>
             </Grid>
           )}

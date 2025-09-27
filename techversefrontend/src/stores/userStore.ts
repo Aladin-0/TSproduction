@@ -1,4 +1,4 @@
-// src/stores/userStore.ts - Session-based authentication
+// src/stores/userStore.ts - Enhanced with proper profile management
 import { create } from 'zustand';
 import apiClient from '../api';
 
@@ -48,20 +48,27 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
   
   checkAuthStatus: async () => {
+    console.log('checkAuthStatus called');
+    
     // First try JWT token
     const token = localStorage.getItem('access_token');
+    console.log('JWT token exists:', !!token);
+    
     if (token) {
       try {
         const response = await apiClient.get('/api/auth/user/');
+        console.log('JWT auth successful:', response.data.email);
         set({ user: response.data, isAuthenticated: true });
         return;
       } catch (error) {
+        console.log('JWT auth failed, removing token');
         localStorage.removeItem('access_token');
       }
     }
     
     // If JWT fails, try session authentication
     try {
+      console.log('Trying session authentication...');
       const response = await fetch('http://127.0.0.1:8000/api/auth/user/', {
         method: 'GET',
         credentials: 'include',
@@ -72,26 +79,33 @@ export const useUserStore = create<UserState>((set, get) => ({
       
       if (response.ok) {
         const userData = await response.json();
+        console.log('Session auth successful:', userData.email);
         set({ user: userData, isAuthenticated: true });
         return;
+      } else {
+        console.log('Session auth failed with status:', response.status);
       }
     } catch (error) {
-      console.log('Session auth failed:', error);
+      console.log('Session auth error:', error);
     }
     
     // If both fail, user is not authenticated
+    console.log('Authentication failed, setting unauthenticated state');
     set({ user: null, isAuthenticated: false });
   },
   
   updateProfile: async (data) => {
     try {
+      console.log('Updating profile in store with:', data);
+      
       // Try JWT first, then session
       let response;
       try {
         response = await apiClient.patch('/api/users/profile/', data);
       } catch (jwtError) {
+        console.log('JWT update failed, trying session auth...');
         // Fallback to session-based request
-        response = await fetch('http://127.0.0.1:8000/api/users/profile/', {
+        const sessionResponse = await fetch('http://127.0.0.1:8000/api/users/profile/', {
           method: 'PATCH',
           credentials: 'include',
           headers: {
@@ -100,15 +114,21 @@ export const useUserStore = create<UserState>((set, get) => ({
           body: JSON.stringify(data),
         });
         
-        if (!response.ok) {
+        if (!sessionResponse.ok) {
           throw new Error('Profile update failed');
         }
         
-        response = { data: await response.json() };
+        response = { data: await sessionResponse.json() };
       }
       
+      console.log('Profile updated successfully:', response.data);
+      
+      // Update the user state with the response data
       set({ user: response.data });
+      
+      return response.data;
     } catch (error) {
+      console.error('Profile update error in store:', error);
       throw error;
     }
   },

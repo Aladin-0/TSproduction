@@ -1,4 +1,4 @@
-# users/urls.py
+# users/urls.py - Updated with profile validation
 
 from django.urls import path
 from django.contrib.auth import views as auth_views
@@ -16,12 +16,13 @@ urlpatterns = [
     path('csrf/', views.csrf_token_view, name='api-csrf'),
     path('me/', views.CurrentUserView.as_view(), name='api-me'),
     path('profile/', views.UserProfileUpdateView.as_view(), name='api-profile'),
+    path('profile/validate/', views.ProfileValidationView.as_view(), name='api-profile-validate'),
     path('change-password/', views.ChangePasswordView.as_view(), name='api-change-password'),
     path('delete-account/', views.DeleteAccountView.as_view(), name='api-delete-account'),
     
     # Google OAuth JWT endpoints
     path('google-jwt/', views.GoogleJWTTokenView.as_view(), name='google-jwt-token'),
-    path('google-login-success/', views.google_login_success, name='google-login-success'),  # NEW
+    path('google-login-success/', views.google_login_success, name='google-login-success'),
     path('debug-auth/', views.DebugAuthView.as_view(), name='debug-auth'),
     path('create-from-google/', views.create_user_from_google, name='create-from-google'),
 ]

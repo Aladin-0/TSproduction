@@ -1,5 +1,5 @@
-// src/pages/UserProfilePage.tsx
-import React, { useState, useEffect, Suspense } from 'react';
+// src/pages/UserProfilePage.tsx - Simplified without 3D
+import React, { useState, useEffect } from 'react';
 import { styled } from '@mui/material/styles';
 import { 
   Box, 
@@ -27,13 +27,9 @@ import AddIcon from '@mui/icons-material/Add';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
-import HomeIcon from "@mui/icons-material/Home";   // CORRECT - has slash /
+import HomeIcon from "@mui/icons-material/Home";
 import SecurityIcon from '@mui/icons-material/Security';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import { Canvas } from '@react-three/fiber';
-import { useGLTF, OrbitControls, Environment } from '@react-three/drei';
-import { useSpring as useSpringWeb, animated } from '@react-spring/web';
-import { useSpring as useSpring3d, animated as a3 } from '@react-spring/three';
+import { useSpring, animated } from '@react-spring/web';
 import { useUserStore } from '../stores/userStore';
 import { useProductStore } from '../stores/productStore';
 import apiClient from '../api';
@@ -318,36 +314,6 @@ const PremiumDialog = styled(Dialog)({
   },
 });
 
-// 3D Profile decoration component
-function ProfileDecoration(props: any) {
-  const { scene } = useGLTF('/gaming_laptop.glb');
-  
-  const { rotation } = useSpring3d({
-    from: { rotation: [0, 0, 0] },
-    to: { rotation: [0, Math.PI * 2, 0] },
-    loop: true,
-    config: { duration: 20000, easing: (t) => t },
-  });
-
-  return (
-    <a3.group rotation={rotation} {...props}>
-      <primitive object={scene} scale={1.5} position={[0, 0, 0]} />
-    </a3.group>
-  );
-}
-
-const CanvasWrapper = styled(Box)({
-  position: 'absolute',
-  top: '20%',
-  right: '5%',
-  width: '300px',
-  height: '300px',
-  zIndex: 1,
-  '@media (max-width:900px)': {
-    display: 'none',
-  },
-});
-
 interface Address {
   id: number;
   street_address: string;
@@ -358,23 +324,30 @@ interface Address {
 }
 
 interface UserProfile {
+  id: number;
   name: string;
   email: string;
   phone?: string;
   role: string;
+  email_notifications: boolean;
+  sms_notifications: boolean;
 }
 
 export const UserProfilePage: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
   const user = useUserStore((state) => state.user);
+  const updateUserInStore = useUserStore((state) => state.updateProfile);
   const { addresses, fetchAddresses } = useProductStore();
   
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState<UserProfile>({
+    id: 0,
     name: '',
     email: '',
     phone: '',
-    role: 'CUSTOMER'
+    role: 'CUSTOMER',
+    email_notifications: true,
+    sms_notifications: true
   });
   
   // Dialog states
@@ -392,39 +365,70 @@ export const UserProfilePage: React.FC = () => {
   });
 
   // Hero animation
-  const heroAnimation = useSpringWeb({
+  const heroAnimation = useSpring({
     from: { opacity: 0, transform: 'translateY(40px)' },
     to: { opacity: 1, transform: 'translateY(0px)' },
     config: { tension: 280, friction: 60 },
     delay: 200,
   });
 
-  // Load user data
+  // Load user data from backend
   useEffect(() => {
     const loadUserData = async () => {
-      if (user) {
-        setProfileData({
-          name: user.name || '',
-          email: user.email || '',
-          phone: '', // You'll need to add this field to your user model
-          role: user.role || 'CUSTOMER'
-        });
+      try {
+        // Fetch latest user data from backend
+        const response = await apiClient.get('/api/users/profile/');
+        console.log('Fetched user profile:', response.data);
+        setProfileData(response.data);
+        
+        // Also update the global user store
+        updateUserInStore(response.data);
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        // Fallback to store data if API fails
+        if (user) {
+          setProfileData({
+            id: user.id,
+            name: user.name || '',
+            email: user.email || '',
+            phone: user.phone || '',
+            role: user.role || 'CUSTOMER',
+            email_notifications: user.email_notifications ?? true,
+            sms_notifications: user.sms_notifications ?? true
+          });
+        }
       }
+      
       await fetchAddresses();
       setLoading(false);
     };
+    
     loadUserData();
-  }, [user, fetchAddresses]);
+  }, [user, fetchAddresses, updateUserInStore]);
 
   const handleUpdateProfile = async () => {
     try {
-      await apiClient.patch('/api/auth/user/', {
+      console.log('Updating profile with:', profileData);
+      
+      const response = await apiClient.patch('/api/users/profile/', {
         name: profileData.name,
-        // Add phone field if you extend the user model
+        phone: profileData.phone,
+        email_notifications: profileData.email_notifications,
+        sms_notifications: profileData.sms_notifications
       });
+      
+      console.log('Profile update response:', response.data);
+      
+      // Update local state with response
+      setProfileData(response.data);
+      
+      // Update global store
+      updateUserInStore(response.data);
+      
       enqueueSnackbar('Profile updated successfully!', { variant: 'success' });
       setEditProfileOpen(false);
     } catch (error) {
+      console.error('Profile update error:', error);
       enqueueSnackbar('Failed to update profile', { variant: 'error' });
     }
   };
@@ -433,7 +437,7 @@ export const UserProfilePage: React.FC = () => {
     try {
       if (editingAddress) {
         // Update existing address
-        await apiClient.patch(`/api/addresses/${editingAddress.id}/`, addressForm);
+        await apiClient.patch(`/api/addresses/${editingAddress.id}/update/`, addressForm);
         enqueueSnackbar('Address updated successfully!', { variant: 'success' });
       } else {
         // Create new address
@@ -445,6 +449,7 @@ export const UserProfilePage: React.FC = () => {
       setEditingAddress(null);
       setAddressForm({ street_address: '', city: '', state: '', pincode: '', is_default: false });
     } catch (error) {
+      console.error('Address save error:', error);
       enqueueSnackbar('Failed to save address', { variant: 'error' });
     }
   };
@@ -453,10 +458,11 @@ export const UserProfilePage: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this address?')) return;
     
     try {
-      await apiClient.delete(`/api/addresses/${addressId}/`);
+      await apiClient.delete(`/api/addresses/${addressId}/delete/`);
       enqueueSnackbar('Address deleted successfully!', { variant: 'success' });
       await fetchAddresses();
     } catch (error) {
+      console.error('Address deletion error:', error);
       enqueueSnackbar('Failed to delete address', { variant: 'error' });
     }
   };
@@ -476,6 +482,15 @@ export const UserProfilePage: React.FC = () => {
       setAddressForm({ street_address: '', city: '', state: '', pincode: '', is_default: false });
     }
     setAddressDialogOpen(true);
+  };
+
+  const getUserInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   if (loading) {
@@ -503,33 +518,12 @@ export const UserProfilePage: React.FC = () => {
       <ProfileHero>
         <animated.div style={heroAnimation}>
           <ProfileAvatar>
-            <PersonIcon fontSize="inherit" />
+            {profileData.name ? getUserInitials(profileData.name) : <PersonIcon fontSize="inherit" />}
           </ProfileAvatar>
           <ProfileTitle>{profileData.name || 'User'}</ProfileTitle>
           <ProfileSubtitle>{profileData.email}</ProfileSubtitle>
           <ProfileBadge label={profileData.role} />
         </animated.div>
-        
-        {/* 3D Decoration */}
-        <CanvasWrapper>
-          <Canvas
-            style={{ width: '100%', height: '100%' }}
-            camera={{ position: [5, 5, 5], fov: 45 }}
-          >
-            <Suspense fallback={null}>
-              <OrbitControls
-                enableZoom={false} 
-                enablePan={false}
-                minPolarAngle={Math.PI / 2.5} 
-                maxPolarAngle={Math.PI / 1.8}
-              />
-              <ProfileDecoration />
-              <Environment preset="city" />
-              <ambientLight intensity={0.5} />
-              <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
-            </Suspense>
-          </Canvas>
-        </CanvasWrapper>
       </ProfileHero>
 
       {/* Profile Content */}
@@ -699,7 +693,8 @@ export const UserProfilePage: React.FC = () => {
                   <FormControlLabel
                     control={
                       <Switch 
-                        defaultChecked 
+                        checked={profileData.email_notifications}
+                        onChange={(e) => setProfileData({ ...profileData, email_notifications: e.target.checked })}
                         sx={{
                           '& .MuiSwitch-track': {
                             backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -729,7 +724,8 @@ export const UserProfilePage: React.FC = () => {
                   <FormControlLabel
                     control={
                       <Switch 
-                        defaultChecked 
+                        checked={profileData.sms_notifications}
+                        onChange={(e) => setProfileData({ ...profileData, sms_notifications: e.target.checked })}
                         sx={{
                           '& .MuiSwitch-track': {
                             backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -792,6 +788,7 @@ export const UserProfilePage: React.FC = () => {
               value={profileData.name}
               onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
               fullWidth
+              required
             />
             <PremiumTextField
               label="Email Address"

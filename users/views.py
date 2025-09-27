@@ -1,10 +1,10 @@
-# users/views.py
+# users/views.py - Enhanced version with proper profile management
 
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.middleware.csrf import get_token 
 from django.contrib.auth import get_user_model
 from django.views.decorators.csrf import csrf_exempt
@@ -99,6 +99,8 @@ class UserProfileUpdateView(APIView):
 
     def patch(self, request):
         """Update user profile"""
+        print(f"Received profile update data: {request.data}")
+        
         serializer = UserProfileUpdateSerializer(
             request.user, 
             data=request.data, 
@@ -106,10 +108,14 @@ class UserProfileUpdateView(APIView):
         )
         
         if serializer.is_valid():
-            serializer.save()
-            updated_serializer = UserSerializer(request.user)
+            user = serializer.save()
+            print(f"User updated successfully: {user.name}, {user.phone}")
+            
+            # Return updated user data
+            updated_serializer = UserSerializer(user)
             return Response(updated_serializer.data)
         
+        print(f"Serializer errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ChangePasswordView(APIView):
@@ -171,6 +177,32 @@ class DeleteAccountView(APIView):
         
         return Response({'message': 'Account deactivated successfully'})
 
+class ProfileValidationView(APIView):
+    """Check if user profile is complete for checkout"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        missing_fields = []
+        
+        if not user.name or user.name.strip() == '':
+            missing_fields.append('name')
+        
+        if not user.phone or user.phone.strip() == '':
+            missing_fields.append('phone')
+        
+        # Check if user has at least one address
+        from store.models import Address
+        addresses = Address.objects.filter(user=user)
+        if not addresses.exists():
+            missing_fields.append('address')
+        
+        return Response({
+            'is_complete': len(missing_fields) == 0,
+            'missing_fields': missing_fields,
+            'user': UserSerializer(user).data
+        })
+
 @method_decorator(csrf_exempt, name='dispatch')
 class GoogleJWTTokenView(APIView):
     """
@@ -225,7 +257,11 @@ class DebugAuthView(APIView):
             'user_authenticated': request.user.is_authenticated,
             'user_id': request.user.id if request.user.is_authenticated else None,
             'user_email': request.user.email if request.user.is_authenticated else None,
+            'user_name': getattr(request.user, 'name', None) if request.user.is_authenticated else None,
             'session_key': request.session.session_key,
+            'has_jwt_header': 'Authorization' in request.headers,
+            'jwt_header': request.headers.get('Authorization', 'None')[:50] if 'Authorization' in request.headers else None,
+            'cookies': list(request.COOKIES.keys()),
         })
 
 @csrf_exempt

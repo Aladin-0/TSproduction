@@ -1,4 +1,4 @@
-// src/App.tsx - Updated with Checkout Route
+// src/App.tsx - Updated with Debug Component
 import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useUserStore } from './stores/userStore';
