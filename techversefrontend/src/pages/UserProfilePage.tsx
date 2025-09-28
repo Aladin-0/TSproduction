@@ -423,7 +423,7 @@ export const UserProfilePage: React.FC = () => {
       setProfileData(response.data);
       
       // Update global store
-      updateUserInStore(response.data);
+      setUserFromServer(response.data);
       
       enqueueSnackbar('Profile updated successfully!', { variant: 'success' });
       setEditProfileOpen(false);

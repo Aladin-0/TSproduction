@@ -527,10 +527,7 @@ export const NavBar = () => {
           My Cart ({totalItems})
         </MenuItem>
         
-        <MenuItem>
-          <SettingsIcon sx={{ mr: 2, fontSize: '18px' }} />
-          Settings
-        </MenuItem>
+        
         
         <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', margin: '8px' }} />
         
