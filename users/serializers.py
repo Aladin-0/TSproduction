@@ -16,16 +16,24 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
         fields = ['name', 'phone', 'email_notifications', 'sms_notifications']
 
 class CustomRegisterSerializer(RegisterSerializer):
+    # Explicitly disable username to avoid "username is required" errors
+    username = None
     name = serializers.CharField(required=True, write_only=True)
 
     def get_cleaned_data(self):
         # Start with the default cleaned data (email, password1, password2, etc.)
         data = super().get_cleaned_data()
+        # Remove username if present in upstream defaults
+        data.pop('username', None)
         # Merge our custom field(s)
         data.update({
             'name': self.validated_data.get('name', ''),
         })
         return data
+
+    # Guard in case upstream tries validating username
+    def validate_username(self, username):
+        return username
 
     def save(self, request):
         adapter = get_adapter()
