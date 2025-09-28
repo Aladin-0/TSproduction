@@ -1,4 +1,4 @@
-# ecom_project/urls.py - Updated to include rating API endpoints
+# ecom_project/urls.py - Updated to include custom admin panel
 
 from django.contrib import admin
 from django.urls import path, include
@@ -16,6 +16,10 @@ admin.site.index_title = "Welcome to TechVerse Administration"
 admin.site.index_template = 'admin/index.html'
 
 urlpatterns = [
+    # Custom Admin Panel (NEW - comes before Django admin)
+    path('admin-panel/', include('admin_panel.urls')),
+    
+    # Django Admin (moved after custom admin)
     path('admin/', admin.site.urls),
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
     

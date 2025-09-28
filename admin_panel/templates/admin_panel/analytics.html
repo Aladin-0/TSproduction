@@ -1,0 +1,640 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Analytics - TechVerse Admin{% endblock %}
+
+{% block page_title %}Analytics Dashboard{% endblock %}
+
+{% block top_actions %}
+<button class="btn btn-secondary" onclick="exportAnalytics()">
+    <i class="fas fa-download"></i>
+    Export Report
+</button>
+<button class="btn btn-secondary" onclick="refreshData()">
+    <i class="fas fa-sync"></i>
+    Refresh Data
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Date Range Filter -->
+<div class="filters" style="margin-bottom: 30px;">
+    <div style="display: flex; gap: 15px; align-items: end; flex-wrap: wrap;">
+        <div class="filter-group">
+            <label class="filter-label">Date Range</label>
+            <select id="dateRange" class="form-control" style="min-width: 150px;" onchange="updateDateRange()">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 3 months</option>
+                <option value="365">Last year</option>
+                <option value="custom">Custom Range</option>
+            </select>
+        </div>
+        
+        <div class="filter-group" id="customDateRange" style="display: none;">
+            <label class="filter-label">From</label>
+            <input type="date" id="startDate" class="form-control">
+        </div>
+        
+        <div class="filter-group" id="customDateRange2" style="display: none;">
+            <label class="filter-label">To</label>
+            <input type="date" id="endDate" class="form-control">
+        </div>
+        
+        <button class="btn btn-primary" onclick="applyDateFilter()">
+            <i class="fas fa-filter"></i>
+            Apply Filter
+        </button>
+    </div>
+</div>
+
+<!-- Key Metrics -->
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-bottom: 40px;">
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-title">Total Revenue</div>
+            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">
+                <i class="fas fa-rupee-sign"></i>
+            </div>
+        </div>
+        <div class="stat-value">₹2,45,678</div>
+        <div class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>
+            +15.4% from last month
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-title">Total Orders</div>
+            <div class="stat-icon" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6;">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+        </div>
+        <div class="stat-value">1,247</div>
+        <div class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>
+            +8.2% from last month
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-title">Avg. Order Value</div>
+            <div class="stat-icon" style="background: rgba(168, 85, 247, 0.2); color: #a855f7;">
+                <i class="fas fa-chart-line"></i>
+            </div>
+        </div>
+        <div class="stat-value">₹1,968</div>
+        <div class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>
+            +5.8% from last month
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-title">Customer Satisfaction</div>
+            <div class="stat-icon" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24;">
+                <i class="fas fa-star"></i>
+            </div>
+        </div>
+        <div class="stat-value">4.8/5</div>
+        <div class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>
+            +0.2 from last month
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 40px;">
+    <!-- Revenue Chart -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 class="table-title">Revenue Overview</h3>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" onclick="toggleChartType('revenue')" style="padding: 5px 10px; font-size: 12px;">
+                    <i class="fas fa-chart-bar"></i>
+                </button>
+                <button class="btn btn-secondary" onclick="downloadChart('revenue')" style="padding: 5px 10px; font-size: 12px;">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+        <div style="padding: 25px;">
+            <canvas id="revenueChart" style="width: 100%; height: 300px;"></canvas>
+        </div>
+    </div>
+
+    <!-- Top Products -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 class="table-title">Top Products</h3>
+        </div>
+        <div style="padding: 25px;">
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-laptop" style="color: #3b82f6;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600;">Gaming Laptop Pro</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.6);">124 orders</div>
+                        </div>
+                    </div>
+                    <div style="font-weight: 600;">₹98,560</div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: rgba(16, 185, 129, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-keyboard" style="color: #10b981;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600;">Mechanical Keyboard</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.6);">89 orders</div>
+                        </div>
+                    </div>
+                    <div style="font-weight: 600;">₹45,230</div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: rgba(168, 85, 247, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-headphones" style="color: #a855f7;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600;">Wireless Headphones</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.6);">67 orders</div>
+                        </div>
+                    </div>
+                    <div style="font-weight: 600;">₹32,150</div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: rgba(239, 68, 68, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-mouse" style="color: #ef4444;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600;">Gaming Mouse</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.6);">54 orders</div>
+                        </div>
+                    </div>
+                    <div style="font-weight: 600;">₹21,600</div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: rgba(251, 191, 36, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-desktop" style="color: #fbbf24;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600;">4K Monitor</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.6);">43 orders</div>
+                        </div>
+                    </div>
+                    <div style="font-weight: 600;">₹18,900</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Additional Analytics -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 40px;">
+    <!-- Orders Chart -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 class="table-title">Orders Trend</h3>
+        </div>
+        <div style="padding: 25px;">
+            <canvas id="ordersChart" style="width: 100%; height: 250px;"></canvas>
+        </div>
+    </div>
+
+    <!-- Customer Distribution -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 class="table-title">Customer Types</h3>
+        </div>
+        <div style="padding: 25px;">
+            <canvas id="customerChart" style="width: 100%; height: 250px;"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Metrics -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+    <!-- Service Performance -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 class="table-title">Service Performance</h3>
+        </div>
+        <div style="padding: 25px;">
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span>Average Response Time</span>
+                        <strong>2.4 hours</strong>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                        <div style="width: 85%; height: 100%; background: linear-gradient(135deg, #10b981, #059669);"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span>Resolution Rate</span>
+                        <strong>94%</strong>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                        <div style="width: 94%; height: 100%; background: linear-gradient(135deg, #3b82f6, #2563eb);"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span>Customer Satisfaction</span>
+                        <strong>4.8/5</strong>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                        <div style="width: 96%; height: 100%; background: linear-gradient(135deg, #fbbf24, #f59e0b);"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span>Technician Efficiency</span>
+                        <strong>87%</strong>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                        <div style="width: 87%; height: 100%; background: linear-gradient(135deg, #a855f7, #9333ea);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Geographic Distribution -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 class="table-title">Top Cities</h3>
+        </div>
+        <div style="padding: 25px;">
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600;">Mumbai</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Maharashtra</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 80px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                            <div style="width: 90%; height: 100%; background: #3b82f6;"></div>
+                        </div>
+                        <strong>347</strong>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600;">Delhi</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Delhi</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 80px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                            <div style="width: 78%; height: 100%; background: #10b981;"></div>
+                        </div>
+                        <strong>298</strong>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600;">Bangalore</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Karnataka</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 80px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                            <div style="width: 65%; height: 100%; background: #a855f7;"></div>
+                        </div>
+                        <strong>245</strong>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600;">Pune</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Maharashtra</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 80px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                            <div style="width: 52%; height: 100%; background: #fbbf24;"></div>
+                        </div>
+                        <strong>198</strong>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600;">Chennai</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Tamil Nadu</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 80px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                            <div style="width: 45%; height: 100%; background: #ef4444;"></div>
+                        </div>
+                        <strong>167</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 class="table-title">Recent Activity</h3>
+        </div>
+        <div style="padding: 25px;">
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 32px; height: 32px; background: rgba(16, 185, 129, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-shopping-cart" style="color: #10b981; font-size: 12px;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 13px; font-weight: 600;">New order placed</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.6);">Order #1247 by John Doe</div>
+                    </div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.5);">2m ago</div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 32px; height: 32px; background: rgba(59, 130, 246, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-user-plus" style="color: #3b82f6; font-size: 12px;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 13px; font-weight: 600;">New customer registered</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.6);">Sarah Wilson from Mumbai</div>
+                    </div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.5);">5m ago</div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 32px; height: 32px; background: rgba(251, 191, 36, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-star" style="color: #fbbf24; font-size: 12px;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 13px; font-weight: 600;">5-star rating received</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.6);">For technician Ram Kumar</div>
+                    </div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.5);">8m ago</div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 32px; height: 32px; background: rgba(168, 85, 247, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-tools" style="color: #a855f7; font-size: 12px;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 13px; font-weight: 600;">Service completed</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.6);">Laptop repair service #89</div>
+                    </div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.5);">12m ago</div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 32px; height: 32px; background: rgba(239, 68, 68, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-exclamation-triangle" style="color: #ef4444; font-size: 12px;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 13px; font-weight: 600;">Low stock alert</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.6);">Gaming Mouse - 3 left</div>
+                    </div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.5);">15m ago</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize charts when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeCharts();
+    });
+
+    function initializeCharts() {
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: {% if monthly_revenue %}{{ monthly_revenue|safe }}{% else %}['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']{% endif %},
+                datasets: [{
+                    label: 'Revenue (₹)',
+                    data: [45000, 52000, 48000, 61000, 55000, 67000, 73000, 69000, 78000, 85000, 79000, 92000],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            callback: function(value) {
+                                return '₹' + (value / 1000) + 'K';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Orders Chart
+        const ordersCtx = document.getElementById('ordersChart').getContext('2d');
+        new Chart(ordersCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Orders',
+                    data: [45, 67, 52, 73, 61, 39, 28],
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Customer Chart
+        const customerCtx = document.getElementById('customerChart').getContext('2d');
+        new Chart(customerCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Regular', 'AMC', 'New'],
+                datasets: [{
+                    data: [65, 25, 10],
+                    backgroundColor: ['#10b981', '#3b82f6', '#fbbf24'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Date range functions
+    function updateDateRange() {
+        const dateRange = document.getElementById('dateRange').value;
+        const customFields = document.querySelectorAll('#customDateRange, #customDateRange2');
+        
+        if (dateRange === 'custom') {
+            customFields.forEach(field => field.style.display = 'block');
+        } else {
+            customFields.forEach(field => field.style.display = 'none');
+        }
+    }
+
+    function applyDateFilter() {
+        const dateRange = document.getElementById('dateRange').value;
+        
+        if (dateRange === 'custom') {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates');
+                return;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                alert('Start date cannot be after end date');
+                return;
+            }
+        }
+        
+        // Apply filter logic here
+        console.log('Applying date filter:', dateRange);
+        // You would make an API call here to update the data
+    }
+
+    // Utility functions
+    function toggleChartType(chartId) {
+        console.log('Toggling chart type for:', chartId);
+        // Implement chart type toggle
+    }
+
+    function downloadChart(chartId) {
+        console.log('Downloading chart:', chartId);
+        // Implement chart download
+    }
+
+    function exportAnalytics() {
+        console.log('Exporting analytics report');
+        // Implement export functionality
+    }
+
+    function refreshData() {
+        console.log('Refreshing analytics data');
+        // Show loading state
+        const refreshBtn = event.target.closest('button');
+        const originalText = refreshBtn.innerHTML;
+        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+        refreshBtn.disabled = true;
+        
+        // Simulate API call
+        setTimeout(() => {
+            refreshBtn.innerHTML = originalText;
+            refreshBtn.disabled = false;
+            // location.reload(); // Uncomment to actually refresh
+        }, 2000);
+    }
+
+    // Auto-refresh data every 5 minutes
+    setInterval(() => {
+        console.log('Auto-refreshing analytics data');
+        // Implement auto-refresh logic here
+        // You could make API calls to update the charts and stats
+    }, 300000); // 5 minutes
+
+    // Real-time updates simulation
+    function simulateRealTimeUpdates() {
+        // Update some stats randomly to simulate real-time data
+        const stats = document.querySelectorAll('.stat-value');
+        stats.forEach(stat => {
+            // Add subtle animation when data updates
+            stat.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                stat.style.transform = 'scale(1)';
+            }, 200);
+        });
+    }
+
+    // Simulate real-time updates every 30 seconds
+    setInterval(simulateRealTimeUpdates, 30000);
+</script>

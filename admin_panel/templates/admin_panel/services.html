@@ -1,0 +1,588 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Services Management - TechVerse Admin{% endblock %}
+
+{% block page_title %}Services Management{% endblock %}
+
+{% block top_actions %}
+<button class="btn btn-primary" onclick="bulkAssignTechnician()">
+    <i class="fas fa-user-plus"></i>
+    Bulk Assign
+</button>
+<button class="btn btn-secondary" onclick="exportServices()">
+    <i class="fas fa-download"></i>
+    Export
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="filters">
+    <form method="get" style="display: flex; gap: 15px; align-items: end; flex-wrap: wrap; width: 100%;">
+        <div class="filter-group">
+            <label class="filter-label">Status</label>
+            <select name="status" class="form-control" style="min-width: 140px;" onchange="this.form.submit()">
+                <option value="">All Status</option>
+                {% for status_key, status_name in status_choices %}
+                <option value="{{ status_key }}" {% if status_filter == status_key %}selected{% endif %}>
+                    {{ status_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Category</label>
+            <select name="category" class="form-control" style="min-width: 150px;" onchange="this.form.submit()">
+                <option value="">All Categories</option>
+                {% for category in service_categories %}
+                <option value="{{ category.id }}" {% if category_filter == category.id|stringformat:'s' %}selected{% endif %}>
+                    {{ category.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Technician</label>
+            <select name="technician" class="form-control" style="min-width: 150px;" onchange="this.form.submit()">
+                <option value="">All Technicians</option>
+                <option value="unassigned" {% if technician_filter == 'unassigned' %}selected{% endif %}>Unassigned</option>
+                {% for technician in technicians %}
+                <option value="{{ technician.id }}" {% if technician_filter == technician.id|stringformat:'s' %}selected{% endif %}>
+                    {{ technician.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" name="search" class="form-control" placeholder="Search services..." 
+                   value="{{ search }}" onkeyup="searchDelay(this.form)">
+        </div>
+
+        <button type="submit" class="btn btn-secondary">
+            <i class="fas fa-filter"></i>
+            Filter
+        </button>
+
+        {% if status_filter or category_filter or technician_filter or search %}
+        <a href="{% url 'admin_panel:services' %}" class="btn btn-secondary">
+            <i class="fas fa-times"></i>
+            Clear
+        </a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Quick Stats -->
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 25px;">
+    <div class="stat-card" style="padding: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px;">SUBMITTED</div>
+                <div style="font-size: 20px; font-weight: 700; color: #fbbf24;">
+                    {% for service in services %}{% if service.status == 'SUBMITTED' %}{% if forloop.first %}1{% else %}{{ forloop.counter }}{% endif %}{% endif %}{% empty %}0{% endfor %}
+                </div>
+            </div>
+            <i class="fas fa-clipboard-list" style="color: #fbbf24; font-size: 20px;"></i>
+        </div>
+    </div>
+    
+    <div class="stat-card" style="padding: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px;">UNASSIGNED</div>
+                <div style="font-size: 20px; font-weight: 700; color: #ef4444;">
+                    {% for service in services %}{% if not service.technician %}{% if forloop.first %}1{% else %}{{ forloop.counter }}{% endif %}{% endif %}{% empty %}0{% endfor %}
+                </div>
+            </div>
+            <i class="fas fa-user-times" style="color: #ef4444; font-size: 20px;"></i>
+        </div>
+    </div>
+    
+    <div class="stat-card" style="padding: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px;">IN PROGRESS</div>
+                <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">
+                    {% for service in services %}{% if service.status == 'IN_PROGRESS' %}{% if forloop.first %}1{% else %}{{ forloop.counter }}{% endif %}{% endif %}{% empty %}0{% endfor %}
+                </div>
+            </div>
+            <i class="fas fa-cog fa-spin" style="color: #3b82f6; font-size: 20px;"></i>
+        </div>
+    </div>
+    
+    <div class="stat-card" style="padding: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px;">COMPLETED</div>
+                <div style="font-size: 20px; font-weight: 700; color: #10b981;">
+                    {% for service in services %}{% if service.status == 'COMPLETED' %}{% if forloop.first %}1{% else %}{{ forloop.counter }}{% endif %}{% endif %}{% empty %}0{% endfor %}
+                </div>
+            </div>
+            <i class="fas fa-check-circle" style="color: #10b981; font-size: 20px;"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Services Table -->
+<div class="table-container">
+    <div class="table-header">
+        <h3 class="table-title">
+            Service Requests 
+            <span style="color: rgba(255,255,255,0.6); font-weight: 400; font-size: 14px;">
+                ({{ services.paginator.count }} total)
+            </span>
+        </h3>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-secondary" onclick="selectAllServices()">
+                <i class="fas fa-check-square"></i>
+                Select All
+            </button>
+            <button class="btn btn-primary" onclick="bulkAssignTechnician()" id="bulkAssignBtn" style="display: none;">
+                <i class="fas fa-user-plus"></i>
+                Assign Technician
+            </button>
+        </div>
+    </div>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 40px;">
+                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                </th>
+                <th>Service ID</th>
+                <th>Customer</th>
+                <th>Category</th>
+                <th>Issue</th>
+                <th>Status</th>
+                <th>Technician</th>
+                <th>Location</th>
+                <th>Date</th>
+                <th style="width: 140px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for service in services %}
+            <tr>
+                <td>
+                    <input type="checkbox" class="service-checkbox" data-service-id="{{ service.id }}" onchange="updateBulkActions()">
+                </td>
+                <td>
+                    <div>
+                        <div style="font-weight: 600; font-size: 16px;">#{{ service.id }}</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.6);">
+                            {{ service.request_date|date:"M d, H:i" }}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="user-avatar" style="width: 35px; height: 35px;">
+                            {{ service.customer.name|first|upper }}
+                        </div>
+                        <div>
+                            <div style="font-weight: 600;">{{ service.customer.name }}</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.6);">{{ service.customer.email }}</div>
+                            {% if service.customer.phone %}
+                            <div style="font-size: 11px; color: rgba(255,255,255,0.5);">
+                                <i class="fas fa-phone"></i> {{ service.customer.phone }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="status-badge status-processing">
+                        {{ service.service_category.name }}
+                    </span>
+                </td>
+                <td>
+                    <div>
+                        {% if service.issue %}
+                            <div style="font-weight: 600;">{{ service.issue.description }}</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.6);">₹{{ service.issue.price }}</div>
+                        {% endif %}
+                        {% if service.custom_description %}
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 4px;">
+                                {{ service.custom_description|truncatechars:50 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </td>
+                <td>
+                    <span class="status-badge status-{% if service.status == 'SUBMITTED' %}pending{% elif service.status == 'ASSIGNED' or service.status == 'IN_PROGRESS' %}processing{% elif service.status == 'COMPLETED' %}completed{% else %}cancelled{% endif %}">
+                        {{ service.status }}
+                    </span>
+                </td>
+                <td>
+                    {% if service.technician %}
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div class="user-avatar" style="width: 30px; height: 30px; font-size: 12px;">
+                                {{ service.technician.name|first|upper }}
+                            </div>
+                            <div>
+                                <div style="font-weight: 600; font-size: 13px;">{{ service.technician.name }}</div>
+                                {% if service.technician.phone %}
+                                <div style="font-size: 10px; color: rgba(255,255,255,0.5);">{{ service.technician.phone }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <span style="color: rgba(255,255,255,0.5); font-style: italic;">Unassigned</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if service.service_location %}
+                        <div style="font-size: 12px;">
+                            <div>{{ service.service_location.city }}, {{ service.service_location.state }}</div>
+                            <div style="color: rgba(255,255,255,0.5);">{{ service.service_location.pincode }}</div>
+                        </div>
+                    {% else %}
+                        <span style="color: rgba(255,255,255,0.5);">No address</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div style="font-size: 13px;">
+                        {{ service.request_date|date:"M d, Y" }}
+                        <div style="color: rgba(255,255,255,0.6); font-size: 11px;">
+                            {{ service.request_date|timesince }} ago
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <button onclick="viewServiceDetails({{ service.id }})" 
+                                class="btn btn-secondary" 
+                                style="padding: 5px 8px; font-size: 12px;"
+                                title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        
+                        {% if not service.technician %}
+                        <button onclick="quickAssignTechnician({{ service.id }}, '{{ service.customer.name|escapejs }}')" 
+                                class="btn btn-primary" 
+                                style="padding: 5px 8px; font-size: 12px;"
+                                title="Assign Technician">
+                            <i class="fas fa-user-plus"></i>
+                        </button>
+                        {% endif %}
+                        
+                        <button onclick="updateServiceStatus({{ service.id }}, '{{ service.status }}')" 
+                                class="btn btn-secondary" 
+                                style="padding: 5px 8px; font-size: 12px;"
+                                title="Update Status">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10" style="text-align: center; color: rgba(255,255,255,0.6); padding: 60px;">
+                    <i class="fas fa-tools" style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;"></i>
+                    <div style="font-size: 18px; margin-bottom: 10px;">No service requests found</div>
+                    <div style="font-size: 14px;">
+                        {% if search or status_filter or category_filter or technician_filter %}
+                            Try adjusting your search criteria or 
+                            <a href="{% url 'admin_panel:services' %}" style="color: #60a5fa;">clear filters</a>
+                        {% else %}
+                            Service requests will appear here when customers submit them
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if services.has_other_pages %}
+<div class="pagination">
+    {% if services.has_previous %}
+        <a href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if technician_filter %}&technician={{ technician_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">&laquo; First</a>
+        <a href="?page={{ services.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if technician_filter %}&technician={{ technician_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">&lsaquo; Previous</a>
+    {% endif %}
+
+    <span class="current">
+        Page {{ services.number }} of {{ services.paginator.num_pages }}
+    </span>
+
+    {% if services.has_next %}
+        <a href="?page={{ services.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if technician_filter %}&technician={{ technician_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Next &rsaquo;</a>
+        <a href="?page={{ services.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if technician_filter %}&technician={{ technician_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Last &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Service Details Modal -->
+<div id="serviceDetailsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: linear-gradient(135deg, #1a1a1a, #151515); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 30px; max-width: 800px; width: 90%; max-height: 80%; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h3 style="color: white; margin: 0;">Service Request Details</h3>
+            <button onclick="closeServiceModal()" style="background: none; border: none; color: rgba(255,255,255,0.6); font-size: 20px; cursor: pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="serviceDetailsContent">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Assign Technician Modal -->
+<div id="assignTechnicianModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: linear-gradient(135deg, #1a1a1a, #151515); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 30px; max-width: 500px; width: 90%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h3 style="color: white; margin: 0;">Assign Technician</h3>
+            <button onclick="closeAssignModal()" style="background: none; border: none; color: rgba(255,255,255,0.6); font-size: 20px; cursor: pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="assignTechnicianContent">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Status Update Modal -->
+<div id="statusUpdateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: linear-gradient(135deg, #1a1a1a, #151515); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 30px; max-width: 500px; width: 90%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h3 style="color: white; margin: 0;">Update Service Status</h3>
+            <button onclick="closeStatusModal()" style="background: none; border: none; color: rgba(255,255,255,0.6); font-size: 20px; cursor: pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="statusUpdateContent">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let searchTimeout;
+    let selectedServiceId = null;
+
+    // Search with delay
+    function searchDelay(form) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            form.submit();
+        }, 500);
+    }
+
+    // Select all functionality
+    function toggleSelectAll() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.service-checkbox');
+        
+        checkboxes.forEach(cb => {
+            cb.checked = selectAll.checked;
+        });
+        
+        updateBulkActions();
+    }
+
+    function updateBulkActions() {
+        const checkedBoxes = document.querySelectorAll('.service-checkbox:checked');
+        const bulkAssignBtn = document.getElementById('bulkAssignBtn');
+        
+        if (checkedBoxes.length > 0) {
+            bulkAssignBtn.style.display = 'inline-flex';
+        } else {
+            bulkAssignBtn.style.display = 'none';
+        }
+    }
+
+    // View service details
+    function viewServiceDetails(serviceId) {
+        const modal = document.getElementById('serviceDetailsModal');
+        const content = document.getElementById('serviceDetailsContent');
+        
+        content.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #60a5fa;"></i>
+                <div style="margin-top: 15px; color: rgba(255,255,255,0.7);">Loading service details...</div>
+            </div>
+        `;
+        
+        modal.style.display = 'flex';
+        
+        // Simulate loading service details
+        setTimeout(() => {
+            content.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                    <div>
+                        <h4 style="color: white; margin-bottom: 15px;">Service Information</h4>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div><strong>Service ID:</strong> #${serviceId}</div>
+                            <div><strong>Category:</strong> Computer Repair</div>
+                            <div><strong>Issue:</strong> Screen replacement</div>
+                            <div><strong>Status:</strong> <span class="status-badge status-pending">SUBMITTED</span></div>
+                            <div><strong>Date:</strong> Dec 28, 2024</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="color: white; margin-bottom: 15px;">Customer Details</h4>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div><strong>Name:</strong> John Doe</div>
+                            <div><strong>Email:</strong> john@example.com</div>
+                            <div><strong>Phone:</strong> +91 9876543210</div>
+                            <div><strong>Location:</strong> Mumbai, Maharashtra</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: white; margin-bottom: 15px;">Description</h4>
+                    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
+                        Laptop screen has cracked and needs replacement. Urgent repair needed.
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: end;">
+                    <button onclick="closeServiceModal()" class="btn btn-primary">Close</button>
+                </div>
+            `;
+        }, 1000);
+    }
+
+    function closeServiceModal() {
+        document.getElementById('serviceDetailsModal').style.display = 'none';
+    }
+
+    // Assign technician functions
+    function quickAssignTechnician(serviceId, customerName) {
+        selectedServiceId = serviceId;
+        const modal = document.getElementById('assignTechnicianModal');
+        const content = document.getElementById('assignTechnicianContent');
+        
+        content.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">Service: #${serviceId}</label>
+                <div style="font-size: 14px; color: rgba(255,255,255,0.6);">Customer: ${customerName}</div>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">Select Technician</label>
+                <select id="selectedTechnician" class="form-control">
+                    <option value="">Choose a technician...</option>
+                    {% for technician in technicians %}
+                    <option value="{{ technician.id }}">{{ technician.name }} - {{ technician.email }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: end;">
+                <button onclick="closeAssignModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="assignTechnician()" class="btn btn-primary">Assign</button>
+            </div>
+        `;
+        
+        modal.style.display = 'flex';
+    }
+
+    function assignTechnician() {
+        const technicianId = document.getElementById('selectedTechnician').value;
+        
+        if (!technicianId) {
+            alert('Please select a technician');
+            return;
+        }
+        
+        // Simulate API call
+        alert('Technician assigned successfully!');
+        closeAssignModal();
+        location.reload();
+    }
+
+    function closeAssignModal() {
+        document.getElementById('assignTechnicianModal').style.display = 'none';
+        selectedServiceId = null;
+    }
+
+    // Status update functions
+    function updateServiceStatus(serviceId, currentStatus) {
+        selectedServiceId = serviceId;
+        const modal = document.getElementById('statusUpdateModal');
+        const content = document.getElementById('statusUpdateContent');
+        
+        content.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">Service: #${serviceId}</label>
+                <div style="font-size: 14px; color: rgba(255,255,255,0.6);">Current Status: ${currentStatus}</div>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">New Status</label>
+                <select id="newStatus" class="form-control">
+                    {% for status_key, status_name in status_choices %}
+                    <option value="{{ status_key }}">{{ status_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: end;">
+                <button onclick="closeStatusModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="updateStatus()" class="btn btn-primary">Update</button>
+            </div>
+        `;
+        
+        modal.style.display = 'flex';
+    }
+
+    function updateStatus() {
+        const newStatus = document.getElementById('newStatus').value;
+        
+        // Simulate API call
+        alert('Service status updated successfully!');
+        closeStatusModal();
+        location.reload();
+    }
+
+    function closeStatusModal() {
+        document.getElementById('statusUpdateModal').style.display = 'none';
+        selectedServiceId = null;
+    }
+
+    // Bulk operations
+    function bulkAssignTechnician() {
+        const checkedBoxes = document.querySelectorAll('.service-checkbox:checked');
+        const serviceIds = Array.from(checkedBoxes).map(cb => cb.dataset.serviceId);
+        
+        if (serviceIds.length === 0) return;
+        
+        alert(`Bulk assign technician to ${serviceIds.length} services`);
+    }
+
+    // Export function
+    function exportServices() {
+        const params = new URLSearchParams(window.location.search);
+        params.set('export', 'csv');
+        window.location.href = '?' + params.toString();
+    }
+
+    // Close modals when clicking outside
+    document.getElementById('serviceDetailsModal').addEventListener('click', function(e) {
+        if (e.target === this) closeServiceModal();
+    });
+
+    document.getElementById('assignTechnicianModal').addEventListener('click', function(e) {
+        if (e.target === this) closeAssignModal();
+    });
+
+    document.getElementById('statusUpdateModal').addEventListener('click', function(e) {
+        if (e.target === this) closeStatusModal();
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeServiceModal();
+            closeAssignModal();
+            closeStatusModal();
+        }
+    });
+</script>
+{% endblock %}

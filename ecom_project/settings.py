@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'users',
     'store',
     'services',
+    'admin_panel',
     
     # Third-party Apps
     'rest_framework',

@@ -1,0 +1,416 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Categories Management - TechVerse Admin{% endblock %}
+
+{% block page_title %}Categories Management{% endblock %}
+
+{% block top_actions %}
+<button class="btn btn-primary" onclick="showCreateCategoryModal('product')">
+    <i class="fas fa-plus"></i>
+    Add Product Category
+</button>
+<button class="btn btn-secondary" onclick="showCreateCategoryModal('service')">
+    <i class="fas fa-tools"></i>
+    Add Service Category
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Product Categories Section -->
+<div class="table-container" style="margin-bottom: 30px;">
+    <div class="table-header">
+        <h3 class="table-title">
+            Product Categories
+            <span style="color: rgba(255,255,255,0.6); font-weight: 400; font-size: 14px;">
+                ({{ categories.count }} categories)
+            </span>
+        </h3>
+        <button class="btn btn-primary" onclick="showCreateCategoryModal('product')">
+            <i class="fas fa-plus"></i>
+            Add Category
+        </button>
+    </div>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Category Name</th>
+                <th>Slug</th>
+                <th>Products Count</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th style="width: 120px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category in categories %}
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #60a5fa, #3b82f6); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-box" style="color: white; font-size: 16px;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 16px;">{{ category.name }}</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Product Category</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <code style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                        {{ category.slug }}
+                    </code>
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: 600; font-size: 18px;">{{ category.product_count }}</span>
+                        <span style="color: rgba(255,255,255,0.6);">products</span>
+                    </div>
+                </td>
+                <td>
+                    <span class="status-badge status-completed">Active</span>
+                </td>
+                <td>
+                    <div style="font-size: 13px;">Recently</div>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 5px;">
+                        <button onclick="editCategory('product', {{ category.id }}, '{{ category.name|escapejs }}', '{{ category.slug|escapejs }}')" 
+                                class="btn btn-secondary" 
+                                style="padding: 5px 8px; font-size: 12px;"
+                                title="Edit Category">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        
+                        <button onclick="deleteCategory('product', {{ category.id }}, '{{ category.name|escapejs }}', {{ category.product_count }})" 
+                                class="btn btn-danger" 
+                                style="padding: 5px 8px; font-size: 12px;"
+                                title="Delete Category">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; color: rgba(255,255,255,0.6); padding: 40px;">
+                    <i class="fas fa-box" style="font-size: 36px; margin-bottom: 15px; opacity: 0.3;"></i>
+                    <div style="font-size: 16px; margin-bottom: 10px;">No product categories found</div>
+                    <button class="btn btn-primary" onclick="showCreateCategoryModal('product')">
+                        <i class="fas fa-plus"></i>
+                        Create your first product category
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Service Categories Section -->
+<div class="table-container">
+    <div class="table-header">
+        <h3 class="table-title">
+            Service Categories
+            <span style="color: rgba(255,255,255,0.6); font-weight: 400; font-size: 14px;">
+                ({{ service_categories.count }} categories)
+            </span>
+        </h3>
+        <button class="btn btn-secondary" onclick="showCreateCategoryModal('service')">
+            <i class="fas fa-plus"></i>
+            Add Category
+        </button>
+    </div>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Category Name</th>
+                <th>Services Count</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th style="width: 120px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category in service_categories %}
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-tools" style="color: white; font-size: 16px;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 16px;">{{ category.name }}</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Service Category</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: 600; font-size: 18px;">{{ category.service_count }}</span>
+                        <span style="color: rgba(255,255,255,0.6);">services</span>
+                    </div>
+                </td>
+                <td>
+                    <span class="status-badge status-completed">Active</span>
+                </td>
+                <td>
+                    <div style="font-size: 13px;">Recently</div>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 5px;">
+                        <button onclick="editCategory('service', {{ category.id }}, '{{ category.name|escapejs }}', '')" 
+                                class="btn btn-secondary" 
+                                style="padding: 5px 8px; font-size: 12px;"
+                                title="Edit Category">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        
+                        <button onclick="deleteCategory('service', {{ category.id }}, '{{ category.name|escapejs }}', {{ category.service_count }})" 
+                                class="btn btn-danger" 
+                                style="padding: 5px 8px; font-size: 12px;"
+                                title="Delete Category">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center; color: rgba(255,255,255,0.6); padding: 40px;">
+                    <i class="fas fa-tools" style="font-size: 36px; margin-bottom: 15px; opacity: 0.3;"></i>
+                    <div style="font-size: 16px; margin-bottom: 10px;">No service categories found</div>
+                    <button class="btn btn-secondary" onclick="showCreateCategoryModal('service')">
+                        <i class="fas fa-plus"></i>
+                        Create your first service category
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Category Modal -->
+<div id="categoryModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: linear-gradient(135deg, #1a1a1a, #151515); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 30px; max-width: 500px; width: 90%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h3 style="color: white; margin: 0;" id="modalTitle">Add Category</h3>
+            <button onclick="closeCategoryModal()" style="background: none; border: none; color: rgba(255,255,255,0.6); font-size: 20px; cursor: pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="categoryForm">
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">Category Name</label>
+                <input type="text" id="categoryName" class="form-control" placeholder="Enter category name" required>
+            </div>
+            
+            <div id="slugField" style="margin-bottom: 20px;">
+                <label class="form-label">Slug (URL-friendly name)</label>
+                <input type="text" id="categorySlug" class="form-control" placeholder="auto-generated-slug" readonly>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px;">
+                    Automatically generated from category name
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: end;">
+                <button type="button" onclick="closeCategoryModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="submitBtn">Create Category</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Category Stats -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
+    <!-- Product Category Stats -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 class="table-title">Product Category Performance</h3>
+        </div>
+        <div style="padding: 25px;">
+            {% for category in categories|slice:":5" %}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <div style="font-weight: 600;">{{ category.name }}</div>
+                    <div style="font-size: 12px; color: rgba(255,255,255,0.6);">{{ category.product_count }} products</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 100px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                        <div style="width: {% if categories %}{% widthratio category.product_count categories.0.product_count 100 %}{% else %}0{% endif %}%; height: 100%; background: linear-gradient(135deg, #60a5fa, #3b82f6);"></div>
+                    </div>
+                    <span style="font-weight: 600; min-width: 30px;">{{ category.product_count }}</span>
+                </div>
+            </div>
+            {% empty %}
+            <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 20px;">
+                No categories to display
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Service Category Stats -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 class="table-title">Service Category Performance</h3>
+        </div>
+        <div style="padding: 25px;">
+            {% for category in service_categories|slice:":5" %}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <div style="font-weight: 600;">{{ category.name }}</div>
+                    <div style="font-size: 12px; color: rgba(255,255,255,0.6);">{{ category.service_count }} requests</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 100px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                        <div style="width: {% if service_categories %}{% widthratio category.service_count service_categories.0.service_count 100 %}{% else %}0{% endif %}%; height: 100%; background: linear-gradient(135deg, #10b981, #059669);"></div>
+                    </div>
+                    <span style="font-weight: 600; min-width: 30px;">{{ category.service_count }}</span>
+                </div>
+            </div>
+            {% empty %}
+            <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 20px;">
+                No categories to display
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentCategoryType = '';
+    let editingCategoryId = null;
+
+    // Generate slug from name
+    function generateSlug(name) {
+        return name.toLowerCase()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+
+    // Update slug when name changes
+    document.addEventListener('DOMContentLoaded', function() {
+        const nameInput = document.getElementById('categoryName');
+        const slugInput = document.getElementById('categorySlug');
+        
+        nameInput.addEventListener('input', function() {
+            if (!editingCategoryId) { // Only auto-generate for new categories
+                slugInput.value = generateSlug(this.value);
+            }
+        });
+    });
+
+    // Show create category modal
+    function showCreateCategoryModal(type) {
+        currentCategoryType = type;
+        editingCategoryId = null;
+        
+        const modal = document.getElementById('categoryModal');
+        const title = document.getElementById('modalTitle');
+        const submitBtn = document.getElementById('submitBtn');
+        const slugField = document.getElementById('slugField');
+        
+        title.textContent = `Add ${type === 'product' ? 'Product' : 'Service'} Category`;
+        submitBtn.textContent = 'Create Category';
+        slugField.style.display = type === 'product' ? 'block' : 'none';
+        
+        // Reset form
+        document.getElementById('categoryForm').reset();
+        
+        modal.style.display = 'flex';
+        document.getElementById('categoryName').focus();
+    }
+
+    // Edit category
+    function editCategory(type, id, name, slug) {
+        currentCategoryType = type;
+        editingCategoryId = id;
+        
+        const modal = document.getElementById('categoryModal');
+        const title = document.getElementById('modalTitle');
+        const submitBtn = document.getElementById('submitBtn');
+        const slugField = document.getElementById('slugField');
+        
+        title.textContent = `Edit ${type === 'product' ? 'Product' : 'Service'} Category`;
+        submitBtn.textContent = 'Update Category';
+        slugField.style.display = type === 'product' ? 'block' : 'none';
+        
+        // Fill form
+        document.getElementById('categoryName').value = name;
+        if (type === 'product') {
+            document.getElementById('categorySlug').value = slug;
+        }
+        
+        modal.style.display = 'flex';
+        document.getElementById('categoryName').focus();
+    }
+
+    // Close modal
+    function closeCategoryModal() {
+        document.getElementById('categoryModal').style.display = 'none';
+        currentCategoryType = '';
+        editingCategoryId = null;
+    }
+
+    // Handle form submission
+    document.getElementById('categoryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('categoryName').value.trim();
+        const slug = currentCategoryType === 'product' ? document.getElementById('categorySlug').value.trim() : '';
+        
+        if (!name) {
+            alert('Please enter a category name');
+            return;
+        }
+        
+        if (currentCategoryType === 'product' && !slug) {
+            alert('Please enter a slug');
+            return;
+        }
+        
+        // Simulate API call
+        const action = editingCategoryId ? 'updated' : 'created';
+        alert(`${currentCategoryType === 'product' ? 'Product' : 'Service'} category ${action} successfully!`);
+        
+        closeCategoryModal();
+        // location.reload(); // Uncomment when implementing real API
+    });
+
+    // Delete category
+    function deleteCategory(type, id, name, count) {
+        if (count > 0) {
+            const itemType = type === 'product' ? 'products' : 'services';
+            if (!confirm(`This category has ${count} ${itemType}. Deleting it will also remove all associated ${itemType}. Are you sure?`)) {
+                return;
+            }
+        }
+        
+        if (confirm(`Are you sure you want to delete the category "${name}"?`)) {
+            // Here you would make an API call to delete the category
+            alert(`${type === 'product' ? 'Product' : 'Service'} category deleted successfully!`);
+            // location.reload(); // Uncomment when implementing real API
+        }
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('categoryModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeCategoryModal();
+        }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeCategoryModal();
+        }
+    });
+</script>
+{% endblock %}
