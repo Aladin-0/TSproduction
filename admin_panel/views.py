@@ -68,7 +68,7 @@ class AdminDashboardView(TemplateView):
                 order_date__gte=current_month_start,
                 status__in=['PROCESSING', 'SHIPPED', 'DELIVERED']
             ).aggregate(
-                total=Sum('items__price')
+                total=Sum('total_amount')
             )['total'] or 0
         except:
             current_month_revenue = 0
@@ -81,7 +81,8 @@ class AdminDashboardView(TemplateView):
         ).annotate(
             avg_rating=Avg('ratings_received__rating'),
             total_orders=Count('assigned_orders'),
-            total_services=Count('assigned_services')
+            total_services=Count('assigned_services'),
+            total_jobs=Count('assigned_orders') + Count('assigned_services')
         ).order_by('-avg_rating')[:5]
         
         return context
@@ -237,9 +238,10 @@ class AdminCreateProductView(View):
                     product.image = request.FILES['image']
                     product.save()
                 
-                # Handle additional images
+                # Handle additional images (up to 10)
                 if 'additional_images' in request.FILES:
-                    for i, image_file in enumerate(request.FILES.getlist('additional_images')):
+                    additional_images = request.FILES.getlist('additional_images')
+                    for i, image_file in enumerate(additional_images[:10]):  # Limit to 10
                         ProductImage.objects.create(
                             product=product,
                             image=image_file,
@@ -323,10 +325,11 @@ class AdminEditProductView(View):
                     except ProductImage.DoesNotExist:
                         pass
                 
-                # Handle new additional images
+                # Handle new additional images (up to 10)
                 if 'new_additional_images' in request.FILES:
                     existing_count = product.additional_images.count()
-                    for i, image_file in enumerate(request.FILES.getlist('new_additional_images')):
+                    new_images = request.FILES.getlist('new_additional_images')
+                    for i, image_file in enumerate(new_images[:10]):  # Limit to 10
                         ProductImage.objects.create(
                             product=product,
                             image=image_file,
@@ -447,7 +450,7 @@ class AdminOrdersView(View):
         search = request.GET.get('search', '')
         
         # Build queryset
-        orders = Order.objects.select_related('customer', 'technician', 'shipping_address')
+        orders = Order.objects.select_related('customer', 'technician', 'shipping_address').prefetch_related('items__product')
         
         if status_filter:
             orders = orders.filter(status=status_filter)
@@ -466,6 +469,19 @@ class AdminOrdersView(View):
         
         orders = orders.order_by('-order_date')
         
+        # Calculate real stats for the current filtered orders
+        all_orders = Order.objects.all()
+        if status_filter or technician_filter or search:
+            # If filtered, show stats for all orders, not just filtered ones
+            stats_orders = all_orders
+        else:
+            stats_orders = all_orders
+        
+        pending_count = stats_orders.filter(status='PENDING').count()
+        unassigned_count = stats_orders.filter(technician__isnull=True).count()
+        processing_count = stats_orders.filter(status='PROCESSING').count()
+        completed_count = stats_orders.filter(status='DELIVERED').count()
+        
         # Pagination
         paginator = Paginator(orders, 20)
         page_number = request.GET.get('page')
@@ -478,6 +494,11 @@ class AdminOrdersView(View):
             'status_filter': status_filter,
             'technician_filter': technician_filter,
             'search': search,
+            # Real stats
+            'pending_count': pending_count,
+            'unassigned_count': unassigned_count,
+            'processing_count': processing_count,
+            'completed_count': completed_count,
         }
         
         return render(request, 'admin_panel/orders.html', context)
@@ -518,6 +539,21 @@ class AdminEditOrderView(View):
         except Exception as e:
             messages.error(request, f'Error updating order: {str(e)}')
             return redirect('admin_panel:edit_order', order_id=order_id)
+
+@method_decorator(staff_member_required, name='dispatch')
+class AdminDeleteOrderView(View):
+    def post(self, request, order_id):
+        order = get_object_or_404(Order, id=order_id)
+        order_number = order.id
+        
+        try:
+            # Delete order (related items will be deleted automatically due to CASCADE)
+            order.delete()
+            messages.success(request, f'Order #{order_number} deleted successfully!')
+        except Exception as e:
+            messages.error(request, f'Error deleting order: {str(e)}')
+        
+        return redirect('admin_panel:orders')
 
 @method_decorator(staff_member_required, name='dispatch')
 class AdminAssignTechnicianView(View):
@@ -738,7 +774,7 @@ class AdminAnalyticsView(TemplateView):
                 revenue = Order.objects.filter(
                     order_date__range=[month_start, month_end],
                     status__in=['PROCESSING', 'SHIPPED', 'DELIVERED']
-                ).aggregate(total=Sum('items__price'))['total'] or 0
+                ).aggregate(total=Sum('total_amount'))['total'] or 0
             except:
                 revenue = 0
             
@@ -774,11 +810,57 @@ def admin_stats_api(request):
             'pending_orders': Order.objects.filter(status='PENDING').count(),
             'total_revenue': float(Order.objects.filter(
                 status__in=['PROCESSING', 'SHIPPED', 'DELIVERED']
-            ).aggregate(total=Sum('items__price'))['total'] or 0),
+            ).aggregate(total=Sum('total_amount'))['total'] or 0),
         }
         return JsonResponse(stats)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@staff_member_required
+def get_order_details_api(request, order_id):
+    """API endpoint for getting order details"""
+    try:
+        order = get_object_or_404(
+            Order.objects.select_related('customer', 'technician', 'shipping_address').prefetch_related('items__product'),
+            id=order_id
+        )
+        
+        # Build order data
+        order_data = {
+            'id': order.id,
+            'status': order.status,
+            'total_amount': str(order.total_amount),
+            'order_date': order.order_date.strftime('%B %d, %Y at %I:%M %p'),
+            'customer': {
+                'name': order.customer.name,
+                'email': order.customer.email,
+                'phone': order.customer.phone or 'N/A'
+            },
+            'technician': order.technician.name if order.technician else None,
+            'shipping_address': str(order.shipping_address) if order.shipping_address else 'N/A',
+            'items': []
+        }
+        
+        # Add items
+        for item in order.items.all():
+            item_total = float(item.price) * item.quantity
+            order_data['items'].append({
+                'product_name': item.product.name,
+                'quantity': item.quantity,
+                'price': str(item.price),
+                'total': str(item_total)
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'order': order_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
 
 @staff_member_required
 @require_POST

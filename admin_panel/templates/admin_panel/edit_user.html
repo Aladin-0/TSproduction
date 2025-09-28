@@ -173,11 +173,15 @@
                     <div style="display: flex; justify-content: space-between;">
                         <span>Average Rating</span>
                         <strong>
-                            {% if user_obj.ratings_received.count > 0 %}
-                                {{ user_obj.ratings_received.all|slice:":1"|first.rating|default:"N/A" }}★
-                            {% else %}
-                                N/A
-                            {% endif %}
+                            {% with ratings=user_obj.ratings_received.all %}
+                                {% if ratings %}
+                                    {% for rating in ratings|slice:":1" %}
+                                        {{ rating.rating|default:"N/A" }}★
+                                    {% endfor %}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            {% endwith %}
                         </strong>
                     </div>
                     {% endif %}

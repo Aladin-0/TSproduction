@@ -250,8 +250,11 @@
                             <input type="file" name="new_additional_images" id="newAdditionalImages" accept="image/*" multiple style="display: none;">
                             <button type="button" onclick="document.getElementById('newAdditionalImages').click()" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;">
                                 <i class="fas fa-plus"></i>
-                                Add More Images
+                                Add More Images (Up to 10)
                             </button>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px;">
+                                You can select up to 10 images at once
+                            </div>
                         </div>
                         <div id="newAdditionalImagesPreview" style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <!-- New additional image previews will appear here -->
@@ -390,17 +393,26 @@
         }
     });
 
+    // Enhanced additional images handling - up to 10 images
     document.getElementById('newAdditionalImages').addEventListener('change', function(e) {
         const container = document.getElementById('newAdditionalImagesPreview');
         container.innerHTML = '';
         
-        Array.from(e.target.files).forEach((file, index) => {
+        const files = Array.from(e.target.files);
+        
+        // Limit to 10 images
+        if (files.length > 10) {
+            alert('You can only select up to 10 images at once. Only the first 10 will be processed.');
+            files.splice(10);
+        }
+        
+        files.forEach((file, index) => {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const div = document.createElement('div');
                 div.innerHTML = `
                     <img src="${e.target.result}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px;">
-                    <button type="button" onclick="removeNewAdditionalImage(${index})" class="btn btn-danger" style="margin-top: 5px; width: 100%; padding: 2px; font-size: 10px;">
+                    <button type="button" onclick="removeNewAdditionalImage(this)" class="btn btn-danger" style="margin-top: 5px; width: 100%; padding: 2px; font-size: 10px;">
                         Remove
                     </button>
                 `;
@@ -408,6 +420,14 @@
             };
             reader.readAsDataURL(file);
         });
+        
+        // Show count of selected images
+        if (files.length > 0) {
+            const countDiv = document.createElement('div');
+            countDiv.style.cssText = 'text-align: center; margin-top: 10px; font-size: 12px; color: #10b981;';
+            countDiv.textContent = `${files.length} image${files.length > 1 ? 's' : ''} selected`;
+            container.appendChild(countDiv);
+        }
     });
 
     function removeExistingImage(imageId) {
@@ -422,9 +442,16 @@
         }
     }
 
-    function removeNewAdditionalImage(index) {
-        // Implementation for removing new additional image
-        console.log('Remove new additional image:', index);
+    function removeNewAdditionalImage(button) {
+        button.parentElement.remove();
+        
+        // Update the file input to reflect the removal
+        const container = document.getElementById('newAdditionalImagesPreview');
+        const remainingImages = container.querySelectorAll('img').length;
+        
+        if (remainingImages === 0) {
+            document.getElementById('newAdditionalImages').value = '';
+        }
     }
 
     // Specifications management
@@ -476,6 +503,41 @@
         submitBtn.disabled = true;
         
         // Form will submit normally to Django view
+    });
+
+    // Drag and drop for images
+    ['mainImageUpload', 'newAdditionalImages'].forEach(id => {
+        const element = document.getElementById(id === 'mainImageUpload' ? 'mainImageUpload' : 'newAdditionalImages').parentElement;
+        
+        element.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = 'rgba(255,255,255,0.05)';
+        });
+        
+        element.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = 'transparent';
+        });
+        
+        element.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = 'transparent';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                if (id === 'mainImageUpload') {
+                    document.getElementById('newMainImage').files = files;
+                    document.getElementById('newMainImage').dispatchEvent(new Event('change'));
+                } else {
+                    // For additional images, limit to 10
+                    const limitedFiles = Array.from(files).slice(0, 10);
+                    const dt = new DataTransfer();
+                    limitedFiles.forEach(file => dt.items.add(file));
+                    document.getElementById('newAdditionalImages').files = dt.files;
+                    document.getElementById('newAdditionalImages').dispatchEvent(new Event('change'));
+                }
+            }
+        });
     });
 </script>
 {% endblock %}

@@ -5,17 +5,9 @@
 {% block page_title %}Orders Management{% endblock %}
 
 {% block top_actions %}
-<button class="btn btn-primary" onclick="assignMultipleTechnicians()">
-    <i class="fas fa-user-plus"></i>
-    Bulk Assign
-</button>
 <button class="btn btn-secondary" onclick="exportOrders()">
     <i class="fas fa-download"></i>
     Export
-</button>
-<button class="btn btn-secondary" onclick="printOrders()">
-    <i class="fas fa-print"></i>
-    Print
 </button>
 {% endblock %}
 
@@ -75,7 +67,7 @@
             <div>
                 <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px;">PENDING</div>
                 <div style="font-size: 20px; font-weight: 700; color: #fbbf24;">
-                    {{ orders|length }}
+                    {{ pending_count|default:0 }}
                 </div>
             </div>
             <i class="fas fa-clock" style="color: #fbbf24; font-size: 20px;"></i>
@@ -87,7 +79,7 @@
             <div>
                 <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px;">UNASSIGNED</div>
                 <div style="font-size: 20px; font-weight: 700; color: #ef4444;">
-                    {% for order in orders %}{% if not order.technician %}{% if forloop.first %}1{% else %}{{ forloop.counter }}{% endif %}{% endif %}{% empty %}0{% endfor %}
+                    {{ unassigned_count|default:0 }}
                 </div>
             </div>
             <i class="fas fa-user-times" style="color: #ef4444; font-size: 20px;"></i>
@@ -99,7 +91,7 @@
             <div>
                 <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px;">IN PROGRESS</div>
                 <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">
-                    {% for order in orders %}{% if order.status == 'PROCESSING' %}{% if forloop.first %}1{% else %}{{ forloop.counter }}{% endif %}{% endif %}{% empty %}0{% endfor %}
+                    {{ processing_count|default:0 }}
                 </div>
             </div>
             <i class="fas fa-cog fa-spin" style="color: #3b82f6; font-size: 20px;"></i>
@@ -111,7 +103,7 @@
             <div>
                 <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px;">COMPLETED</div>
                 <div style="font-size: 20px; font-weight: 700; color: #10b981;">
-                    {% for order in orders %}{% if order.status == 'DELIVERED' %}{% if forloop.first %}1{% else %}{{ forloop.counter }}{% endif %}{% endif %}{% empty %}0{% endfor %}
+                    {{ completed_count|default:0 }}
                 </div>
             </div>
             <i class="fas fa-check-circle" style="color: #10b981; font-size: 20px;"></i>
@@ -128,24 +120,11 @@
                 ({{ orders.paginator.count }} total)
             </span>
         </h3>
-        <div style="display: flex; gap: 10px;">
-            <button class="btn btn-secondary" onclick="selectAllOrders()">
-                <i class="fas fa-check-square"></i>
-                Select All
-            </button>
-            <button class="btn btn-primary" onclick="bulkAssignTechnician()" id="bulkAssignBtn" style="display: none;">
-                <i class="fas fa-user-plus"></i>
-                Assign Technician
-            </button>
-        </div>
     </div>
     
     <table class="table">
         <thead>
             <tr>
-                <th style="width: 40px;">
-                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
-                </th>
                 <th>Order</th>
                 <th>Customer</th>
                 <th>Items</th>
@@ -158,10 +137,7 @@
         </thead>
         <tbody>
             {% for order in orders %}
-            <tr onclick="selectOrderRow(this)" style="cursor: pointer;">
-                <td onclick="event.stopPropagation();">
-                    <input type="checkbox" class="order-checkbox" data-order-id="{{ order.id }}" onchange="updateBulkActions()">
-                </td>
+            <tr>
                 <td>
                     <div>
                         <div style="font-weight: 600; font-size: 16px;">#{{ order.id }}</div>
@@ -236,7 +212,7 @@
                         </div>
                     </div>
                 </td>
-                <td onclick="event.stopPropagation();">
+                <td>
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                         <button onclick="viewOrderDetails({{ order.id }})" 
                                 class="btn btn-secondary" 
@@ -261,18 +237,18 @@
                             <i class="fas fa-edit"></i>
                         </button>
                         
-                        <button onclick="printOrder({{ order.id }})" 
-                                class="btn btn-secondary" 
+                        <button onclick="deleteOrder({{ order.id }})" 
+                                class="btn btn-danger" 
                                 style="padding: 5px 8px; font-size: 12px;"
-                                title="Print Order">
-                            <i class="fas fa-print"></i>
+                                title="Delete Order">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="9" style="text-align: center; color: rgba(255,255,255,0.6); padding: 60px;">
+                <td colspan="8" style="text-align: center; color: rgba(255,255,255,0.6); padding: 60px;">
                     <i class="fas fa-shopping-cart" style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;"></i>
                     <div style="font-size: 18px; margin-bottom: 10px;">No orders found</div>
                     <div style="font-size: 14px;">
@@ -368,37 +344,7 @@
         }, 500);
     }
 
-    // Select all functionality
-    function toggleSelectAll() {
-        const selectAll = document.getElementById('selectAll');
-        const checkboxes = document.querySelectorAll('.order-checkbox');
-        
-        checkboxes.forEach(cb => {
-            cb.checked = selectAll.checked;
-        });
-        
-        updateBulkActions();
-    }
-
-    function updateBulkActions() {
-        const checkedBoxes = document.querySelectorAll('.order-checkbox:checked');
-        const bulkAssignBtn = document.getElementById('bulkAssignBtn');
-        
-        if (checkedBoxes.length > 0) {
-            bulkAssignBtn.style.display = 'inline-flex';
-        } else {
-            bulkAssignBtn.style.display = 'none';
-        }
-    }
-
-    // Select order row
-    function selectOrderRow(row) {
-        const checkbox = row.querySelector('.order-checkbox');
-        checkbox.checked = !checkbox.checked;
-        updateBulkActions();
-    }
-
-    // View order details
+    // View order details with real data
     function viewOrderDetails(orderId) {
         const modal = document.getElementById('orderDetailsModal');
         const content = document.getElementById('orderDetailsContent');
@@ -413,60 +359,89 @@
         
         modal.style.display = 'flex';
         
-        // Simulate loading order details
-        setTimeout(() => {
-            content.innerHTML = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
-                    <div>
-                        <h4 style="color: white; margin-bottom: 15px;">Order Information</h4>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <div><strong>Order ID:</strong> #${orderId}</div>
-                            <div><strong>Status:</strong> <span class="status-badge status-pending">PENDING</span></div>
-                            <div><strong>Total:</strong> ₹15,999</div>
-                            <div><strong>Date:</strong> Dec 28, 2024</div>
+        // Fetch real order details via AJAX
+        fetch(`/admin-panel/api/order-details/${orderId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const order = data.order;
+                    content.innerHTML = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                            <div>
+                                <h4 style="color: white; margin-bottom: 15px;">Order Information</h4>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <div><strong>Order ID:</strong> #${order.id}</div>
+                                    <div><strong>Status:</strong> <span class="status-badge status-${order.status.toLowerCase()}">${order.status}</span></div>
+                                    <div><strong>Total:</strong> ₹${order.total_amount}</div>
+                                    <div><strong>Date:</strong> ${order.order_date}</div>
+                                    ${order.technician ? `<div><strong>Technician:</strong> ${order.technician}</div>` : '<div><strong>Technician:</strong> <span style="color: #ef4444;">Not Assigned</span></div>'}
+                                </div>
+                            </div>
+                            <div>
+                                <h4 style="color: white; margin-bottom: 15px;">Customer Details</h4>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <div><strong>Name:</strong> ${order.customer.name}</div>
+                                    <div><strong>Email:</strong> ${order.customer.email}</div>
+                                    <div><strong>Phone:</strong> ${order.customer.phone || 'N/A'}</div>
+                                    <div><strong>Address:</strong> ${order.shipping_address || 'N/A'}</div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <h4 style="color: white; margin-bottom: 15px;">Customer Details</h4>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <div><strong>Name:</strong> John Doe</div>
-                            <div><strong>Email:</strong> john@example.com</div>
-                            <div><strong>Phone:</strong> +91 9876543210</div>
-                            <div><strong>Address:</strong> 123 Tech Street, Mumbai</div>
+                        <div>
+                            <h4 style="color: white; margin-bottom: 15px;">Order Items</h4>
+                            <div class="table-container" style="margin: 0;">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Quantity</th>
+                                            <th>Price</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${order.items.map(item => `
+                                            <tr>
+                                                <td>${item.product_name}</td>
+                                                <td>${item.quantity}</td>
+                                                <td>₹${item.price}</td>
+                                                <td>₹${item.total}</td>
+                                            </tr>
+                                        `).join('')}
+                                        <tr style="border-top: 2px solid rgba(255,255,255,0.1);">
+                                            <td colspan="3" style="text-align: right; font-weight: bold;">Total Amount:</td>
+                                            <td style="font-weight: bold; font-size: 16px;">₹${order.total_amount}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
+                        <div style="display: flex; gap: 10px; justify-content: end; margin-top: 20px;">
+                            <button onclick="closeOrderModal()" class="btn btn-primary">Close</button>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #ef4444; margin-bottom: 20px;"></i>
+                            <div style="font-size: 18px; margin-bottom: 10px;">Error Loading Order</div>
+                            <div style="color: rgba(255,255,255,0.6);">${data.error || 'Unable to load order details'}</div>
+                            <button onclick="closeOrderModal()" class="btn btn-secondary" style="margin-top: 20px;">Close</button>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #ef4444; margin-bottom: 20px;"></i>
+                        <div style="font-size: 18px; margin-bottom: 10px;">Connection Error</div>
+                        <div style="color: rgba(255,255,255,0.6);">Unable to connect to server</div>
+                        <button onclick="closeOrderModal()" class="btn btn-secondary" style="margin-top: 20px;">Close</button>
                     </div>
-                </div>
-                <div>
-                    <h4 style="color: white; margin-bottom: 15px;">Order Items</h4>
-                    <div class="table-container" style="margin: 0;">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Gaming Laptop Pro</td>
-                                    <td>1</td>
-                                    <td>₹15,999</td>
-                                    <td>₹15,999</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: end; margin-top: 20px;">
-                    <button onclick="printOrder(${orderId})" class="btn btn-secondary">
-                        <i class="fas fa-print"></i> Print
-                    </button>
-                    <button onclick="closeOrderModal()" class="btn btn-primary">Close</button>
-                </div>
-            `;
-        }, 1000);
+                `;
+            });
     }
 
     function closeOrderModal() {
@@ -612,29 +587,31 @@
         selectedOrderId = null;
     }
 
-    // Bulk operations
-    function bulkAssignTechnician() {
-        const checkedBoxes = document.querySelectorAll('.order-checkbox:checked');
-        const orderIds = Array.from(checkedBoxes).map(cb => cb.dataset.orderId);
-        
-        if (orderIds.length === 0) return;
-        
-        alert(`Bulk assign technician to ${orderIds.length} orders`);
+    // Delete order
+    function deleteOrder(orderId) {
+        if (confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+            // Create form to delete order
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/admin-panel/orders/${orderId}/delete/`;
+            
+            // Add CSRF token
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = '{{ csrf_token }}';
+            form.appendChild(csrfInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
     }
 
-    // Export and print functions
+    // Export orders
     function exportOrders() {
         const params = new URLSearchParams(window.location.search);
         params.set('export', 'csv');
         window.location.href = '?' + params.toString();
-    }
-
-    function printOrders() {
-        window.print();
-    }
-
-    function printOrder(orderId) {
-        window.open(`/admin-panel/orders/${orderId}/print/`, '_blank');
     }
 
     // Close modals when clicking outside
@@ -658,16 +635,5 @@
             closeStatusModal();
         }
     });
-
-    // Auto refresh every 2 minutes
-    setInterval(() => {
-        // Only refresh if no modals are open
-        const modals = document.querySelectorAll('[id$="Modal"]');
-        const anyModalOpen = Array.from(modals).some(modal => modal.style.display === 'flex');
-        
-        if (!anyModalOpen) {
-            location.reload();
-        }
-    }, 120000);
 </script>
 {% endblock %}
