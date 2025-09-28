@@ -55,7 +55,8 @@ export const useCartStore = create<CartState>()(
           if (storedData) {
             try {
               const parsed = JSON.parse(storedData);
-              userCarts = parsed.userCarts || {};
+              const container = parsed.state || parsed;
+              userCarts = container.userCarts || {};
             } catch (error) {
               console.error('Error parsing stored cart data:', error);
             }
@@ -64,50 +65,18 @@ export const useCartStore = create<CartState>()(
           // Load this user's cart items
           let userCart: CartItem[] = userId ? (userCarts[userId] || []) : (userCarts['guest'] || []);
 
-          // If we are logging in (guest -> user), merge the guest cart into the user's cart
+          // Strict isolation: do not merge guest cart into a user on login.
+          // If logging in from guest -> user, clear any residual guest cart.
           const isGuestToUser = !state.currentUserId && !!userId;
-          if (isGuestToUser && state.items.length > 0) {
-            const existingById = new Map<number, CartItem>();
-            for (const item of userCart) {
-              existingById.set(item.product.id, { ...item });
-            }
-            for (const guestItem of state.items) {
-              const existing = existingById.get(guestItem.product.id);
-              if (existing) {
-                existingById.set(guestItem.product.id, {
-                  product: existing.product,
-                  quantity: existing.quantity + guestItem.quantity,
-                });
-              } else {
-                existingById.set(guestItem.product.id, { ...guestItem });
-              }
-            }
-            userCart = Array.from(existingById.values());
-            // Persist the merged cart for this user immediately
-            userCarts[userId!] = userCart;
-            try {
-              localStorage.setItem('cart-storage', JSON.stringify({
-                userCarts,
-                currentUserId: userId,
-              }));
-            } catch (error) {
-              console.error('Error saving merged cart to storage:', error);
-            }
+          if (isGuestToUser) {
+            userCarts['guest'] = [];
           }
 
-          // If we are logging out (user -> guest), persist current user's items as guest
+          // When logging out (user -> guest), clear the guest cart so the next user won't see prior items.
           const isUserToGuest = !!state.currentUserId && !userId;
           if (isUserToGuest) {
-            userCarts['guest'] = state.items;
-            userCart = userCarts['guest'] || [];
-            try {
-              localStorage.setItem('cart-storage', JSON.stringify({
-                userCarts,
-                currentUserId: null,
-              }));
-            } catch (error) {
-              console.error('Error saving guest cart to storage:', error);
-            }
+            userCarts['guest'] = [];
+            userCart = [];
           }
 
           set({
@@ -138,9 +107,9 @@ export const useCartStore = create<CartState>()(
           newItems = [...items, { product, quantity }];
         }
 
+        // Do not auto-open cart when adding items; keep current open state
         set({
-          items: newItems,
-          isOpen: true
+          items: newItems
         });
       },
 
@@ -192,7 +161,8 @@ export const useCartStore = create<CartState>()(
         if (storedData) {
           try {
             const parsed = JSON.parse(storedData);
-            userCarts = parsed.userCarts || {};
+            const container = parsed.state || parsed;
+            userCarts = container.userCarts || {};
           } catch (error) {
             console.error('Error parsing stored cart data:', error);
           }
@@ -207,11 +177,25 @@ export const useCartStore = create<CartState>()(
         };
       },
       onRehydrateStorage: () => (state) => {
-        // When rehydrating, we need to restore the correct user's cart
-        console.log('Rehydrating cart storage');
-        if (state) {
-          // The items will be set when setCurrentUser is called
-          state.items = [];
+        // When rehydrating, restore items for current user or guest
+        try {
+          console.log('Rehydrating cart storage');
+          if (!state) return;
+
+          const raw = localStorage.getItem('cart-storage');
+          if (!raw) {
+            state.items = [];
+            return;
+          }
+
+          const parsed = JSON.parse(raw);
+          const container = parsed.state || parsed;
+          const userCarts: Record<string, CartItem[]> = container.userCarts || {};
+          const key = state.currentUserId ?? 'guest';
+          state.items = userCarts[key] || [];
+        } catch (error) {
+          console.error('Error during cart rehydration:', error);
+          if (state) state.items = [];
         }
       }
     }

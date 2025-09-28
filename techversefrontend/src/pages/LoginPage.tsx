@@ -1,19 +1,35 @@
 // src/pages/LoginPage.tsx - Fixed version
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Container, Typography, Button, Box, Tabs, Tab, TextField, Alert } from '@mui/material';
 import apiClient from '../api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUserStore } from '../stores/userStore'; 
 
 export const LoginPage = () => {
     const [tab, setTab] = useState(0);
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const [infoMessage, setInfoMessage] = useState('');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [password2, setPassword2] = useState('');
     const [error, setError] = useState('');
     const login = useUserStore((state) => state.login);
+
+    // Open Create Account tab when `?tab=signup` or `?tab=register` is present
+    useEffect(() => {
+        const t = (searchParams.get('tab') || '').toLowerCase();
+        if (t === 'signup' || t === 'register') {
+            setTab(1);
+        }
+        const info = (searchParams.get('info') || '').toLowerCase();
+        if (info === 'no_account') {
+            setInfoMessage("We couldn't find an account for this email. Please create your account to continue.");
+        } else {
+            setInfoMessage('');
+        }
+    }, [searchParams]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -34,10 +50,13 @@ export const LoginPage = () => {
             return;
         }
         try {
+            // Ensure CSRF cookie is set before unsafe POST (session-based)
+            try { await apiClient.get('/api/users/csrf/'); } catch {}
             const response = await apiClient.post('/api/auth/registration/', { 
-                email, 
-                password1: password, 
-                password2: password2 
+                email,
+                name,
+                password1: password,
+                password2: password2
             });
             
             // Store the token
@@ -51,7 +70,32 @@ export const LoginPage = () => {
             
             navigate('/');
         } catch (err: any) {
-            setError(err.response?.data?.email?.[0] || err.response?.data?.non_field_errors?.[0] || 'Registration failed. Please try again.');
+            // Surface common field errors first, then fall back to flattening unknown errors
+            const data = err.response?.data || {};
+            let msg = data?.name?.[0]
+                || data?.email?.[0]
+                || data?.password1?.[0]
+                || data?.password2?.[0]
+                || data?.non_field_errors?.[0]
+                || data?.detail;
+
+            if (!msg && data && typeof data === 'object') {
+                try {
+                    const parts: string[] = [];
+                    Object.entries(data).forEach(([key, val]) => {
+                        if (Array.isArray(val)) {
+                            parts.push(`${key}: ${val.join(', ')}`);
+                        } else if (typeof val === 'string') {
+                            parts.push(`${key}: ${val}`);
+                        } else if (val && typeof val === 'object') {
+                            parts.push(`${key}: ${JSON.stringify(val)}`);
+                        }
+                    });
+                    msg = parts.join('\n');
+                } catch {}
+            }
+
+            setError(msg || 'Registration failed. Please try again.');
         }
     };
 
@@ -65,6 +109,9 @@ export const LoginPage = () => {
             </Box>
 
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {tab === 1 && infoMessage && (
+                <Alert severity="info" sx={{ mb: 2 }}>{infoMessage}</Alert>
+            )}
 
             {tab === 0 && (
                 <Box component="form" onSubmit={handleLogin}>
@@ -76,6 +123,7 @@ export const LoginPage = () => {
 
             {tab === 1 && (
                 <Box component="form" onSubmit={handleRegister}>
+                    <TextField label="Full Name" type="text" fullWidth required margin="normal" value={name} onChange={e => setName(e.target.value)} />
                     <TextField label="Email" type="email" fullWidth required margin="normal" value={email} onChange={e => setEmail(e.target.value)} />
                     <TextField label="Password" type="password" fullWidth required margin="normal" value={password} onChange={e => setPassword(e.target.value)} />
                     <TextField label="Confirm Password" type="password" fullWidth required margin="normal" value={password2} onChange={e => setPassword2(e.target.value)} />
@@ -85,16 +133,29 @@ export const LoginPage = () => {
 
             <Typography align="center" sx={{ my: 2 }}>OR</Typography>
 
-            <Button
-                variant="outlined"
-                size="large"
-                fullWidth
-                onClick={() => {
-                    window.location.href = "http://127.0.0.1:8000/accounts/google/login/";
-                }}
-            >
-                Sign in with Google
-            </Button>
+            {tab === 0 ? (
+                <Button
+                    variant="outlined"
+                    size="large"
+                    fullWidth
+                    onClick={() => {
+                        window.location.href = "http://127.0.0.1:8000/accounts/google/login/";
+                    }}
+                >
+                    Sign in with Google
+                </Button>
+            ) : (
+                <Button
+                    variant="outlined"
+                    size="large"
+                    fullWidth
+                    onClick={() => {
+                        window.location.href = "http://127.0.0.1:8000/accounts/google/login/";
+                    }}
+                >
+                    Sign up with Google
+                </Button>
+            )}
         </Container>
     );
 };

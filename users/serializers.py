@@ -19,15 +19,31 @@ class CustomRegisterSerializer(RegisterSerializer):
     name = serializers.CharField(required=True, write_only=True)
 
     def get_cleaned_data(self):
-        return {
-            'email': self.validated_data.get('email', ''),
-            'password1': self.validated_data.get('password1', ''),
+        # Start with the default cleaned data (email, password1, password2, etc.)
+        data = super().get_cleaned_data()
+        # Merge our custom field(s)
+        data.update({
             'name': self.validated_data.get('name', ''),
-        }
+        })
+        return data
 
     def save(self, request):
         adapter = get_adapter()
         user = adapter.new_user(request)
         self.cleaned_data = self.get_cleaned_data()
         adapter.save_user(request, user, self)
+        # Ensure our custom fields are persisted
+        self.custom_signup(request, user)
         return user
+
+    def custom_signup(self, request, user):
+        # Persist custom fields (name, default role)
+        user.name = self.validated_data.get('name', '')
+        # Ensure default role is CUSTOMER for self-registrations
+        try:
+            # Access Role enum if available; otherwise set string
+            from .models import CustomUser
+            user.role = getattr(CustomUser.Role, 'CUSTOMER', 'CUSTOMER')
+        except Exception:
+            user.role = 'CUSTOMER'
+        user.save()

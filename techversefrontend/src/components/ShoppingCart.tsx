@@ -1,5 +1,6 @@
-// src/components/ShoppingCart.tsx
+// src/components/ShoppingCart.tsx - Fixed checkout navigation
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '../stores/cartStore';
 
 interface CartIconButtonProps {
@@ -60,6 +61,7 @@ export const CartIconButton: React.FC<CartIconButtonProps> = ({ onClick, totalIt
 
 // Main Shopping Cart Component (Drawer/Sidebar)
 export const ShoppingCart: React.FC = () => {
+  const navigate = useNavigate();
   const {
     items,
     isOpen,
@@ -75,13 +77,14 @@ export const ShoppingCart: React.FC = () => {
 
   const handleCheckout = () => {
     closeCart();
-    // Navigate to checkout page
-    window.location.href = '/checkout';
+    // Use React Router navigation instead of window.location
+    navigate('/checkout');
   };
 
   const handleContinueShopping = () => {
     closeCart();
-    window.location.href = '/store';
+    // Use React Router navigation instead of window.location
+    navigate('/store');
   };
 
   if (!isOpen) return null;

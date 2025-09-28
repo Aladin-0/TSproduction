@@ -20,6 +20,8 @@ interface UserState {
   checkAuthStatus: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  // Local-only setter to sync store with server-fetched user without network writes
+  setUserFromServer: (user: User) => void;
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -104,6 +106,12 @@ export const useUserStore = create<UserState>((set, get) => ({
         });
         
         set({ user: userData, isAuthenticated: true });
+        // Ensure CSRF cookie is set for subsequent writes
+        try {
+          await apiClient.get('/api/users/csrf/');
+        } catch (e) {
+          // Non-fatal: CSRF cookie may already exist
+        }
         return;
       } else {
         console.log('Session auth failed with status:', response.status);
@@ -129,27 +137,14 @@ export const useUserStore = create<UserState>((set, get) => ({
     try {
       console.log('Updating profile in store with:', data);
       
-      // Try JWT first, then session
+      // Try JWT first; on failure, retry via Axios without JWT (session + CSRF)
       let response;
       try {
         response = await apiClient.patch('/api/users/profile/', data);
       } catch (jwtError) {
-        console.log('JWT update failed, trying session auth...');
-        // Fallback to session-based request
-        const sessionResponse = await fetch('http://127.0.0.1:8000/api/users/profile/', {
-          method: 'PATCH',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data),
-        });
-        
-        if (!sessionResponse.ok) {
-          throw new Error('Profile update failed');
-        }
-        
-        response = { data: await sessionResponse.json() };
+        console.log('JWT update failed, retrying with session/CSRF...');
+        // Response interceptor should have removed expired token.
+        response = await apiClient.patch('/api/users/profile/', data);
       }
       
       console.log('Profile updated successfully:', response.data);
@@ -173,25 +168,19 @@ export const useUserStore = create<UserState>((set, get) => ({
           new_password: newPassword
         });
       } catch (jwtError) {
-        // Fallback to session-based request
-        const response = await fetch('http://127.0.0.1:8000/api/users/change-password/', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            current_password: currentPassword,
-            new_password: newPassword
-          }),
+        // Response interceptor should have removed expired token.
+        await apiClient.post('/api/users/change-password/', {
+          current_password: currentPassword,
+          new_password: newPassword
         });
-        
-        if (!response.ok) {
-          throw new Error('Password change failed');
-        }
       }
     } catch (error) {
       throw error;
     }
+  },
+
+  setUserFromServer: (user) => {
+    // Update store state without triggering any network request
+    set({ user, isAuthenticated: true });
   },
 }));

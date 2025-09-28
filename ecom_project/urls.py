@@ -5,6 +5,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from users.admin_views import admin_dashboard
+from users.views import redirect_third_party_signup
 
 # Customize admin site
 admin.site.site_header = "TechVerse Administration"
@@ -22,6 +23,8 @@ urlpatterns = [
     path('api/auth/', include('dj_rest_auth.urls')),  # This provides /api/auth/user/ and /api/auth/login/
     path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
     
+    # Intercept Allauth's 3rd-party signup page and redirect to frontend signup
+    path('accounts/3rdparty/signup/', redirect_third_party_signup, name='redirect_3rdparty_signup'),
     path('accounts/', include('allauth.urls')),
     path('', include('store.urls')),
     path('services/', include('services.urls')),

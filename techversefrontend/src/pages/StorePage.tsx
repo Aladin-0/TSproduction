@@ -733,6 +733,7 @@ export const StorePage: React.FC = () => {
     const normalize = (s: string) => s.trim().toLowerCase();
     const normalizedParam = normalize(catParam);
 
+    // If explicitly "all", reset filters
     if (normalizedParam === 'all' || normalizedParam === normalize('All Products')) {
       setSelectedCategory('All Products');
       setActiveTab('All Products');
@@ -740,12 +741,44 @@ export const StorePage: React.FC = () => {
       return;
     }
 
-    const match = categories.find(c => normalize(c) === normalizedParam);
-    if (match) {
-      setSelectedCategory(match);
-      setActiveTab(match);
-      setVisibleProducts(8);
+    // Build category name/slug sets from products
+    const categoryNames = ['All Products', ...Array.from(new Set(products.map(p => p.category.name)))];
+    const categorySlugs = Array.from(new Set(products.map(p => p.category.slug)));
+
+    // 1) Exact name match
+    let matchName = categoryNames.find(c => normalize(c) === normalizedParam);
+
+    // 2) Exact slug match (map slug -> name)
+    let matchSlugName: string | undefined;
+    if (!matchName) {
+      const matchProduct = products.find(p => normalize(p.category.slug) === normalizedParam);
+      if (matchProduct) {
+        matchSlugName = matchProduct.category.name;
+      }
     }
+
+    // 3) Partial name match (handles cases like "Laptop / PC" vs "Laptop")
+    let partialMatch: string | undefined;
+    if (!matchName && !matchSlugName) {
+      partialMatch = categoryNames.find(c => {
+        const nc = normalize(c);
+        return nc.includes(normalizedParam) || normalizedParam.includes(nc);
+      });
+    }
+
+    const finalMatch = matchName || matchSlugName || partialMatch;
+
+    if (!finalMatch) {
+      // Fallback to All Products if no good match
+      setSelectedCategory('All Products');
+      setActiveTab('All Products');
+      setVisibleProducts(8);
+      return;
+    }
+
+    setSelectedCategory(finalMatch);
+    setActiveTab(finalMatch);
+    setVisibleProducts(8);
   }, [products, searchParams]);
 
   useEffect(() => {

@@ -336,7 +336,7 @@ interface UserProfile {
 export const UserProfilePage: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
   const user = useUserStore((state) => state.user);
-  const updateUserInStore = useUserStore((state) => state.updateProfile);
+  const setUserFromServer = useUserStore((state) => state.setUserFromServer);
   const { addresses, fetchAddresses } = useProductStore();
   
   const [loading, setLoading] = useState(true);
@@ -381,8 +381,8 @@ export const UserProfilePage: React.FC = () => {
         console.log('Fetched user profile:', response.data);
         setProfileData(response.data);
         
-        // Also update the global user store
-        updateUserInStore(response.data);
+        // Sync store locally without triggering a PATCH
+        setUserFromServer(response.data);
       } catch (error) {
         console.error('Error fetching user profile:', error);
         // Fallback to store data if API fails
@@ -404,7 +404,7 @@ export const UserProfilePage: React.FC = () => {
     };
     
     loadUserData();
-  }, [user, fetchAddresses, updateUserInStore]);
+  }, [user?.id]);
 
   const handleUpdateProfile = async () => {
     try {

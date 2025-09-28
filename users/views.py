@@ -14,6 +14,8 @@ from rest_framework.response import Response
 from rest_framework import permissions, status
 from rest_framework_simplejwt.tokens import RefreshToken
 import json
+from django.http import HttpResponseRedirect
+from django.conf import settings
 
 # Local imports
 from .forms import CustomerRegistrationForm, AddressForm
@@ -80,7 +82,19 @@ def technician_dashboard(request):
 
 # API views
 def csrf_token_view(request):
-    return JsonResponse({'csrfToken': get_token(request)})
+    """Return CSRF token and set CSRF cookie for session-auth writes."""
+    token = get_token(request)
+    response = JsonResponse({'csrfToken': token})
+    # Ensure CSRF cookie is set so double-submit check passes
+    # Django's default cookie name is 'csrftoken'
+    response.set_cookie(
+        'csrftoken',
+        token,
+        samesite='Lax',
+        secure=request.is_secure(),
+        httponly=False,
+    )
+    return response
 
 class CurrentUserView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -352,7 +366,7 @@ def google_login_success(request):
                                 refresh: '{refresh}'
                             }},
                             user: userData
-                        }}, 'http://localhost:5173');
+                        }}, '*');
                         window.close();
                     }} else {{
                         // Fallback: redirect to React app with success parameter
@@ -368,3 +382,10 @@ def google_login_success(request):
             return HttpResponse("Not authenticated", status=401)
     
     return HttpResponse("Method not allowed", status=405)
+
+
+# Redirect Allauth's 3rd-party signup page to our frontend Create Account
+def redirect_third_party_signup(request):
+    # Include an info flag so the frontend can show a helpful notice
+    base = getattr(settings, 'FRONTEND_BASE_URL', 'http://localhost:5173')
+    return HttpResponseRedirect(f"{base}/login?tab=signup&info=no_account")

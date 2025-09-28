@@ -183,6 +183,10 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_REDIRECT_URL = 'http://localhost:5173/?login=success'
 ACCOUNT_LOGOUT_REDIRECT_URL = 'http://localhost:5173/'
 
+# Frontend base URL (used for server-side redirects to the React app)
+# Configure via env var FRONTEND_BASE_URL if needed.
+FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:5173')
+
 # Google OAuth Provider - No hardcoded credentials
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
