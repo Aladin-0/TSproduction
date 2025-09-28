@@ -43,15 +43,15 @@ export const useCartStore = create<CartState>()(
 
       setCurrentUser: (userId) => {
         const state = get();
-        
+
         // If switching to a different user, clear current cart and load user's cart
         if (state.currentUserId !== userId) {
           console.log('Switching cart user from', state.currentUserId, 'to', userId);
-          
+
           // Get the stored cart data for this user
           const storedData = localStorage.getItem('cart-storage');
-          let userCarts = {};
-          
+          let userCarts: Record<string, CartItem[]> = {};
+
           if (storedData) {
             try {
               const parsed = JSON.parse(storedData);
@@ -60,10 +60,56 @@ export const useCartStore = create<CartState>()(
               console.error('Error parsing stored cart data:', error);
             }
           }
-          
+
           // Load this user's cart items
-          const userCart = userId ? userCarts[userId] || [] : [];
-          
+          let userCart: CartItem[] = userId ? (userCarts[userId] || []) : (userCarts['guest'] || []);
+
+          // If we are logging in (guest -> user), merge the guest cart into the user's cart
+          const isGuestToUser = !state.currentUserId && !!userId;
+          if (isGuestToUser && state.items.length > 0) {
+            const existingById = new Map<number, CartItem>();
+            for (const item of userCart) {
+              existingById.set(item.product.id, { ...item });
+            }
+            for (const guestItem of state.items) {
+              const existing = existingById.get(guestItem.product.id);
+              if (existing) {
+                existingById.set(guestItem.product.id, {
+                  product: existing.product,
+                  quantity: existing.quantity + guestItem.quantity,
+                });
+              } else {
+                existingById.set(guestItem.product.id, { ...guestItem });
+              }
+            }
+            userCart = Array.from(existingById.values());
+            // Persist the merged cart for this user immediately
+            userCarts[userId!] = userCart;
+            try {
+              localStorage.setItem('cart-storage', JSON.stringify({
+                userCarts,
+                currentUserId: userId,
+              }));
+            } catch (error) {
+              console.error('Error saving merged cart to storage:', error);
+            }
+          }
+
+          // If we are logging out (user -> guest), persist current user's items as guest
+          const isUserToGuest = !!state.currentUserId && !userId;
+          if (isUserToGuest) {
+            userCarts['guest'] = state.items;
+            userCart = userCarts['guest'] || [];
+            try {
+              localStorage.setItem('cart-storage', JSON.stringify({
+                userCarts,
+                currentUserId: null,
+              }));
+            } catch (error) {
+              console.error('Error saving guest cart to storage:', error);
+            }
+          }
+
           set({
             currentUserId: userId,
             items: userCart,
@@ -141,8 +187,8 @@ export const useCartStore = create<CartState>()(
       partialize: (state) => {
         // Store cart data per user
         const storedData = localStorage.getItem('cart-storage');
-        let userCarts = {};
-        
+        let userCarts: Record<string, CartItem[]> = {};
+
         if (storedData) {
           try {
             const parsed = JSON.parse(storedData);
@@ -151,12 +197,10 @@ export const useCartStore = create<CartState>()(
             console.error('Error parsing stored cart data:', error);
           }
         }
-        
-        // Update the current user's cart
-        if (state.currentUserId) {
-          userCarts[state.currentUserId] = state.items;
-        }
-        
+        // Update the current user's cart or guest cart when unauthenticated
+        const key = state.currentUserId ?? 'guest';
+        userCarts[key] = state.items;
+
         return {
           userCarts,
           currentUserId: state.currentUserId

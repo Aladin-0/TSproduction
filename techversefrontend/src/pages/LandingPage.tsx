@@ -1,5 +1,6 @@
 // src/pages/LandingPage.tsx
 import React, { useRef, useEffect, Suspense, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { styled, ThemeProvider, createTheme } from '@mui/material/styles';
 import { Box, Button, Grid, Typography, IconButton } from '@mui/material';
 import { Canvas } from '@react-three/fiber';
@@ -696,47 +697,48 @@ function GamingHeadphone(props) {
 const categories = [
     { 
         name: 'Laptop / PC', 
-        placeholder: 'Laptop Image',
+        image: '/src/assets/laptop.jpg',
         hoverColor: 'rgba(59, 130, 246, 0.1)' // Blue
     },
     { 
         name: 'Printer', 
-        placeholder: 'Printer Image',
+        image: '/src/assets/Printer.png',
         hoverColor: 'rgba(16, 185, 129, 0.1)' // Green
     },
     { 
         name: 'Keyboard', 
-        placeholder: 'Keyboard Image',
+        image: '/src/assets/Keyboard.png',
         hoverColor: 'rgba(139, 92, 246, 0.1)' // Purple
     },
     { 
         name: 'Mouse', 
-        placeholder: 'Mouse Image',
+        image: '/src/assets/Mouse.jpeg',
         hoverColor: 'rgba(245, 101, 101, 0.1)' // Red
     },
     { 
         name: 'Monitor', 
-        placeholder: 'Monitor Image',
+        image: '/src/assets/Monitor.jpg',
         hoverColor: 'rgba(251, 191, 36, 0.1)' // Yellow
     },
     { 
         name: 'CCTV / Analog', 
-        placeholder: 'CCTV Image',
+        image: '/src/assets/CCTV.jpg',
         hoverColor: 'rgba(236, 72, 153, 0.1)' // Pink
     },
     { 
         name: 'Headphones', 
-        placeholder: 'Headphones Image',
+        image: '/src/assets/Headphones.jpg',
         hoverColor: 'rgba(6, 182, 212, 0.1)' // Cyan
     },
     { 
         name: 'Refurbished', 
-        placeholder: 'Refurbished Image',
+        image: '/src/assets/Refurbished.jpg',
         hoverColor: 'rgba(34, 197, 94, 0.1)' // Emerald
     },
 ];
 
 const AnimatedCategoryCard = ({ category }) => {
+    const navigate = useNavigate();
     const [hovered, setHovered] = useState(false);
     const [props, api] = useSpringWeb(() => ({
         scale: 1,
@@ -774,12 +776,10 @@ const AnimatedCategoryCard = ({ category }) => {
         api.start({ scale: 1, rotateX: 0, rotateY: 0, rotateZ: 0 }); 
     };
 
-    // Handle category click - ADD YOUR NAVIGATION PATH HERE
+    // Navigate to store filtered by this category
     const handleCategoryClick = () => {
-        // TODO: Add your navigation logic here
-        // Example: navigate(`/store/${category.name.toLowerCase().replace(/\s+/g, '-')}`);
-        // Or: window.location.href = `/store/${category.name.toLowerCase().replace(/\s+/g, '-')}`;
-        console.log(`Maps to: ${category.name} category page`);
+        const target = encodeURIComponent(category.name);
+        navigate(`/store?category=${target}`);
     };
 
     return (
@@ -797,16 +797,18 @@ const AnimatedCategoryCard = ({ category }) => {
                     rotateZ: props.rotateZ.to(val => `${val}deg`),
                 }}
             >
-                {/* Simple Placeholder */}
-                <PlaceholderBox 
+                {/* Product Image */}
+                {category.image && (
+                  <ProductImage 
+                    src={category.image}
+                    alt={category.name}
                     style={{ 
-                        opacity: hovered ? 0.8 : 1,
-                        transform: hovered ? 'scale(1.05)' : 'scale(1)',
-                        background: hovered ? category.hoverColor : 'linear-gradient(135deg, #1a1a1a, #0f0f0f)'
+                      opacity: hovered ? 1 : 0.95,
+                      transform: hovered ? 'translateZ(6px) scale(1.02)' : 'translateZ(0px) scale(1)',
+                      filter: hovered ? 'brightness(0.95) contrast(1.05)' : 'brightness(0.85) contrast(1.08)'
                     }}
-                >
-                    {category.placeholder}
-                </PlaceholderBox>
+                  />
+                )}
                 
                 {/* Glow Effect */}
                 <CardGlow 

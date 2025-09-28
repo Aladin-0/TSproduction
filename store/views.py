@@ -115,6 +115,7 @@ class ProductListAPIView(APIView):
     """
     API view to list all active products.
     """
+    permission_classes = [permissions.AllowAny]
     def get(self, request, format=None):
         products = Product.objects.filter(is_active=True).select_related('category').prefetch_related('additional_images', 'specifications')
         serializer = ProductSerializer(products, many=True)
@@ -126,6 +127,7 @@ class ProductDetailAPIView(generics.RetrieveAPIView):
     """
     serializer_class = ProductDetailSerializer
     lookup_field = 'slug'
+    permission_classes = [permissions.AllowAny]
     
     def get_queryset(self):
         return Product.objects.filter(is_active=True).select_related('category').prefetch_related('additional_images', 'specifications')

@@ -1,4 +1,4 @@
-# store/serializers.py - Fixed with proper image handling
+# store/serializers.py - Updated with better can_rate logic
 from rest_framework import serializers
 from .models import Product, ProductCategory, ProductImage, ProductSpecification, Address, Order, OrderItem
 
@@ -109,11 +109,24 @@ class AddressCreateUpdateSerializer(serializers.ModelSerializer):
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
-    product_image = serializers.CharField(source='product.image.url', read_only=True)
+    product_image = serializers.SerializerMethodField()
     
     class Meta:
         model = OrderItem
         fields = ['id', 'product_name', 'product_image', 'quantity', 'price']
+    
+    def get_product_image(self, obj):
+        """Get the product image URL"""
+        try:
+            if obj.product and obj.product.image:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.product.image.url)
+                else:
+                    return obj.product.image.url
+            return None
+        except Exception:
+            return None
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
@@ -135,8 +148,23 @@ class OrderSerializer(serializers.ModelSerializer):
         ]
     
     def get_can_rate(self, obj):
-        # User can rate if order is delivered and no rating exists yet
-        return (
-            obj.status == 'DELIVERED' and 
-            not hasattr(obj, 'rating')
-        )
+        """Check if user can rate this order"""
+        try:
+            # Import here to avoid circular imports
+            from services.models import TechnicianRating
+            
+            # User can rate if:
+            # 1. Order is delivered
+            # 2. Has a technician assigned
+            # 3. No rating exists yet for this order by this customer
+            return (
+                obj.status == 'DELIVERED' and 
+                obj.technician is not None and
+                not TechnicianRating.objects.filter(
+                    order=obj, 
+                    customer=obj.customer
+                ).exists()
+            )
+        except Exception as e:
+            print(f"Error checking can_rate for order {obj.id}: {e}")
+            return False

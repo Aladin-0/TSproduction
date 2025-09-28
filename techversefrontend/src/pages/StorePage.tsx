@@ -1,7 +1,7 @@
 // src/pages/StorePage.tsx - Updated with product links and shortened descriptions
 import React, { useEffect, useState } from 'react';
 import { styled } from '@mui/material/styles';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Box, 
   Typography, 
@@ -704,6 +704,7 @@ export const StorePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('All Products');
   const [visibleProducts, setVisibleProducts] = useState(8);
   const [error, setError] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
 
   // Hero animation
   const heroAnimation = useSpring({
@@ -723,6 +724,29 @@ export const StorePage: React.FC = () => {
 
   // Get unique categories from backend
   const categories = ['All Products', ...Array.from(new Set(products.map(p => p.category.name)))];
+
+  // Initialize category from URL query param (?category=...)
+  useEffect(() => {
+    const catParam = searchParams.get('category');
+    if (!catParam) return;
+
+    const normalize = (s: string) => s.trim().toLowerCase();
+    const normalizedParam = normalize(catParam);
+
+    if (normalizedParam === 'all' || normalizedParam === normalize('All Products')) {
+      setSelectedCategory('All Products');
+      setActiveTab('All Products');
+      setVisibleProducts(8);
+      return;
+    }
+
+    const match = categories.find(c => normalize(c) === normalizedParam);
+    if (match) {
+      setSelectedCategory(match);
+      setActiveTab(match);
+      setVisibleProducts(8);
+    }
+  }, [products, searchParams]);
 
   useEffect(() => {
     const loadProducts = async () => {

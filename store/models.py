@@ -1,7 +1,8 @@
-# store/models.py - Fixed with proper image handling
+# store/models.py - Fixed with proper error handling
 
 from django.db import models
 from django.conf import settings # To get the CustomUser model
+from decimal import Decimal
 
 class Address(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -168,16 +169,54 @@ class Order(models.Model):
 
     @property
     def total_amount(self):
-        return sum(item.get_total_item_price() for item in self.items.all())
+        """Calculate total amount with proper error handling"""
+        try:
+            total = Decimal('0.00')
+            for item in self.items.all():
+                item_total = item.get_total_item_price()
+                if item_total is not None:
+                    total += item_total
+            return total
+        except Exception as e:
+            print(f"Error calculating total amount for order {self.id}: {e}")
+            return Decimal('0.00')
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
-    price = models.DecimalField(max_digits=10, decimal_places=2) # Price at time of order
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) # Price at time of order
 
     def __str__(self):
         return f"{self.quantity} of {self.product.name}"
 
     def get_total_item_price(self):
-        return self.quantity * self.price
+        """Calculate total item price with proper error handling"""
+        try:
+            # Use the stored price from order time, fallback to current product price
+            item_price = self.price
+            if item_price is None:
+                if self.product and self.product.price:
+                    item_price = self.product.price
+                    # Update the stored price for future reference
+                    self.price = item_price
+                    self.save(update_fields=['price'])
+                else:
+                    print(f"Warning: No price found for OrderItem {self.id} (Product: {self.product})")
+                    return Decimal('0.00')
+            
+            if self.quantity and item_price:
+                return Decimal(str(self.quantity)) * Decimal(str(item_price))
+            else:
+                print(f"Warning: Invalid quantity ({self.quantity}) or price ({item_price}) for OrderItem {self.id}")
+                return Decimal('0.00')
+                
+        except Exception as e:
+            print(f"Error calculating total for OrderItem {self.id}: {e}")
+            return Decimal('0.00')
+    
+    def save(self, *args, **kwargs):
+        """Override save to ensure price is set"""
+        if self.price is None and self.product:
+            self.price = self.product.price
+        super().save(*args, **kwargs)

@@ -1,4 +1,4 @@
-# Add this to your main ecom_project/urls.py file
+# ecom_project/urls.py - Updated to include rating API endpoints
 
 from django.contrib import admin
 from django.urls import path, include
@@ -26,6 +26,8 @@ urlpatterns = [
     path('', include('store.urls')),
     path('services/', include('services.urls')),
     path('api/users/', include('users.urls')),
+    
+    # Rating API endpoints are now included in services.urls
 ]
 
 # Override admin index view
