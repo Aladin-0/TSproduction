@@ -270,6 +270,63 @@ def create_order(request):
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
+def create_bulk_order(request):
+    """
+    Create a single order that aggregates multiple cart items.
+    Expected payload: { address_id: number, items: [{ product_slug, quantity }] }
+    """
+    try:
+        address_id = request.data.get('address_id')
+        items = request.data.get('items', [])
+
+        if not address_id or not items:
+            return Response({'error': 'Items and address are required'}, status=400)
+
+        # Validate address
+        address = get_object_or_404(Address, id=address_id, user=request.user)
+
+        # Validate stock for all items first to avoid partial orders
+        validated_items = []
+        for raw in items:
+            product_slug = raw.get('product_slug')
+            quantity = int(raw.get('quantity', 1))
+            if not product_slug:
+                return Response({'error': 'Each item must include product_slug'}, status=400)
+
+            product = get_object_or_404(Product, slug=product_slug, is_active=True)
+
+            if product.stock < quantity:
+                return Response(
+                    {'error': f'Only {product.stock} items available in stock for {product.name}'},
+                    status=400
+                )
+
+            validated_items.append((product, quantity))
+
+        # Create the single order
+        order = Order.objects.create(
+            customer=request.user,
+            status='PENDING',
+            shipping_address=address
+        )
+
+        # Create order items
+        for product, quantity in validated_items:
+            OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=quantity,
+                price=product.price
+            )
+
+        serializer = OrderSerializer(order)
+        return Response(serializer.data, status=201)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
 def cancel_order(request, order_id):
     """
     Cancel an order (only if pending/processing)

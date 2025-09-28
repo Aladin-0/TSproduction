@@ -33,6 +33,7 @@ urlpatterns = [
     path('api/orders/', views.UserOrdersListView.as_view(), name='api_orders_list'),
     path('api/orders/<int:pk>/', views.OrderDetailView.as_view(), name='api_order_detail'),
     path('api/orders/create/', views.create_order, name='api_create_order'),
+    path('api/orders/create-bulk/', views.create_bulk_order, name='api_create_bulk_order'),
     path('api/orders/<int:order_id>/cancel/', views.cancel_order, name='api_cancel_order'),
     
     # Technician API endpoints

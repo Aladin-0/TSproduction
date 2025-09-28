@@ -317,22 +317,22 @@ const CheckoutPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const createdOrderIds: number[] = [];
-      
-      // Create orders for each item
-      for (const item of items) {
-        const response = await apiClient.post('/api/orders/create/', {
+      // Create a single order for all cart items
+      const payload = {
+        address_id: selectedAddress,
+        items: items.map((item) => ({
           product_slug: item.product.slug,
           quantity: item.quantity,
-          address_id: selectedAddress
-        });
-        createdOrderIds.push(response.data.id);
-      }
-      
-      setOrderIds(createdOrderIds);
+        })),
+      };
+
+      const response = await apiClient.post('/api/orders/create-bulk/', payload);
+
+      // The API returns the created order object
+      setOrderIds([response.data.id]);
       clearCart();
       setOrderSuccess(true);
-      
+
     } catch (error) {
       console.error('Order creation failed:', error);
       alert('Failed to place order. Please try again.');
