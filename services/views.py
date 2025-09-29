@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
-from .serializers import ServiceCategorySerializer, ServiceRequestSerializer
+from .serializers import ServiceCategorySerializer, ServiceRequestSerializer, ServiceRequestHistorySerializer
 
 @login_required
 def select_service_category(request):
@@ -111,6 +111,18 @@ class ServiceRequestCreateAPIView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(customer=self.request.user)
+
+
+class ServiceRequestHistoryAPIView(generics.ListAPIView):
+    """
+    API view to list the current user's service requests (history).
+    Includes technician info and whether the request can be rated.
+    """
+    serializer_class = ServiceRequestHistorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ServiceRequest.objects.filter(customer=self.request.user).order_by('-request_date')
 
 # Rating API Views
 @api_view(['POST'])

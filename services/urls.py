@@ -16,6 +16,7 @@ urlpatterns = [
     # API endpoints
     path('api/categories/', views.ServiceCategoryListAPIView.as_view(), name='api_service_category_list'),
     path('api/requests/create/', views.ServiceRequestCreateAPIView.as_view(), name='api_service_request_create'),
+    path('api/requests/history/', views.ServiceRequestHistoryAPIView.as_view(), name='api_service_request_history'),
     
     # Rating API endpoints
     path('api/ratings/create/', views.create_rating, name='api_create_rating'),

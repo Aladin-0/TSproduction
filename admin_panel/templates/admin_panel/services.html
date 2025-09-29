@@ -5,14 +5,7 @@
 {% block page_title %}Services Management{% endblock %}
 
 {% block top_actions %}
-<button class="btn btn-primary" onclick="bulkAssignTechnician()">
-    <i class="fas fa-user-plus"></i>
-    Bulk Assign
-</button>
-<button class="btn btn-secondary" onclick="exportServices()">
-    <i class="fas fa-download"></i>
-    Export
-</button>
+<!-- Removed bulk assign and export buttons -->
 {% endblock %}
 
 {% block content %}
@@ -76,14 +69,14 @@
     </form>
 </div>
 
-<!-- Quick Stats -->
+<!-- Quick Stats - REAL DATA -->
 <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 25px;">
     <div class="stat-card" style="padding: 15px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px;">SUBMITTED</div>
                 <div style="font-size: 20px; font-weight: 700; color: #fbbf24;">
-                    {% for service in services %}{% if service.status == 'SUBMITTED' %}{% if forloop.first %}1{% else %}{{ forloop.counter }}{% endif %}{% endif %}{% empty %}0{% endfor %}
+                    {{ submitted_count }}
                 </div>
             </div>
             <i class="fas fa-clipboard-list" style="color: #fbbf24; font-size: 20px;"></i>
@@ -95,7 +88,7 @@
             <div>
                 <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px;">UNASSIGNED</div>
                 <div style="font-size: 20px; font-weight: 700; color: #ef4444;">
-                    {% for service in services %}{% if not service.technician %}{% if forloop.first %}1{% else %}{{ forloop.counter }}{% endif %}{% endif %}{% empty %}0{% endfor %}
+                    {{ unassigned_count }}
                 </div>
             </div>
             <i class="fas fa-user-times" style="color: #ef4444; font-size: 20px;"></i>
@@ -107,7 +100,7 @@
             <div>
                 <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px;">IN PROGRESS</div>
                 <div style="font-size: 20px; font-weight: 700; color: #3b82f6;">
-                    {% for service in services %}{% if service.status == 'IN_PROGRESS' %}{% if forloop.first %}1{% else %}{{ forloop.counter }}{% endif %}{% endif %}{% empty %}0{% endfor %}
+                    {{ in_progress_count }}
                 </div>
             </div>
             <i class="fas fa-cog fa-spin" style="color: #3b82f6; font-size: 20px;"></i>
@@ -119,7 +112,7 @@
             <div>
                 <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px;">COMPLETED</div>
                 <div style="font-size: 20px; font-weight: 700; color: #10b981;">
-                    {% for service in services %}{% if service.status == 'COMPLETED' %}{% if forloop.first %}1{% else %}{{ forloop.counter }}{% endif %}{% endif %}{% empty %}0{% endfor %}
+                    {{ completed_count }}
                 </div>
             </div>
             <i class="fas fa-check-circle" style="color: #10b981; font-size: 20px;"></i>
@@ -136,24 +129,13 @@
                 ({{ services.paginator.count }} total)
             </span>
         </h3>
-        <div style="display: flex; gap: 10px;">
-            <button class="btn btn-secondary" onclick="selectAllServices()">
-                <i class="fas fa-check-square"></i>
-                Select All
-            </button>
-            <button class="btn btn-primary" onclick="bulkAssignTechnician()" id="bulkAssignBtn" style="display: none;">
-                <i class="fas fa-user-plus"></i>
-                Assign Technician
-            </button>
-        </div>
+        <!-- Removed bulk actions -->
     </div>
     
     <table class="table">
         <thead>
             <tr>
-                <th style="width: 40px;">
-                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
-                </th>
+                <!-- Removed checkbox column -->
                 <th>Service ID</th>
                 <th>Customer</th>
                 <th>Category</th>
@@ -168,9 +150,6 @@
         <tbody>
             {% for service in services %}
             <tr>
-                <td>
-                    <input type="checkbox" class="service-checkbox" data-service-id="{{ service.id }}" onchange="updateBulkActions()">
-                </td>
                 <td>
                     <div>
                         <div style="font-weight: 600; font-size: 16px;">#{{ service.id }}</div>
@@ -282,7 +261,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="10" style="text-align: center; color: rgba(255,255,255,0.6); padding: 60px;">
+                <td colspan="9" style="text-align: center; color: rgba(255,255,255,0.6); padding: 60px;">
                     <i class="fas fa-tools" style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;"></i>
                     <div style="font-size: 18px; margin-bottom: 10px;">No service requests found</div>
                     <div style="font-size: 14px;">
@@ -378,29 +357,6 @@
         }, 500);
     }
 
-    // Select all functionality
-    function toggleSelectAll() {
-        const selectAll = document.getElementById('selectAll');
-        const checkboxes = document.querySelectorAll('.service-checkbox');
-        
-        checkboxes.forEach(cb => {
-            cb.checked = selectAll.checked;
-        });
-        
-        updateBulkActions();
-    }
-
-    function updateBulkActions() {
-        const checkedBoxes = document.querySelectorAll('.service-checkbox:checked');
-        const bulkAssignBtn = document.getElementById('bulkAssignBtn');
-        
-        if (checkedBoxes.length > 0) {
-            bulkAssignBtn.style.display = 'inline-flex';
-        } else {
-            bulkAssignBtn.style.display = 'none';
-        }
-    }
-
     // View service details
     function viewServiceDetails(serviceId) {
         const modal = document.getElementById('serviceDetailsModal');
@@ -493,10 +449,32 @@
             return;
         }
         
-        // Simulate API call
-        alert('Technician assigned successfully!');
-        closeAssignModal();
-        location.reload();
+        // Make real AJAX call to assign technician
+        fetch('{% url "admin_panel:api_assign_service_technician" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                service_id: selectedServiceId,
+                technician_id: technicianId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Technician assigned successfully!');
+                closeAssignModal();
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error assigning technician');
+            console.error(error);
+        });
     }
 
     function closeAssignModal() {
@@ -529,38 +507,48 @@
             </div>
         `;
         
+        // Set current status as selected
+        setTimeout(() => {
+            document.getElementById('newStatus').value = currentStatus;
+        }, 100);
+        
         modal.style.display = 'flex';
     }
 
     function updateStatus() {
         const newStatus = document.getElementById('newStatus').value;
         
-        // Simulate API call
-        alert('Service status updated successfully!');
-        closeStatusModal();
-        location.reload();
+        // Make real AJAX call to update status
+        fetch('{% url "admin_panel:api_update_service_status" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                service_id: selectedServiceId,
+                status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Service status updated successfully!');
+                closeStatusModal();
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error updating status');
+            console.error(error);
+        });
     }
 
     function closeStatusModal() {
         document.getElementById('statusUpdateModal').style.display = 'none';
         selectedServiceId = null;
-    }
-
-    // Bulk operations
-    function bulkAssignTechnician() {
-        const checkedBoxes = document.querySelectorAll('.service-checkbox:checked');
-        const serviceIds = Array.from(checkedBoxes).map(cb => cb.dataset.serviceId);
-        
-        if (serviceIds.length === 0) return;
-        
-        alert(`Bulk assign technician to ${serviceIds.length} services`);
-    }
-
-    // Export function
-    function exportServices() {
-        const params = new URLSearchParams(window.location.search);
-        params.set('export', 'csv');
-        window.location.href = '?' + params.toString();
     }
 
     // Close modals when clicking outside

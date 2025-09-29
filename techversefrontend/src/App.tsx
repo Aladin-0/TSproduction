@@ -13,6 +13,7 @@ import { ServiceRequestPage } from './pages/ServiceRequestPage';
 import { LoginPage } from './pages/LoginPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import { OrdersPage } from './pages/OrdersPage';
+import { ServiceHistoryPage } from './pages/ServiceHistoryPage';
 import { TechnicianDashboard } from './pages/TechnicianDashboard';
 import CheckoutPage from './pages/CheckoutPage';
 
@@ -164,6 +165,14 @@ function App() {
             element={
               <CustomerRoute>
                 <OrdersPage />
+              </CustomerRoute>
+            } 
+          />
+          <Route 
+            path="/service-history" 
+            element={
+              <CustomerRoute>
+                <ServiceHistoryPage />
               </CustomerRoute>
             } 
           />

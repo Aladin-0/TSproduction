@@ -1,4 +1,4 @@
-# admin_panel/views.py - Complete working views with real database operations
+# admin_panel/views.py - Updated with fixed service stats and category creation
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
@@ -20,6 +20,7 @@ import json
 from datetime import datetime, timedelta
 from django.utils import timezone
 import os
+from django.db.models import F, DecimalField
 
 # Import models
 from store.models import Product, ProductCategory, Order, OrderItem, ProductImage, ProductSpecification
@@ -469,18 +470,12 @@ class AdminOrdersView(View):
         
         orders = orders.order_by('-order_date')
         
-        # Calculate real stats for the current filtered orders
+        # Calculate real stats for all orders
         all_orders = Order.objects.all()
-        if status_filter or technician_filter or search:
-            # If filtered, show stats for all orders, not just filtered ones
-            stats_orders = all_orders
-        else:
-            stats_orders = all_orders
-        
-        pending_count = stats_orders.filter(status='PENDING').count()
-        unassigned_count = stats_orders.filter(technician__isnull=True).count()
-        processing_count = stats_orders.filter(status='PROCESSING').count()
-        completed_count = stats_orders.filter(status='DELIVERED').count()
+        pending_count = all_orders.filter(status='PENDING').count()
+        unassigned_count = all_orders.filter(technician__isnull=True).count()
+        processing_count = all_orders.filter(status='PROCESSING').count()
+        completed_count = all_orders.filter(status='DELIVERED').count()
         
         # Pagination
         paginator = Paginator(orders, 20)
@@ -572,6 +567,7 @@ class AdminAssignTechnicianView(View):
             messages.error(request, f'Error assigning technician: {str(e)}')
             return redirect('admin_panel:edit_order', order_id=order_id)
 
+# FIXED: Services Management View with Real Stats
 @method_decorator(staff_member_required, name='dispatch')
 class AdminServicesView(View):
     def get(self, request):
@@ -605,6 +601,13 @@ class AdminServicesView(View):
         
         services = services.order_by('-request_date')
         
+        # Calculate REAL stats for all services (not filtered)
+        all_services = ServiceRequest.objects.all()
+        submitted_count = all_services.filter(status='SUBMITTED').count()
+        unassigned_count = all_services.filter(technician__isnull=True).count()
+        in_progress_count = all_services.filter(status='IN_PROGRESS').count()
+        completed_count = all_services.filter(status='COMPLETED').count()
+        
         # Pagination
         paginator = Paginator(services, 20)
         page_number = request.GET.get('page')
@@ -619,6 +622,11 @@ class AdminServicesView(View):
             'technician_filter': technician_filter,
             'category_filter': category_filter,
             'search': search,
+            # REAL STATS
+            'submitted_count': submitted_count,
+            'unassigned_count': unassigned_count,
+            'in_progress_count': in_progress_count,
+            'completed_count': completed_count,
         }
         
         return render(request, 'admin_panel/services.html', context)
@@ -675,6 +683,7 @@ class AdminAssignServiceTechnicianView(View):
             messages.error(request, f'Error assigning technician: {str(e)}')
             return redirect('admin_panel:edit_service', service_id=service_id)
 
+# FIXED: Categories Management View
 @method_decorator(staff_member_required, name='dispatch')
 class AdminCategoriesView(View):
     def get(self, request):
@@ -693,6 +702,7 @@ class AdminCategoriesView(View):
         
         return render(request, 'admin_panel/categories.html', context)
 
+# FIXED: Create Category View
 @method_decorator(staff_member_required, name='dispatch')
 class AdminCreateCategoryView(View):
     def post(self, request):
@@ -700,24 +710,30 @@ class AdminCreateCategoryView(View):
         name = request.POST.get('name')
         slug = request.POST.get('slug', '')
         
+        if not name or not name.strip():
+            messages.error(request, 'Category name is required')
+            return redirect('admin_panel:categories')
+        
         try:
             if category_type == 'product':
-                if not slug:
+                if not slug or not slug.strip():
                     slug = slugify(name)
                 
-                # Check if slug exists
+                # Check if slug exists and make it unique
                 original_slug = slug
                 counter = 1
                 while ProductCategory.objects.filter(slug=slug).exists():
                     slug = f"{original_slug}-{counter}"
                     counter += 1
                 
-                ProductCategory.objects.create(name=name, slug=slug)
+                ProductCategory.objects.create(name=name.strip(), slug=slug)
                 messages.success(request, f'Product category "{name}" created successfully!')
             
             elif category_type == 'service':
-                ServiceCategory.objects.create(name=name)
+                ServiceCategory.objects.create(name=name.strip())
                 messages.success(request, f'Service category "{name}" created successfully!')
+            else:
+                messages.error(request, 'Invalid category type')
             
         except Exception as e:
             messages.error(request, f'Error creating category: {str(e)}')
@@ -731,23 +747,73 @@ class AdminEditCategoryView(View):
         name = request.POST.get('name')
         slug = request.POST.get('slug', '')
         
+        if not name or not name.strip():
+            messages.error(request, 'Category name is required')
+            return redirect('admin_panel:categories')
+        
         try:
             if category_type == 'product':
                 category = get_object_or_404(ProductCategory, id=category_id)
-                category.name = name
-                if slug:
-                    category.slug = slug
+                category.name = name.strip()
+                if slug and slug.strip():
+                    category.slug = slug.strip()
                 category.save()
                 messages.success(request, f'Product category "{name}" updated successfully!')
             
             elif category_type == 'service':
                 category = get_object_or_404(ServiceCategory, id=category_id)
-                category.name = name
+                category.name = name.strip()
                 category.save()
                 messages.success(request, f'Service category "{name}" updated successfully!')
             
         except Exception as e:
             messages.error(request, f'Error updating category: {str(e)}')
+        
+        return redirect('admin_panel:categories')
+
+@method_decorator(staff_member_required, name='dispatch')
+class AdminDeleteCategoryView(View):
+    def post(self, request, category_id):
+        category_type = request.POST.get('type', 'product')  # Default to product if not specified
+        
+        try:
+            if category_type == 'product':
+                category = get_object_or_404(ProductCategory, id=category_id)
+                category_name = category.name
+                
+                # Check if category has products
+                product_count = category.products.count()
+                if product_count > 0:
+                    messages.warning(
+                        request, 
+                        f'Cannot delete category "{category_name}" because it has {product_count} associated products. Please reassign or delete those products first.'
+                    )
+                    return redirect('admin_panel:categories')
+                
+                category.delete()
+                messages.success(request, f'Product category "{category_name}" deleted successfully!')
+            
+            elif category_type == 'service':
+                category = get_object_or_404(ServiceCategory, id=category_id)
+                category_name = category.name
+                
+                # Check if category has services
+                service_count = category.servicerequest_set.count()
+                if service_count > 0:
+                    messages.warning(
+                        request, 
+                        f'Cannot delete category "{category_name}" because it has {service_count} associated service requests. Please reassign or delete those services first.'
+                    )
+                    return redirect('admin_panel:categories')
+                
+                category.delete()
+                messages.success(request, f'Service category "{category_name}" deleted successfully!')
+            
+            else:
+                messages.error(request, 'Invalid category type')
+                
+        except Exception as e:
+            messages.error(request, f'Error deleting category: {str(e)}')
         
         return redirect('admin_panel:categories')
 
@@ -758,39 +824,254 @@ class AdminAnalyticsView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Monthly data for charts
-        monthly_orders = []
-        monthly_revenue = []
+        # Get date range from query params (default 30 days)
+        days = int(self.request.GET.get('days', 30))
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=days)
         
-        for i in range(12, 0, -1):
-            month_start = timezone.now().replace(day=1) - timedelta(days=30*i)
-            month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        # Previous period for comparison
+        previous_start = start_date - timedelta(days=days)
+        previous_end = start_date
+        
+        # Current period data
+        current_orders = Order.objects.filter(order_date__range=[start_date, end_date])
+        previous_orders = Order.objects.filter(order_date__range=[previous_start, previous_end])
+        
+        # Calculate revenue from order items (no total_amount field)
+        current_revenue_data = OrderItem.objects.filter(
+            order__order_date__range=[start_date, end_date],
+            order__status__in=['PROCESSING', 'SHIPPED', 'DELIVERED']
+        ).aggregate(
+            total=Sum(F('quantity') * F('price'), output_field=DecimalField())
+        )
+        current_revenue = float(current_revenue_data['total'] or 0)
+        
+        previous_revenue_data = OrderItem.objects.filter(
+            order__order_date__range=[previous_start, previous_end],
+            order__status__in=['PROCESSING', 'SHIPPED', 'DELIVERED']
+        ).aggregate(
+            total=Sum(F('quantity') * F('price'), output_field=DecimalField())
+        )
+        previous_revenue = float(previous_revenue_data['total'] or 0)
+        
+        # Calculate growth percentages
+        revenue_growth = 0
+        if previous_revenue > 0:
+            revenue_growth = ((current_revenue - previous_revenue) / previous_revenue) * 100
+        elif current_revenue > 0:
+            revenue_growth = 100
+        
+        order_growth = 0
+        if previous_orders.count() > 0:
+            order_growth = ((current_orders.count() - previous_orders.count()) / previous_orders.count()) * 100
+        elif current_orders.count() > 0:
+            order_growth = 100
+        
+        # Average order value
+        avg_order_value = current_revenue / current_orders.count() if current_orders.count() > 0 else 0
+        prev_avg_order_value = previous_revenue / previous_orders.count() if previous_orders.count() > 0 else 0
+        
+        aov_growth = 0
+        if prev_avg_order_value > 0:
+            aov_growth = ((avg_order_value - prev_avg_order_value) / prev_avg_order_value) * 100
+        elif avg_order_value > 0:
+            aov_growth = 100
+        
+        # Customer growth
+        current_customers = User.objects.filter(
+            role='CUSTOMER',
+            date_joined__range=[start_date, end_date]
+        ).count()
+        
+        previous_customers = User.objects.filter(
+            role='CUSTOMER',
+            date_joined__range=[previous_start, previous_end]
+        ).count()
+        
+        customer_growth = 0
+        if previous_customers > 0:
+            customer_growth = ((current_customers - previous_customers) / previous_customers) * 100
+        elif current_customers > 0:
+            customer_growth = 100
+        
+        # Monthly revenue data for chart (last 12 months)
+        monthly_revenue = []
+        for i in range(11, -1, -1):
+            month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=30*i)
+            month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
             
-            orders_count = Order.objects.filter(
-                order_date__range=[month_start, month_end]
-            ).count()
-            
-            try:
-                revenue = Order.objects.filter(
-                    order_date__range=[month_start, month_end],
-                    status__in=['PROCESSING', 'SHIPPED', 'DELIVERED']
-                ).aggregate(total=Sum('total_amount'))['total'] or 0
-            except:
-                revenue = 0
-            
-            monthly_orders.append({
-                'month': month_start.strftime('%b %Y'),
-                'count': orders_count
-            })
+            revenue_data = OrderItem.objects.filter(
+                order__order_date__range=[month_start, month_end],
+                order__status__in=['PROCESSING', 'SHIPPED', 'DELIVERED']
+            ).aggregate(
+                total=Sum(F('quantity') * F('price'), output_field=DecimalField())
+            )
+            revenue = float(revenue_data['total'] or 0)
             
             monthly_revenue.append({
-                'month': month_start.strftime('%b %Y'),
-                'amount': float(revenue)
+                'month': month_start.strftime('%b %y'),
+                'amount': revenue
+            })
+        
+        # Daily orders for last 30 days
+        daily_orders = []
+        for i in range(29, -1, -1):
+            day = timezone.now().date() - timedelta(days=i)
+            day_start = timezone.make_aware(datetime.combine(day, datetime.min.time()))
+            day_end = timezone.make_aware(datetime.combine(day, datetime.max.time()))
+            
+            count = Order.objects.filter(order_date__range=[day_start, day_end]).count()
+            daily_orders.append({
+                'day': day.strftime('%m/%d'),
+                'count': count
+            })
+        
+        # Daily services for last 30 days
+        daily_services = []
+        for i in range(29, -1, -1):
+            day = timezone.now().date() - timedelta(days=i)
+            day_start = timezone.make_aware(datetime.combine(day, datetime.min.time()))
+            day_end = timezone.make_aware(datetime.combine(day, datetime.max.time()))
+            
+            count = ServiceRequest.objects.filter(request_date__range=[day_start, day_end]).count()
+            daily_services.append({
+                'day': day.strftime('%m/%d'),
+                'count': count
+            })
+        
+        # Top products by sales (calculate from OrderItems)
+        top_products = OrderItem.objects.filter(
+            order__order_date__range=[start_date, end_date]
+        ).values('product__name').annotate(
+            total_quantity=Sum('quantity'),
+            total_sales=Sum(F('quantity') * F('price'), output_field=DecimalField())
+        ).order_by('-total_sales')[:5]
+        
+        # Order status distribution
+        total_orders_count = Order.objects.filter(order_date__range=[start_date, end_date]).count()
+        order_status_distribution = []
+        
+        for status_code, status_name in Order.STATUS_CHOICES:
+            count = Order.objects.filter(
+                order_date__range=[start_date, end_date],
+                status=status_code
+            ).count()
+            
+            percentage = (count / total_orders_count * 100) if total_orders_count > 0 else 0
+            
+            if count > 0:  # Only show statuses with orders
+                order_status_distribution.append({
+                    'status': status_name,
+                    'count': count,
+                    'percentage': percentage
+                })
+        
+        # Top cities by orders
+        top_cities = Order.objects.filter(
+            order_date__range=[start_date, end_date],
+            shipping_address__isnull=False
+        ).values('shipping_address__city', 'shipping_address__state').annotate(
+            order_count=Count('id')
+        ).order_by('-order_count')[:5]
+        
+        # Recent activities
+        recent_activities = []
+        
+        # Recent orders
+        recent_order = Order.objects.select_related('customer').order_by('-order_date').first()
+        if recent_order:
+            time_diff = timezone.now() - recent_order.order_date
+            if time_diff.days > 0:
+                time_ago = f'{time_diff.days} day{"s" if time_diff.days > 1 else ""} ago'
+            elif time_diff.seconds // 3600 > 0:
+                hours = time_diff.seconds // 3600
+                time_ago = f'{hours} hour{"s" if hours > 1 else ""} ago'
+            else:
+                minutes = time_diff.seconds // 60
+                time_ago = f'{minutes} minute{"s" if minutes > 1 else ""} ago'
+            
+            recent_activities.append({
+                'icon': 'shopping-cart',
+                'color': '16, 185, 129',
+                'title': 'New order placed',
+                'description': f'Order #{recent_order.id} by {recent_order.customer.name}',
+                'time': time_ago
+            })
+        
+        # Recent customers
+        recent_customer = User.objects.filter(role='CUSTOMER').order_by('-date_joined').first()
+        if recent_customer:
+            time_diff = timezone.now() - recent_customer.date_joined
+            if time_diff.days > 0:
+                time_ago = f'{time_diff.days} day{"s" if time_diff.days > 1 else ""} ago'
+            elif time_diff.seconds // 3600 > 0:
+                hours = time_diff.seconds // 3600
+                time_ago = f'{hours} hour{"s" if hours > 1 else ""} ago'
+            else:
+                minutes = time_diff.seconds // 60
+                time_ago = f'{minutes} minute{"s" if minutes > 1 else ""} ago'
+            
+            recent_activities.append({
+                'icon': 'user-plus',
+                'color': '59, 130, 246',
+                'title': 'New customer registered',
+                'description': f'{recent_customer.name}',
+                'time': time_ago
+            })
+        
+        # Recent service
+        recent_service = ServiceRequest.objects.select_related('customer').order_by('-request_date').first()
+        if recent_service:
+            time_diff = timezone.now() - recent_service.request_date
+            if time_diff.days > 0:
+                time_ago = f'{time_diff.days} day{"s" if time_diff.days > 1 else ""} ago'
+            elif time_diff.seconds // 3600 > 0:
+                hours = time_diff.seconds // 3600
+                time_ago = f'{hours} hour{"s" if hours > 1 else ""} ago'
+            else:
+                minutes = time_diff.seconds // 60
+                time_ago = f'{minutes} minute{"s" if minutes > 1 else ""} ago'
+            
+            recent_activities.append({
+                'icon': 'tools',
+                'color': '168, 85, 247',
+                'title': 'Service request submitted',
+                'description': f'Request #{recent_service.id}',
+                'time': time_ago
+            })
+        
+        # Low stock products
+        low_stock = Product.objects.filter(stock__lt=5, stock__gt=0).first()
+        if low_stock:
+            recent_activities.append({
+                'icon': 'exclamation-triangle',
+                'color': '239, 68, 68',
+                'title': 'Low stock alert',
+                'description': f'{low_stock.name} - {low_stock.stock} left',
+                'time': 'Now'
             })
         
         context.update({
-            'monthly_orders': json.dumps(monthly_orders),
+            # Summary stats
+            'total_revenue': current_revenue,
+            'revenue_growth': revenue_growth,
+            'total_orders': current_orders.count(),
+            'order_growth': order_growth,
+            'avg_order_value': avg_order_value,
+            'aov_growth': aov_growth,
+            'total_customers': User.objects.filter(role='CUSTOMER').count(),
+            'customer_growth': customer_growth,
+            
+            # Chart data (JSON serialized)
             'monthly_revenue': json.dumps(monthly_revenue),
+            'daily_orders': json.dumps(daily_orders),
+            'daily_services': json.dumps(daily_services),
+            
+            # Lists
+            'top_products': top_products,
+            'order_status_distribution': order_status_distribution,
+            'top_cities': top_cities,
+            'recent_activities': recent_activities,
         })
         
         return context
@@ -866,7 +1147,7 @@ def get_order_details_api(request, order_id):
 @require_POST
 @csrf_exempt
 def assign_technician_api(request):
-    """API endpoint for assigning technicians"""
+    """API endpoint for assigning technicians to orders"""
     try:
         data = json.loads(request.body)
         order_id = data.get('order_id')

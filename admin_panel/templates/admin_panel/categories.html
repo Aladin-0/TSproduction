@@ -201,17 +201,20 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <form id="categoryForm">
+        <form id="categoryForm" method="POST" action="{% url 'admin_panel:create_category' %}">
+            {% csrf_token %}
+            <input type="hidden" name="type" id="categoryType">
+            
             <div style="margin-bottom: 20px;">
-                <label class="form-label">Category Name</label>
-                <input type="text" id="categoryName" class="form-control" placeholder="Enter category name" required>
+                <label class="form-label">Category Name *</label>
+                <input type="text" name="name" id="categoryName" class="form-control" placeholder="Enter category name" required>
             </div>
             
             <div id="slugField" style="margin-bottom: 20px;">
                 <label class="form-label">Slug (URL-friendly name)</label>
-                <input type="text" id="categorySlug" class="form-control" placeholder="auto-generated-slug" readonly>
+                <input type="text" name="slug" id="categorySlug" class="form-control" placeholder="auto-generated-slug">
                 <div style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px;">
-                    Automatically generated from category name
+                    Automatically generated from category name (leave empty for auto-generation)
                 </div>
             </div>
             
@@ -294,13 +297,13 @@
             .replace(/^-+|-+$/g, '');
     }
 
-    // Update slug when name changes
+    // Update slug when name changes (only for product categories)
     document.addEventListener('DOMContentLoaded', function() {
         const nameInput = document.getElementById('categoryName');
         const slugInput = document.getElementById('categorySlug');
         
         nameInput.addEventListener('input', function() {
-            if (!editingCategoryId) { // Only auto-generate for new categories
+            if (!editingCategoryId && currentCategoryType === 'product') {
                 slugInput.value = generateSlug(this.value);
             }
         });
@@ -315,6 +318,14 @@
         const title = document.getElementById('modalTitle');
         const submitBtn = document.getElementById('submitBtn');
         const slugField = document.getElementById('slugField');
+        const categoryType = document.getElementById('categoryType');
+        const form = document.getElementById('categoryForm');
+        
+        // Set the type
+        categoryType.value = type;
+        
+        // Update form action for create
+        form.action = '{% url "admin_panel:create_category" %}';
         
         title.textContent = `Add ${type === 'product' ? 'Product' : 'Service'} Category`;
         submitBtn.textContent = 'Create Category';
@@ -322,6 +333,7 @@
         
         // Reset form
         document.getElementById('categoryForm').reset();
+        categoryType.value = type; // Reset this again after form reset
         
         modal.style.display = 'flex';
         document.getElementById('categoryName').focus();
@@ -336,6 +348,14 @@
         const title = document.getElementById('modalTitle');
         const submitBtn = document.getElementById('submitBtn');
         const slugField = document.getElementById('slugField');
+        const categoryType = document.getElementById('categoryType');
+        const form = document.getElementById('categoryForm');
+        
+        // Set the type
+        categoryType.value = type;
+        
+        // Update form action for edit
+        form.action = `/admin-panel/categories/${id}/edit/`;
         
         title.textContent = `Edit ${type === 'product' ? 'Product' : 'Service'} Category`;
         submitBtn.textContent = 'Update Category';
@@ -358,44 +378,37 @@
         editingCategoryId = null;
     }
 
-    // Handle form submission
-    document.getElementById('categoryForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const name = document.getElementById('categoryName').value.trim();
-        const slug = currentCategoryType === 'product' ? document.getElementById('categorySlug').value.trim() : '';
-        
-        if (!name) {
-            alert('Please enter a category name');
-            return;
-        }
-        
-        if (currentCategoryType === 'product' && !slug) {
-            alert('Please enter a slug');
-            return;
-        }
-        
-        // Simulate API call
-        const action = editingCategoryId ? 'updated' : 'created';
-        alert(`${currentCategoryType === 'product' ? 'Product' : 'Service'} category ${action} successfully!`);
-        
-        closeCategoryModal();
-        // location.reload(); // Uncomment when implementing real API
-    });
-
     // Delete category
     function deleteCategory(type, id, name, count) {
         if (count > 0) {
             const itemType = type === 'product' ? 'products' : 'services';
-            if (!confirm(`This category has ${count} ${itemType}. Deleting it will also remove all associated ${itemType}. Are you sure?`)) {
+            if (!confirm(`This category has ${count} ${itemType}. Deleting it will also remove the category association. Are you sure?`)) {
                 return;
             }
         }
         
         if (confirm(`Are you sure you want to delete the category "${name}"?`)) {
-            // Here you would make an API call to delete the category
-            alert(`${type === 'product' ? 'Product' : 'Service'} category deleted successfully!`);
-            // location.reload(); // Uncomment when implementing real API
+            // Create a form to delete the category
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/admin-panel/categories/${id}/delete/`;
+            
+            // Add CSRF token
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = '{{ csrf_token }}';
+            form.appendChild(csrfInput);
+            
+            // Add type parameter
+            const typeInput = document.createElement('input');
+            typeInput.type = 'hidden';
+            typeInput.name = 'type';
+            typeInput.value = type;
+            form.appendChild(typeInput);
+            
+            document.body.appendChild(form);
+            form.submit();
         }
     }
 

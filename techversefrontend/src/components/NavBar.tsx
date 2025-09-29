@@ -322,6 +322,11 @@ export const NavBar = () => {
     navigate('/my-orders');
     handleProfileMenuClose();
   };
+  
+  const handleServiceHistoryClick = () => {
+    navigate('/service-history');
+    handleProfileMenuClose();
+  };
 
   const handleCartClick = () => {
     openCart();
@@ -401,6 +406,9 @@ export const NavBar = () => {
           </DrawerItem>
           <DrawerItem>
             <RouterLink to="/my-orders" onClick={handleDrawerToggle}>My Orders</RouterLink>
+          </DrawerItem>
+          <DrawerItem>
+            <RouterLink to="/service-history" onClick={handleDrawerToggle}>Service History</RouterLink>
           </DrawerItem>
           <DrawerItem>
             <button onClick={() => { handleLogout(); handleDrawerToggle(); }}>
@@ -520,6 +528,11 @@ export const NavBar = () => {
         <MenuItem onClick={handleOrdersClick}>
           <HistoryIcon sx={{ mr: 2, fontSize: '18px' }} />
           Order History
+        </MenuItem>
+        
+        <MenuItem onClick={handleServiceHistoryClick}>
+          <HistoryIcon sx={{ mr: 2, fontSize: '18px' }} />
+          Service History
         </MenuItem>
         
         <MenuItem onClick={handleCartClick}>
