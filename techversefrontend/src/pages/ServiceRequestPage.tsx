@@ -1,4 +1,4 @@
-// src/pages/ServiceRequestPage.tsx - Complete redesigned page like Store page
+// src/pages/ServiceRequestPage.tsx - COMPLETE FIXED VERSION - PART 1/2
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
@@ -16,14 +16,6 @@ import {
   DialogActions,
   Grid,
   Radio,
-  RadioGroup,
-  FormControlLabel,
-  FormControl,
-  FormLabel,
-  Select,
-  MenuItem,
-  InputLabel,
-  Skeleton,
   Alert,
   Switch
 } from '@mui/material';
@@ -41,7 +33,7 @@ import { useUserStore } from '../stores/userStore';
 import apiClient from '../api';
 import { useSnackbar } from 'notistack';
 
-// Main page wrapper matching store design
+// Main page wrapper
 const PageWrapper = styled(Box)({
   backgroundColor: '#000000',
   color: 'white',
@@ -51,7 +43,6 @@ const PageWrapper = styled(Box)({
   paddingTop: '80px',
 });
 
-// Premium header section
 const Header = styled(Box)({
   display: 'flex',
   justifyContent: 'space-between',
@@ -87,7 +78,6 @@ const BreadcrumbText = styled(Typography)({
   fontWeight: 400,
 });
 
-// Premium hero section
 const ServiceHero = styled(Box)({
   background: `
     radial-gradient(ellipse 1200px 800px at 50% 20%, rgba(64, 64, 64, 0.15) 0%, transparent 50%),
@@ -99,19 +89,6 @@ const ServiceHero = styled(Box)({
   position: 'relative',
   overflow: 'hidden',
   borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: `
-      radial-gradient(circle 600px at 75% 30%, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
-      radial-gradient(circle 400px at 25% 70%, rgba(255, 255, 255, 0.02) 0%, transparent 50%)
-    `,
-    pointerEvents: 'none',
-  },
 });
 
 const HeroTitle = styled(Typography)({
@@ -136,26 +113,10 @@ const HeroSubtitle = styled(Typography)({
   margin: '0 auto 20px',
 });
 
-// Content section
 const ServiceContent = styled(Box)({
   padding: '60px',
-  background: `
-    linear-gradient(135deg, #000000 0%, #0a0a0a 25%, #111111 50%, #0a0a0a 75%, #000000 100%)
-  `,
+  background: `linear-gradient(135deg, #000000 0%, #0a0a0a 25%, #111111 50%, #0a0a0a 75%, #000000 100%)`,
   position: 'relative',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: `
-      radial-gradient(ellipse 1000px 300px at 50% 0%, rgba(255, 255, 255, 0.02) 0%, transparent 50%),
-      radial-gradient(ellipse 800px 200px at 50% 100%, rgba(255, 255, 255, 0.01) 0%, transparent 50%)
-    `,
-    pointerEvents: 'none',
-  },
 });
 
 const ContentContainer = styled(Box)({
@@ -176,7 +137,6 @@ const SectionTitle = styled(Typography)({
   letterSpacing: '0.5px',
 });
 
-// Premium service grid matching store design
 const ServiceGrid = styled(Box)({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
@@ -203,41 +163,11 @@ const ServiceCard = styled(AnimatedServiceCard)<{ selected?: boolean }>(({ selec
   cursor: 'pointer',
   position: 'relative',
   backdropFilter: 'blur(20px)',
-  willChange: 'transform, box-shadow',
   '&:hover': {
-    backgroundColor: selected 
-      ? 'rgba(96, 165, 250, 0.2)' 
-      : 'rgba(255, 255, 255, 0.08)',
-    borderColor: selected 
-      ? 'rgba(96, 165, 250, 0.4)' 
-      : 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: selected ? 'rgba(96, 165, 250, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+    borderColor: selected ? 'rgba(96, 165, 250, 0.4)' : 'rgba(255, 255, 255, 0.15)',
     transform: 'translateY(-8px) scale(1.02)',
-    boxShadow: `
-      0 25px 50px rgba(0, 0, 0, 0.5),
-      0 0 30px ${selected ? 'rgba(96, 165, 250, 0.2)' : 'rgba(255, 255, 255, 0.1)'},
-      inset 0 1px 0 rgba(255, 255, 255, 0.1)
-    `,
-  },
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: `
-      linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.1) 0%, 
-        transparent 50%, 
-        rgba(255, 255, 255, 0.05) 100%
-      )
-    `,
-    opacity: 0,
-    transition: 'opacity 0.3s ease',
-    pointerEvents: 'none',
-  },
-  '&:hover::before': {
-    opacity: 1,
+    boxShadow: `0 25px 50px rgba(0, 0, 0, 0.5), 0 0 30px ${selected ? 'rgba(96, 165, 250, 0.2)' : 'rgba(255, 255, 255, 0.1)'}`,
   },
 }));
 
@@ -258,7 +188,6 @@ const ServiceIcon = styled(Box)({
   alignItems: 'center',
   justifyContent: 'center',
   border: '1px solid rgba(255, 255, 255, 0.1)',
-  transition: 'all 0.3s ease',
   '& .MuiSvgIcon-root': {
     fontSize: '28px',
     color: 'rgba(255, 255, 255, 0.8)',
@@ -275,6 +204,9 @@ const ServiceName = styled(Typography)({
   color: 'rgba(255, 255, 255, 0.95)',
   marginBottom: '4px',
   lineHeight: 1.3,
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
 });
 
 const ServicePrice = styled(Chip)({
@@ -287,13 +219,7 @@ const ServicePrice = styled(Chip)({
 });
 
 const CustomServiceCard = styled(ServiceCard)({
-  background: `
-    linear-gradient(135deg, 
-      rgba(139, 92, 246, 0.1) 0%, 
-      rgba(139, 92, 246, 0.05) 50%, 
-      rgba(139, 92, 246, 0.1) 100%
-    )
-  `,
+  background: `linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 50%, rgba(139, 92, 246, 0.1) 100%)`,
   border: '1px solid rgba(139, 92, 246, 0.2)',
   '&:hover': {
     backgroundColor: 'rgba(139, 92, 246, 0.15)',
@@ -301,15 +227,8 @@ const CustomServiceCard = styled(ServiceCard)({
   },
 });
 
-// Address section
 const AddressSection = styled(Card)({
-  background: `
-    linear-gradient(135deg, 
-      rgba(255, 255, 255, 0.05) 0%, 
-      rgba(255, 255, 255, 0.02) 50%, 
-      rgba(255, 255, 255, 0.05) 100%
-    )
-  `,
+  background: `linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0.05) 100%)`,
   border: '1px solid rgba(255, 255, 255, 0.08)',
   borderRadius: '20px',
   marginBottom: '32px',
@@ -424,15 +343,9 @@ const AddressCard = styled(Box)<{ selected?: boolean }>(({ selected }) => ({
   },
 }));
 
-// Premium dialog styling
 const PremiumDialog = styled(Dialog)({
   '& .MuiDialog-paper': {
-    background: `
-      linear-gradient(135deg, 
-        rgba(20, 20, 20, 0.95) 0%, 
-        rgba(10, 10, 10, 0.98) 100%
-      )
-    `,
+    background: `linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(10, 10, 10, 0.98) 100%)`,
     backdropFilter: 'blur(20px)',
     border: '1px solid rgba(255, 255, 255, 0.12)',
     borderRadius: '20px',
@@ -448,51 +361,7 @@ const PremiumDialog = styled(Dialog)({
   },
 });
 
-// Loading skeleton
-const ServiceSkeleton = () => (
-  <Card sx={{ 
-    background: 'rgba(255, 255, 255, 0.02)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '20px',
-    overflow: 'hidden',
-    backdropFilter: 'blur(20px)'
-  }}>
-    <Box sx={{ p: 3, borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Skeleton 
-          variant="rectangular" 
-          width={56} 
-          height={56} 
-          sx={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            borderRadius: '16px'
-          }}
-        />
-        <Box sx={{ flex: 1 }}>
-          <Skeleton 
-            variant="text" 
-            width={150} 
-            height={24} 
-            sx={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', mb: 0.5 }}
-          />
-          <Skeleton 
-            variant="rectangular" 
-            width={80} 
-            height={32} 
-            sx={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '16px' }}
-          />
-        </Box>
-        <Skeleton 
-          variant="circular" 
-          width={24} 
-          height={24} 
-          sx={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
-        />
-      </Box>
-    </Box>
-  </Card>
-);
-
+// UPDATED INTERFACES - FIXED
 interface ServiceIssue {
   id: number;
   description: string;
@@ -503,6 +372,7 @@ interface ServiceCategory {
   id: number;
   name: string;
   issues: ServiceIssue[];
+  is_free_for_user?: boolean; // CRITICAL: Added this field
 }
 
 interface Address {
@@ -513,18 +383,17 @@ interface Address {
   pincode: string;
   is_default: boolean;
 }
+// PART 2/2 - Component Logic and JSX
 
 export const ServiceRequestPage: React.FC = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   
-  // Store hooks
-  const { categories } = useServiceStore();
+  const { categories, fetchCategories } = useServiceStore();
   const { addresses, fetchAddresses } = useProductStore();
   const { user } = useUserStore();
   
-  // State
   const [loading, setLoading] = useState(true);
   const [selectedIssue, setSelectedIssue] = useState<ServiceIssue | null>(null);
   const [customDescription, setCustomDescription] = useState('');
@@ -533,7 +402,6 @@ export const ServiceRequestPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [isCustomSelected, setIsCustomSelected] = useState(false);
   
-  // New address form state
   const [addressForm, setAddressForm] = useState({
     street_address: '',
     city: '',
@@ -542,7 +410,6 @@ export const ServiceRequestPage: React.FC = () => {
     is_default: false
   });
 
-  // Hero animation
   const heroAnimation = useSpring({
     from: { opacity: 0, transform: 'translateY(40px)' },
     to: { opacity: 1, transform: 'translateY(0px)' },
@@ -555,6 +422,7 @@ export const ServiceRequestPage: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        await fetchCategories();
         await fetchAddresses();
       } catch (error) {
         console.error('Error loading data:', error);
@@ -562,9 +430,8 @@ export const ServiceRequestPage: React.FC = () => {
       setLoading(false);
     };
     loadData();
-  }, [fetchAddresses]);
+  }, [fetchCategories, fetchAddresses]);
 
-  // Set default address
   useEffect(() => {
     const defaultAddress = addresses.find(addr => addr.is_default);
     if (defaultAddress && !selectedAddress) {
@@ -574,12 +441,12 @@ export const ServiceRequestPage: React.FC = () => {
 
   const handleIssueSelect = (issue: ServiceIssue) => {
     setSelectedIssue(issue);
-    setCustomDescription(''); // Clear custom description when selecting predefined issue
+    setCustomDescription('');
     setIsCustomSelected(false);
   };
 
   const handleCustomIssue = () => {
-    setSelectedIssue(null); // Clear selected issue when choosing custom
+    setSelectedIssue(null);
     setIsCustomSelected(true);
   };
 
@@ -627,8 +494,6 @@ export const ServiceRequestPage: React.FC = () => {
       console.log('Service request created:', response.data);
       
       enqueueSnackbar('Service request submitted successfully!', { variant: 'success' });
-      
-      // Redirect to success page or back to services
       navigate('/services', { 
         state: { message: 'Service request submitted successfully! We will contact you within 24 hours.' }
       });
@@ -668,7 +533,6 @@ export const ServiceRequestPage: React.FC = () => {
 
   return (
     <PageWrapper>
-      {/* Header with Breadcrumb */}
       <Header>
         <BackButton onClick={() => navigate('/services')}>
           <ArrowBackIcon sx={{ fontSize: '16px' }} />
@@ -677,7 +541,6 @@ export const ServiceRequestPage: React.FC = () => {
         <BreadcrumbText>Services / {category.name} / Request Service</BreadcrumbText>
       </Header>
 
-      {/* Premium Hero */}
       <ServiceHero>
         <animated.div style={heroAnimation}>
           <HeroTitle>Request Service: {category.name}</HeroTitle>
@@ -688,47 +551,101 @@ export const ServiceRequestPage: React.FC = () => {
         </animated.div>
       </ServiceHero>
 
-      {/* Service Content */}
       <ServiceContent>
         <ContentContainer>
-          {/* Service Issues Grid */}
+          {/* FIXED: Show AMC benefit alert */}
+          {category.is_free_for_user && (
+            <Alert 
+              icon={<CheckCircleIcon />}
+              severity="success" 
+              sx={{ 
+                mb: 3,
+                backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                color: '#22c55e',
+                border: '1px solid rgba(34, 197, 94, 0.3)',
+                borderRadius: '16px',
+                '& .MuiAlert-icon': { color: '#22c55e' },
+                '& .MuiAlert-message': { 
+                  fontSize: '14px',
+                  fontWeight: 500
+                }
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                🎉 AMC Benefit Active!
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                All services in this category are FREE for you as an AMC customer. 
+                No service charges will be applied!
+              </Typography>
+            </Alert>
+          )}
+
           <SectionTitle>Available Repair Services</SectionTitle>
 
           <ServiceGrid>
             {loading ? (
               Array.from({ length: 4 }).map((_, index) => (
-                <ServiceSkeleton key={index} />
+                <Box key={index}>Loading...</Box>
               ))
             ) : (
               <>
-                {/* Predefined Issues */}
-                {category.issues.map((issue) => (
-                  <ServiceCard 
-                    key={issue.id}
-                    selected={selectedIssue?.id === issue.id}
-                    onClick={() => handleIssueSelect(issue)}
-                  >
-                    <ServiceHeader>
-                      <ServiceIcon>
-                        <HandymanIcon />
-                      </ServiceIcon>
-                      <ServiceInfo>
-                        <ServiceName>{issue.description}</ServiceName>
-                        <ServicePrice label={`₹${issue.price}`} />
-                      </ServiceInfo>
-                      <Radio
-                        checked={selectedIssue?.id === issue.id}
-                        onChange={() => handleIssueSelect(issue)}
-                        sx={{
-                          color: 'rgba(255, 255, 255, 0.6)',
-                          '&.Mui-checked': {
-                            color: '#60a5fa',
-                          },
-                        }}
-                      />
-                    </ServiceHeader>
-                  </ServiceCard>
-                ))}
+                {/* FIXED: Predefined Issues with FREE indicator */}
+                {category.issues.map((issue) => {
+                  const isFreeService = category.is_free_for_user === true;
+                  
+                  return (
+                    <ServiceCard 
+                      key={issue.id}
+                      selected={selectedIssue?.id === issue.id}
+                      onClick={() => handleIssueSelect(issue)}
+                    >
+                      <ServiceHeader>
+                        <ServiceIcon>
+                          <HandymanIcon />
+                        </ServiceIcon>
+                        <ServiceInfo>
+                          <ServiceName>
+                            {issue.description}
+                            {isFreeService && (
+                              <Chip 
+                                label="FREE" 
+                                size="small"
+                                sx={{
+                                  ml: 1,
+                                  backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                                  color: '#22c55e',
+                                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                                  fontWeight: 700,
+                                  fontSize: '11px',
+                                  height: '22px'
+                                }}
+                              />
+                            )}
+                          </ServiceName>
+                          <ServicePrice 
+                            label={isFreeService ? 'FREE for AMC' : `₹${issue.price}`}
+                            sx={isFreeService ? {
+                              backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                              color: '#22c55e',
+                              border: '1px solid rgba(34, 197, 94, 0.3)'
+                            } : {}}
+                          />
+                        </ServiceInfo>
+                        <Radio
+                          checked={selectedIssue?.id === issue.id}
+                          onChange={() => handleIssueSelect(issue)}
+                          sx={{
+                            color: 'rgba(255, 255, 255, 0.6)',
+                            '&.Mui-checked': {
+                              color: '#60a5fa',
+                            },
+                          }}
+                        />
+                      </ServiceHeader>
+                    </ServiceCard>
+                  );
+                })}
 
                 {/* Custom Issue Option */}
                 <CustomServiceCard 
@@ -769,7 +686,7 @@ export const ServiceRequestPage: React.FC = () => {
                         rows={4}
                         value={customDescription}
                         onChange={(e) => setCustomDescription(e.target.value)}
-                        placeholder="Please describe the problem you're experiencing in detail. Include information about symptoms, error messages, or any troubleshooting you've already tried..."
+                        placeholder="Please describe the problem you're experiencing in detail..."
                         required
                       />
                     </CardContent>
@@ -779,7 +696,7 @@ export const ServiceRequestPage: React.FC = () => {
             )}
           </ServiceGrid>
 
-          {/* Service Location Selection */}
+          {/* Address Section */}
           <AddressSection>
             <SectionHeader>
               <SectionHeaderTitle>
@@ -800,7 +717,7 @@ export const ServiceRequestPage: React.FC = () => {
                     No addresses found
                   </Typography>
                   <Typography sx={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '14px', mb: 3 }}>
-                    Please add a service location to continue with your repair request
+                    Please add a service location to continue
                   </Typography>
                   <PremiumButton className="primary" onClick={() => setShowAddressDialog(true)}>
                     <AddIcon sx={{ mr: 1, fontSize: '16px' }} />
@@ -873,13 +790,7 @@ export const ServiceRequestPage: React.FC = () => {
 
           {/* Submit Section */}
           <Box sx={{ 
-            background: `
-              linear-gradient(135deg, 
-                rgba(255, 255, 255, 0.05) 0%, 
-                rgba(255, 255, 255, 0.02) 50%, 
-                rgba(255, 255, 255, 0.05) 100%
-              )
-            `,
+            background: `linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0.05) 100%)`,
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '20px',
             padding: '32px',
@@ -902,8 +813,7 @@ export const ServiceRequestPage: React.FC = () => {
               maxWidth: '500px',
               margin: '0 auto 24px'
             }}>
-              Our expert technician will contact you within 24 hours to schedule the service. 
-              You'll receive updates via email and SMS.
+              Our expert technician will contact you within 24 hours to schedule the service.
             </Typography>
 
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3 }}>
@@ -912,7 +822,7 @@ export const ServiceRequestPage: React.FC = () => {
                 sx={{ minWidth: '140px' }}
               >
                 <ArrowBackIcon sx={{ mr: 1, fontSize: '16px' }} />
-                Back to Services
+                Back
               </PremiumButton>
               
               <PremiumButton 
@@ -921,34 +831,16 @@ export const ServiceRequestPage: React.FC = () => {
                 disabled={submitting || !isFormValid()}
                 sx={{ minWidth: '200px' }}
               >
-                {submitting ? (
-                  <>
-                    <Box sx={{ 
-                      width: '16px', 
-                      height: '16px', 
-                      border: '2px solid transparent',
-                      borderTop: '2px solid currentColor',
-                      borderRadius: '50%',
-                      animation: 'spin 1s linear infinite',
-                      mr: 1,
-                      '@keyframes spin': {
-                        '0%': { transform: 'rotate(0deg)' },
-                        '100%': { transform: 'rotate(360deg)' }
-                      }
-                    }} />
-                    Submitting...
-                  </>
-                ) : (
+                {submitting ? 'Submitting...' : (
                   <>
                     <CheckCircleIcon sx={{ mr: 1, fontSize: '16px' }} />
-                    Submit Service Request
+                    Submit Request
                   </>
                 )}
               </PremiumButton>
             </Box>
           </Box>
 
-          {/* Info Alert */}
           {isFormValid() && (
             <Alert 
               icon={<CheckCircleIcon />}
@@ -959,79 +851,19 @@ export const ServiceRequestPage: React.FC = () => {
                 color: '#60a5fa',
                 border: '1px solid rgba(96, 165, 250, 0.3)',
                 borderRadius: '16px',
-                '& .MuiAlert-icon': { color: '#60a5fa' },
-                '& .MuiAlert-message': { 
-                  fontSize: '14px',
-                  fontWeight: 500
-                }
               }}
             >
               <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                Request Ready for Submission
+                Request Ready
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                Service: {selectedIssue ? selectedIssue.description : 'Custom Issue'} | 
+                Service: {selectedIssue ? selectedIssue.description : 'Custom'} | 
                 Location: {addresses.find(a => a.id.toString() === selectedAddress)?.city || 'Selected'}
-                {selectedIssue && ` | Price: ₹${selectedIssue.price}`}
+                {selectedIssue && !category.is_free_for_user && ` | Price: ₹${selectedIssue.price}`}
+                {category.is_free_for_user && ` | FREE Service`}
               </Typography>
             </Alert>
           )}
-
-          {/* Service Features */}
-          <Box sx={{ 
-            mt: 4, 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-            gap: 3 
-          }}>
-            <Box sx={{ 
-              textAlign: 'center', 
-              p: 3, 
-              background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.05)'
-            }}>
-              <CheckCircleIcon sx={{ fontSize: '32px', color: '#22c55e', mb: 2 }} />
-              <Typography sx={{ color: 'white', fontWeight: 600, mb: 1, fontSize: '16px' }}>
-                Expert Technicians
-              </Typography>
-              <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '13px' }}>
-                Certified professionals with years of experience
-              </Typography>
-            </Box>
-
-            <Box sx={{ 
-              textAlign: 'center', 
-              p: 3, 
-              background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.05)'
-            }}>
-              <HandymanIcon sx={{ fontSize: '32px', color: '#60a5fa', mb: 2 }} />
-              <Typography sx={{ color: 'white', fontWeight: 600, mb: 1, fontSize: '16px' }}>
-                Quality Parts
-              </Typography>
-              <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '13px' }}>
-                Genuine parts with warranty coverage
-              </Typography>
-            </Box>
-
-            <Box sx={{ 
-              textAlign: 'center', 
-              p: 3, 
-              background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.05)'
-            }}>
-              <RequestQuoteIcon sx={{ fontSize: '32px', color: '#8b5cf6', mb: 2 }} />
-              <Typography sx={{ color: 'white', fontWeight: 600, mb: 1, fontSize: '16px' }}>
-                Transparent Pricing
-              </Typography>
-              <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '13px' }}>
-                No hidden charges, upfront cost estimates
-              </Typography>
-            </Box>
-          </Box>
         </ContentContainer>
       </ServiceContent>
 
@@ -1049,11 +881,7 @@ export const ServiceRequestPage: React.FC = () => {
           </Box>
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
-          <Typography sx={{ 
-            color: 'rgba(255, 255, 255, 0.7)', 
-            fontSize: '14px', 
-            mb: 3 
-          }}>
+          <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '14px', mb: 3 }}>
             Add the address where you'd like our technician to provide the service.
           </Typography>
           
@@ -1127,9 +955,6 @@ export const ServiceRequestPage: React.FC = () => {
                   '& .MuiSwitch-thumb': {
                     backgroundColor: '#60a5fa',
                   },
-                  '&.Mui-checked .MuiSwitch-track': {
-                    backgroundColor: '#60a5fa',
-                  },
                 }}
               />
             </Box>
@@ -1142,8 +967,7 @@ export const ServiceRequestPage: React.FC = () => {
             disabled={submitting}
             sx={{ 
               color: 'rgba(255, 255, 255, 0.7)',
-              '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' },
-              '&:disabled': { color: 'rgba(255, 255, 255, 0.3)' }
+              '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' }
             }}
           >
             Cancel

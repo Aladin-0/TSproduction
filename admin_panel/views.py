@@ -28,6 +28,7 @@ from services.models import ServiceRequest, ServiceCategory, TechnicianRating
 from users.models import CustomUser
 from users.forms import CustomUserCreationForm
 
+
 User = get_user_model()
 
 @method_decorator(staff_member_required, name='dispatch')
@@ -380,13 +381,32 @@ class AdminDeleteProductView(View):
 @method_decorator(staff_member_required, name='dispatch')
 class AdminCreateUserView(View):
     def get(self, request):
+        from users.forms import CustomUserCreationForm
+        from services.models import ServiceCategory
+        
         form = CustomUserCreationForm()
-        return render(request, 'admin_panel/create_user.html', {'form': form})
+        service_categories = ServiceCategory.objects.all()
+        
+        return render(request, 'admin_panel/create_user.html', {
+            'form': form,
+            'service_categories': service_categories
+        })
     
     def post(self, request):
+        from users.forms import CustomUserCreationForm
+        
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            
+            # Set free service categories for AMC users
+            if user.role == 'AMC':
+                selected_categories = request.POST.getlist('free_service_categories')
+                from services.models import ServiceCategory
+                user.free_service_categories.set(
+                    ServiceCategory.objects.filter(id__in=selected_categories)
+                )
+            
             messages.success(request, f'User "{user.name}" created successfully!')
             return redirect('admin_panel:users')
         else:
@@ -394,13 +414,27 @@ class AdminCreateUserView(View):
                 for error in errors:
                     messages.error(request, f'{field}: {error}')
         
-        return render(request, 'admin_panel/create_user.html', {'form': form})
+        from services.models import ServiceCategory
+        service_categories = ServiceCategory.objects.all()
+        
+        return render(request, 'admin_panel/create_user.html', {
+            'form': form,
+            'service_categories': service_categories
+        })
 
 @method_decorator(staff_member_required, name='dispatch')
 class AdminEditUserView(View):
     def get(self, request, user_id):
         user_obj = get_object_or_404(User, id=user_id)
-        context = {'user_obj': user_obj}
+        
+        # Get all service categories for selection
+        from services.models import ServiceCategory
+        service_categories = ServiceCategory.objects.all()
+        
+        context = {
+            'user_obj': user_obj,
+            'service_categories': service_categories
+        }
         return render(request, 'admin_panel/edit_user.html', context)
     
     def post(self, request, user_id):
@@ -416,6 +450,18 @@ class AdminEditUserView(View):
             user_obj.sms_notifications = request.POST.get('sms_notifications') == 'on'
             
             user_obj.save()
+            
+            # Update free service categories for AMC users
+            if user_obj.role == 'AMC':
+                selected_categories = request.POST.getlist('free_service_categories')
+                from services.models import ServiceCategory
+                user_obj.free_service_categories.set(
+                    ServiceCategory.objects.filter(id__in=selected_categories)
+                )
+            else:
+                # Clear free services if not AMC
+                user_obj.free_service_categories.clear()
+            
             messages.success(request, f'User "{user_obj.name}" updated successfully!')
             return redirect('admin_panel:users')
             

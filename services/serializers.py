@@ -8,12 +8,20 @@ class ServiceIssueSerializer(serializers.ModelSerializer):
         fields = ['id', 'description', 'price']
 
 class ServiceCategorySerializer(serializers.ModelSerializer):
-    # This nests the list of issues inside each category
-    issues = ServiceIssueSerializer(many=True, read_only=True)
-
+    issues = ServiceIssueSerializer(many=True, read_only=True)  # ← FIXED: Added this line
+    is_free_for_user = serializers.SerializerMethodField()
+    
     class Meta:
         model = ServiceCategory
-        fields = ['id', 'name', 'issues']
+        fields = ['id', 'name', 'issues', 'is_free_for_user']
+
+    def get_is_free_for_user(self, obj):
+        """Check if this service category is free for the current user"""
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            if request.user.role == 'AMC':
+                return request.user.has_free_service(obj)
+        return False
 
 class ServiceRequestSerializer(serializers.ModelSerializer):
     # We make customer read-only because we'll set it automatically in the view
@@ -30,7 +38,6 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
             'service_location',
             'status',
         ]
-
 
 class ServiceRequestHistorySerializer(serializers.ModelSerializer):
     service_category_name = serializers.CharField(source='service_category.name', read_only=True)

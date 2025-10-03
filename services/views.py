@@ -28,17 +28,32 @@ def create_service_request(request, category_id):
             service_request.service_category = category
             service_request.save()
 
-            # Check if the user is an AMC customer
-            if request.user.role == 'AMC':
-                # If AMC, skip payment and go directly to success
+            # Check if this service is free for this AMC user
+            if request.user.role == 'AMC' and request.user.has_free_service(category):
+                # Service is free for this AMC user - skip payment
+                service_request.status = 'SUBMITTED'
+                service_request.save()
                 return redirect('request_successful')
+            elif request.user.role == 'AMC':
+                # AMC user but this specific service is not free
+                return redirect('service_payment_page', request_id=service_request.id)
             else:
-                # If regular customer, go to the payment page
+                # Regular customer - go to payment page
                 return redirect('service_payment_page', request_id=service_request.id)
     else:
         form = ServiceRequestForm(user=request.user, category=category)
 
-    return render(request, 'services/create_request.html', {'form': form, 'category': category})
+    # Pass information about whether this service is free for this user
+    is_free_for_user = (
+        request.user.role == 'AMC' and 
+        request.user.has_free_service(category)
+    )
+
+    return render(request, 'services/create_request.html', {
+        'form': form, 
+        'category': category,
+        'is_free_for_user': is_free_for_user
+    })
 
 @login_required
 def request_successful(request):
@@ -99,9 +114,14 @@ class ServiceCategoryListAPIView(APIView):
     API view to list all service categories and their nested issues.
     """
     permission_classes = [permissions.AllowAny]
+    
     def get(self, request, format=None):
         categories = ServiceCategory.objects.all()
-        serializer = ServiceCategorySerializer(categories, many=True)
+        serializer = ServiceCategorySerializer(
+            categories, 
+            many=True,
+            context={'request': request}  # Pass request context
+        )
         return Response(serializer.data)
 
 class ServiceRequestCreateAPIView(generics.CreateAPIView):

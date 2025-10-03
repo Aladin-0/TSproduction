@@ -1,0 +1,7 @@
+git status -s; git branch --show-current; git remote -v 
+
+git add -A 
+
+git commit -m "admin_panel: add AdminEditOrderView, AdminAssignTechnicianView, AdminEditServiceView, AdminAssignServiceTechnicianView to fix missing views referenced in URLs; resolves AttributeError; minor repo sync" 
+
+git push ts master 

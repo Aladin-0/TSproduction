@@ -1,0 +1,22 @@
+<!-- services/templates/services/service_payment_page.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Service Payment</h2>
+
+{% if request.user.role == 'AMC' %}
+    <div class="alert alert-info">
+        <p>As an AMC user, you have free access to selected services.</p>
+        <p>This service requires a payment of ₹{{ fee }}.</p>
+    </div>
+{% endif %}
+
+<p>Service Request ID: {{ service_request.id }}</p>
+<p>Service Category: {{ service_request.service_category.name }}</p>
+<p>Amount: ₹{{ fee }}</p>
+
+<form method="post" action="{% url 'confirm_service_request' service_request.id %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary">Proceed to Payment</button>
+</form>
+{% endblock %}

@@ -1,4 +1,4 @@
-# users/admin.py - Fixed version
+# users/admin.py
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
@@ -20,6 +20,11 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = (
         (None, {"fields": ("email", "name")}),
         ("Personal info", {"fields": ("phone", "role")}),
+        ("AMC Services", {
+            "fields": ("free_service_categories",),
+            "classes": ("collapse",),
+            "description": "Select which service categories are free for this AMC user"
+        }),
         ("Notifications", {"fields": ("email_notifications", "sms_notifications")}),
         (
             "Permissions",
@@ -49,8 +54,10 @@ class CustomUserAdmin(UserAdmin):
 
     # Read-only fields
     readonly_fields = ('date_joined', 'last_login')
+    
+    # Configure the many-to-many widget
+    filter_horizontal = ('free_service_categories',)
 
-    # Custom methods for better display
     def get_form(self, request, obj=None, **kwargs):
         """
         Use special form during user creation
@@ -59,6 +66,14 @@ class CustomUserAdmin(UserAdmin):
         if obj is None:
             defaults['form'] = self.add_form
         defaults.update(kwargs)
-        return super().get_form(request, obj, **defaults)
+        form = super().get_form(request, obj, **defaults)
+        
+        # Only show free_service_categories field for AMC users
+        if obj and obj.role != 'AMC':
+            if 'free_service_categories' in form.base_fields:
+                form.base_fields['free_service_categories'].widget.attrs['disabled'] = True
+                form.base_fields['free_service_categories'].help_text = 'Only available for AMC users'
+        
+        return form
 
 admin.site.register(CustomUser, CustomUserAdmin)
