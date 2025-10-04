@@ -71,7 +71,7 @@
                     <span class="status-badge status-completed">Active</span>
                 </td>
                 <td>
-                    <div style="font-size: 13px;">Recently</div>
+                    <div style="font-size: 13px;">{{ category.created_at|date:"M d, Y"|default:"Recently" }}</div>
                 </td>
                 <td>
                     <div style="display: flex; gap: 5px;">
@@ -85,7 +85,8 @@
                         <button onclick="deleteCategory('product', {{ category.id }}, '{{ category.name|escapejs }}', {{ category.product_count }})" 
                                 class="btn btn-danger" 
                                 style="padding: 5px 8px; font-size: 12px;"
-                                title="Delete Category">
+                                title="Delete Category"
+                                {% if category.product_count > 0 %}disabled{% endif %}>
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -126,10 +127,10 @@
         <thead>
             <tr>
                 <th>Category Name</th>
-                <th>Services Count</th>
+                <th>Service Issues</th>
+                <th>Service Requests</th>
                 <th>Status</th>
-                <th>Created</th>
-                <th style="width: 120px;">Actions</th>
+                <th style="width: 150px;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -148,29 +149,33 @@
                 </td>
                 <td>
                     <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: 600; font-size: 18px; color: #a78bfa;">{{ category.issues.count }}</span>
+                        <span style="color: rgba(255,255,255,0.6);">issues</span>
+                    </div>
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="font-weight: 600; font-size: 18px;">{{ category.service_count }}</span>
-                        <span style="color: rgba(255,255,255,0.6);">services</span>
+                        <span style="color: rgba(255,255,255,0.6);">requests</span>
                     </div>
                 </td>
                 <td>
                     <span class="status-badge status-completed">Active</span>
                 </td>
                 <td>
-                    <div style="font-size: 13px;">Recently</div>
-                </td>
-                <td>
                     <div style="display: flex; gap: 5px;">
-                        <button onclick="editCategory('service', {{ category.id }}, '{{ category.name|escapejs }}', '')" 
-                                class="btn btn-secondary" 
-                                style="padding: 5px 8px; font-size: 12px;"
-                                title="Edit Category">
+                        <a href="{% url 'admin_panel:edit_category' category.id %}?type=service" 
+                           class="btn btn-secondary" 
+                           style="padding: 5px 8px; font-size: 12px;"
+                           title="Edit Category & Issues">
                             <i class="fas fa-edit"></i>
-                        </button>
+                        </a>
                         
                         <button onclick="deleteCategory('service', {{ category.id }}, '{{ category.name|escapejs }}', {{ category.service_count }})" 
                                 class="btn btn-danger" 
                                 style="padding: 5px 8px; font-size: 12px;"
-                                title="Delete Category">
+                                title="Delete Category"
+                                {% if category.service_count > 0 %}disabled{% endif %}>
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -192,9 +197,9 @@
     </table>
 </div>
 
-<!-- Category Modal -->
-<div id="categoryModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;">
-    <div style="background: linear-gradient(135deg, #1a1a1a, #151515); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 30px; max-width: 500px; width: 90%;">
+<!-- Category Modal (WITH SERVICE ISSUES) -->
+<div id="categoryModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; overflow-y: auto;">
+    <div style="background: linear-gradient(135deg, #1a1a1a, #151515); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; margin: 20px auto; max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
             <h3 style="color: white; margin: 0;" id="modalTitle">Add Category</h3>
             <button onclick="closeCategoryModal()" style="background: none; border: none; color: rgba(255,255,255,0.6); font-size: 20px; cursor: pointer;">
@@ -210,17 +215,39 @@
                 <input type="text" name="name" id="categoryName" class="form-control" placeholder="Enter category name" required>
             </div>
             
-            <div id="slugField" style="margin-bottom: 20px;">
+            <div id="slugField" style="margin-bottom: 20px; display: none;">
                 <label class="form-label">Slug (URL-friendly name)</label>
                 <input type="text" name="slug" id="categorySlug" class="form-control" placeholder="auto-generated-slug">
-                <div style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px;">
-                    Automatically generated from category name (leave empty for auto-generation)
+            </div>
+            
+            <!-- SERVICE ISSUES SECTION -->
+            <div id="serviceIssuesSection" style="display: none; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <label class="form-label mb-0">Service Issues *</label>
+                    <button type="button" onclick="addIssueField()" class="btn btn-sm" style="background: rgba(168, 85, 247, 0.2); color: #a78bfa; padding: 5px 12px; font-size: 13px;">
+                        <i class="fas fa-plus me-1"></i>Add Issue
+                    </button>
+                </div>
+                
+                <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: start; gap: 10px;">
+                        <i class="fas fa-info-circle" style="color: #a78bfa; margin-top: 2px;"></i>
+                        <div style="font-size: 13px; color: rgba(255,255,255,0.9);">
+                            <strong>Service issues</strong> are specific problems that customers can select. For example, in "Laptop Repair" category, you can add issues like "Screen Replacement", "Keyboard Issue", "Battery Problem", etc.
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="issuesContainer">
+                    <!-- Issues will be added here dynamically -->
                 </div>
             </div>
             
             <div style="display: flex; gap: 10px; justify-content: end;">
                 <button type="button" onclick="closeCategoryModal()" class="btn btn-secondary">Cancel</button>
-                <button type="submit" class="btn btn-primary" id="submitBtn">Create Category</button>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="fas fa-save me-2"></i>Create Category
+                </button>
             </div>
         </form>
     </div>
@@ -231,54 +258,74 @@
     <!-- Product Category Stats -->
     <div class="table-container">
         <div class="table-header">
-            <h3 class="table-title">Product Category Performance</h3>
+            <h3 class="table-title">
+                <i class="fas fa-chart-bar me-2"></i>Product Category Performance
+            </h3>
         </div>
         <div style="padding: 25px;">
-            {% for category in categories|slice:":5" %}
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <div>
-                    <div style="font-weight: 600;">{{ category.name }}</div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.6);">{{ category.product_count }} products</div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 100px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
-                        <div style="width: {% if categories %}{% widthratio category.product_count categories.0.product_count 100 %}{% else %}0{% endif %}%; height: 100%; background: linear-gradient(135deg, #60a5fa, #3b82f6);"></div>
+            {% if categories %}
+                {% for category in categories|slice:":5" %}
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                    <div>
+                        <div style="font-weight: 600;">{{ category.name }}</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.6);">{{ category.product_count }} products</div>
                     </div>
-                    <span style="font-weight: 600; min-width: 30px;">{{ category.product_count }}</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 100px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                            {% with max_count=categories.0.product_count %}
+                                {% if max_count > 0 %}
+                                    <div style="width: {% widthratio category.product_count max_count 100 %}%; height: 100%; background: linear-gradient(135deg, #60a5fa, #3b82f6);"></div>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                        <span style="font-weight: 600; min-width: 30px; color: #60a5fa;">{{ category.product_count }}</span>
+                    </div>
                 </div>
-            </div>
-            {% empty %}
-            <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 20px;">
-                No categories to display
-            </div>
-            {% endfor %}
+                {% endfor %}
+            {% else %}
+                <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 40px;">
+                    <i class="fas fa-box" style="font-size: 32px; opacity: 0.3; margin-bottom: 10px;"></i>
+                    <div>No product categories yet</div>
+                </div>
+            {% endif %}
         </div>
     </div>
 
     <!-- Service Category Stats -->
     <div class="table-container">
         <div class="table-header">
-            <h3 class="table-title">Service Category Performance</h3>
+            <h3 class="table-title">
+                <i class="fas fa-chart-line me-2"></i>Service Category Performance
+            </h3>
         </div>
         <div style="padding: 25px;">
-            {% for category in service_categories|slice:":5" %}
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <div>
-                    <div style="font-weight: 600;">{{ category.name }}</div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.6);">{{ category.service_count }} requests</div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 100px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
-                        <div style="width: {% if service_categories %}{% widthratio category.service_count service_categories.0.service_count 100 %}{% else %}0{% endif %}%; height: 100%; background: linear-gradient(135deg, #10b981, #059669);"></div>
+            {% if service_categories %}
+                {% for category in service_categories|slice:":5" %}
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                    <div>
+                        <div style="font-weight: 600;">{{ category.name }}</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.6);">
+                            {{ category.issues.count }} issues • {{ category.service_count }} requests
+                        </div>
                     </div>
-                    <span style="font-weight: 600; min-width: 30px;">{{ category.service_count }}</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 100px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                            {% with max_count=service_categories.0.service_count %}
+                                {% if max_count > 0 %}
+                                    <div style="width: {% widthratio category.service_count max_count 100 %}%; height: 100%; background: linear-gradient(135deg, #10b981, #059669);"></div>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                        <span style="font-weight: 600; min-width: 30px; color: #10b981;">{{ category.service_count }}</span>
+                    </div>
                 </div>
-            </div>
-            {% empty %}
-            <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 20px;">
-                No categories to display
-            </div>
-            {% endfor %}
+                {% endfor %}
+            {% else %}
+                <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 40px;">
+                    <i class="fas fa-tools" style="font-size: 32px; opacity: 0.3; margin-bottom: 10px;"></i>
+                    <div>No service categories yet</div>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -287,7 +334,7 @@
 {% block extra_js %}
 <script>
     let currentCategoryType = '';
-    let editingCategoryId = null;
+    let issueCounter = 0;
 
     // Generate slug from name
     function generateSlug(name) {
@@ -297,13 +344,58 @@
             .replace(/^-+|-+$/g, '');
     }
 
-    // Update slug when name changes (only for product categories)
+    // Add service issue field
+    function addIssueField() {
+        issueCounter++;
+        const container = document.getElementById('issuesContainer');
+        const issueDiv = document.createElement('div');
+        issueDiv.className = 'issue-row';
+        issueDiv.id = `issue-${issueCounter}`;
+        issueDiv.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: start;';
+        
+        issueDiv.innerHTML = `
+            <div style="flex: 2;">
+                <input type="text" 
+                       name="issue_descriptions[]" 
+                       class="form-control" 
+                       placeholder="Issue description (e.g., Screen Replacement)" 
+                       required>
+            </div>
+            <div style="flex: 1;">
+                <input type="number" 
+                       name="issue_prices[]" 
+                       class="form-control" 
+                       placeholder="Price (₹)" 
+                       step="0.01" 
+                       min="0">
+            </div>
+            <button type="button" 
+                    onclick="removeIssue(${issueCounter})" 
+                    class="btn btn-danger" 
+                    style="padding: 8px 12px;"
+                    title="Remove issue">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        
+        container.appendChild(issueDiv);
+    }
+
+    // Remove issue field
+    function removeIssue(id) {
+        const issueDiv = document.getElementById(`issue-${id}`);
+        if (issueDiv) {
+            issueDiv.remove();
+        }
+    }
+
+    // Update slug when name changes
     document.addEventListener('DOMContentLoaded', function() {
         const nameInput = document.getElementById('categoryName');
         const slugInput = document.getElementById('categorySlug');
         
         nameInput.addEventListener('input', function() {
-            if (!editingCategoryId && currentCategoryType === 'product') {
+            if (currentCategoryType === 'product') {
                 slugInput.value = generateSlug(this.value);
             }
         });
@@ -312,60 +404,72 @@
     // Show create category modal
     function showCreateCategoryModal(type) {
         currentCategoryType = type;
-        editingCategoryId = null;
         
         const modal = document.getElementById('categoryModal');
         const title = document.getElementById('modalTitle');
         const submitBtn = document.getElementById('submitBtn');
         const slugField = document.getElementById('slugField');
+        const serviceIssuesSection = document.getElementById('serviceIssuesSection');
         const categoryType = document.getElementById('categoryType');
         const form = document.getElementById('categoryForm');
         
-        // Set the type
         categoryType.value = type;
-        
-        // Update form action for create
         form.action = '{% url "admin_panel:create_category" %}';
-        
-        title.textContent = `Add ${type === 'product' ? 'Product' : 'Service'} Category`;
-        submitBtn.textContent = 'Create Category';
-        slugField.style.display = type === 'product' ? 'block' : 'none';
         
         // Reset form
         document.getElementById('categoryForm').reset();
-        categoryType.value = type; // Reset this again after form reset
+        document.getElementById('issuesContainer').innerHTML = '';
+        issueCounter = 0;
+        categoryType.value = type;
+        
+        if (type === 'service') {
+            title.innerHTML = '<i class="fas fa-tools me-2"></i>Add Service Category';
+            submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Create Service Category';
+            slugField.style.display = 'none';
+            serviceIssuesSection.style.display = 'block';
+            
+            // Add one default issue field
+            addIssueField();
+        } else {
+            title.innerHTML = '<i class="fas fa-box me-2"></i>Add Product Category';
+            submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Create Product Category';
+            slugField.style.display = 'block';
+            serviceIssuesSection.style.display = 'none';
+        }
         
         modal.style.display = 'flex';
         document.getElementById('categoryName').focus();
     }
 
-    // Edit category
+    // Edit product category (inline)
     function editCategory(type, id, name, slug) {
+        if (type === 'service') {
+            // For service categories, redirect to edit page
+            window.location.href = `/admin-panel/categories/${id}/edit/?type=service`;
+            return;
+        }
+        
+        // For product categories, use modal
         currentCategoryType = type;
-        editingCategoryId = id;
         
         const modal = document.getElementById('categoryModal');
         const title = document.getElementById('modalTitle');
         const submitBtn = document.getElementById('submitBtn');
         const slugField = document.getElementById('slugField');
+        const serviceIssuesSection = document.getElementById('serviceIssuesSection');
         const categoryType = document.getElementById('categoryType');
         const form = document.getElementById('categoryForm');
         
-        // Set the type
         categoryType.value = type;
-        
-        // Update form action for edit
         form.action = `/admin-panel/categories/${id}/edit/`;
         
-        title.textContent = `Edit ${type === 'product' ? 'Product' : 'Service'} Category`;
-        submitBtn.textContent = 'Update Category';
-        slugField.style.display = type === 'product' ? 'block' : 'none';
+        title.innerHTML = '<i class="fas fa-box me-2"></i>Edit Product Category';
+        submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Update Product Category';
+        slugField.style.display = 'block';
+        serviceIssuesSection.style.display = 'none';
         
-        // Fill form
         document.getElementById('categoryName').value = name;
-        if (type === 'product') {
-            document.getElementById('categorySlug').value = slug;
-        }
+        document.getElementById('categorySlug').value = slug;
         
         modal.style.display = 'flex';
         document.getElementById('categoryName').focus();
@@ -375,32 +479,29 @@
     function closeCategoryModal() {
         document.getElementById('categoryModal').style.display = 'none';
         currentCategoryType = '';
-        editingCategoryId = null;
+        document.getElementById('issuesContainer').innerHTML = '';
+        issueCounter = 0;
     }
 
     // Delete category
     function deleteCategory(type, id, name, count) {
         if (count > 0) {
-            const itemType = type === 'product' ? 'products' : 'services';
-            if (!confirm(`This category has ${count} ${itemType}. Deleting it will also remove the category association. Are you sure?`)) {
-                return;
-            }
+            const itemType = type === 'product' ? 'products' : 'service requests';
+            alert(`Cannot delete "${name}" because it has ${count} associated ${itemType}.\n\nPlease reassign or delete those ${itemType} first.`);
+            return;
         }
         
-        if (confirm(`Are you sure you want to delete the category "${name}"?`)) {
-            // Create a form to delete the category
+        if (confirm(`Are you sure you want to delete the ${type} category "${name}"?\n\nThis action cannot be undone.`)) {
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = `/admin-panel/categories/${id}/delete/`;
             
-            // Add CSRF token
             const csrfInput = document.createElement('input');
             csrfInput.type = 'hidden';
             csrfInput.name = 'csrfmiddlewaretoken';
             csrfInput.value = '{{ csrf_token }}';
             form.appendChild(csrfInput);
             
-            // Add type parameter
             const typeInput = document.createElement('input');
             typeInput.type = 'hidden';
             typeInput.name = 'type';
@@ -424,6 +525,22 @@
         if (e.key === 'Escape') {
             closeCategoryModal();
         }
+    });
+
+    // Form submit handler
+    document.getElementById('categoryForm').addEventListener('submit', function(e) {
+        if (currentCategoryType === 'service') {
+            const issues = document.querySelectorAll('input[name="issue_descriptions[]"]');
+            if (issues.length === 0 || !Array.from(issues).some(input => input.value.trim())) {
+                e.preventDefault();
+                alert('Please add at least one service issue!');
+                return false;
+            }
+        }
+        
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
     });
 </script>
 {% endblock %}

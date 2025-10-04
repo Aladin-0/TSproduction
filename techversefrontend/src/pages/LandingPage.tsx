@@ -9,7 +9,8 @@ import { useSpring as useSpringWeb, animated as a } from '@react-spring/web';
 import { useSpring as useSpring3d, animated as a3 } from '@react-spring/three';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import { LoginSuccessHandler } from '../components/LoginSuccessHandler'; // <-- 1. IMPORT ADDED HERE
+import { LoginSuccessHandler } from '../components/LoginSuccessHandler'; 
+import { Footer } from '../components/Footer';
 
 // A single theme for consistent breakpoints
 const theme = createTheme();
@@ -669,13 +670,6 @@ const AuthorRole = styled(Typography)({
   fontWeight: 400 
 });
 
-const Footer = styled(Box)({ background: '#000000', borderTop: '1px solid rgba(255, 255, 255, 0.03)', padding: '22px 55px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '45px', position: 'relative', zIndex: 5, '@media (max-width:900px)': { flexDirection: 'column', gap: '20px', padding: '30px 24px' } });
-const FooterLogo = styled(Typography)({ fontSize: '13px', fontWeight: 700, letterSpacing: '0.8px', color: 'rgba(255, 255, 255, 0.9)' });
-const FooterLinks = styled(Box)({ display: 'flex', gap: '32px' });
-const FooterLink = styled('a')({ color: 'rgba(255, 255, 255, 0.35)', textDecoration: 'none', fontSize: '11px', transition: 'color 0.3s ease', fontWeight: 400, '&:hover': { color: 'rgba(255, 255, 255, 0.6)' } });
-const SocialIcons = styled(Box)({ display: 'flex', gap: '13px' });
-const SocialIcon = styled('a')({ width: '28px', height: '28px', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255, 255, 255, 0.35)', fontSize: '12px', transition: 'all 0.3s ease', textDecoration: 'none', '&:hover': { background: 'rgba(255, 255, 255, 0.03)', color: 'rgba(255, 255, 255, 0.6)', borderColor: 'rgba(255, 255, 255, 0.12)' } });
-const StarFloat = styled(Box)({ position: 'fixed', bottom: '35px', right: '35px', width: '50px', height: '50px', background: 'linear-gradient(135deg, #383838, #181818)', clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)', cursor: 'pointer', transition: 'transform 0.5s ease', zIndex: 1000, boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)', '&:hover': { transform: 'rotate(72deg) scale(1.08)' }, '@media (max-width:900px)': { display: 'none' } });
 
 // 3D Model components with your exact values
 function GamingLaptop(props) {
@@ -1048,19 +1042,7 @@ export const LandingPage = () => {
           </FeaturedRight>
         </FeaturedContainer>
       </FeaturedWrapper>
-      <Footer>
-        <FooterLogo>TECHVERSE</FooterLogo>
-        <FooterLinks>
-          <FooterLink href="#">Privacy Policy</FooterLink>
-          <FooterLink href="#">Terms of Service</FooterLink>
-        </FooterLinks>
-        <SocialIcons>
-          <SocialIcon href="#">f</SocialIcon>
-          <SocialIcon href="#">𝕏</SocialIcon>
-          <SocialIcon href="#">in</SocialIcon>
-        </SocialIcons>
-      </Footer>
-      <StarFloat />
+      <Footer />
     </PageWrapper>
     </ThemeProvider>
   );

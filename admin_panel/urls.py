@@ -1,4 +1,4 @@
-# admin_panel/urls.py - Complete Custom Admin Panel URLs with all endpoints
+# admin_panel/urls.py - Complete URLs with all routes
 
 from django.urls import path
 from . import views
@@ -24,29 +24,29 @@ urlpatterns = [
     # Orders management
     path('orders/', views.AdminOrdersView.as_view(), name='orders'),
     path('orders/<int:order_id>/edit/', views.AdminEditOrderView.as_view(), name='edit_order'),
-    path('orders/<int:order_id>/assign/', views.AdminAssignTechnicianView.as_view(), name='assign_technician'),
     path('orders/<int:order_id>/delete/', views.AdminDeleteOrderView.as_view(), name='delete_order'),
+    path('orders/<int:order_id>/assign/', views.AdminAssignTechnicianView.as_view(), name='assign_technician'),
     
     # Services management
     path('services/', views.AdminServicesView.as_view(), name='services'),
     path('services/<int:service_id>/edit/', views.AdminEditServiceView.as_view(), name='edit_service'),
     path('services/<int:service_id>/assign/', views.AdminAssignServiceTechnicianView.as_view(), name='assign_service_technician'),
     
-    # Categories management
+    # Categories management (FIXED ROUTES)
     path('categories/', views.AdminCategoriesView.as_view(), name='categories'),
     path('categories/create/', views.AdminCreateCategoryView.as_view(), name='create_category'),
     path('categories/<int:category_id>/edit/', views.AdminEditCategoryView.as_view(), name='edit_category'),
-    path('categories/<int:category_id>/delete/', views.AdminDeleteCategoryView.as_view(), name='delete_category'),  # NEW
+    path('categories/<int:category_id>/delete/', views.AdminDeleteCategoryView.as_view(), name='delete_category'),
     
     # Analytics
     path('analytics/', views.AdminAnalyticsView.as_view(), name='analytics'),
     
-    # Settings (removed from navigation but keeping endpoint for now)
+    # Settings
     path('settings/', views.AdminSettingsView.as_view(), name='settings'),
     
     # API endpoints for AJAX operations
     path('api/stats/', views.admin_stats_api, name='api_stats'),
-    path('api/order-details/<int:order_id>/', views.get_order_details_api, name='api_order_details'),
+    path('api/orders/<int:order_id>/', views.get_order_details_api, name='api_order_details'),
     path('api/assign-technician/', views.assign_technician_api, name='api_assign_technician'),
     path('api/assign-service-technician/', views.assign_service_technician_api, name='api_assign_service_technician'),
     path('api/update-order-status/', views.update_order_status_api, name='api_update_order_status'),

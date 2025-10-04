@@ -1,4 +1,4 @@
-# admin_panel/views.py - Updated with fixed service stats and category creation
+# admin_panel/views.py - FULLY FIXED with Real Data Connections
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
@@ -7,7 +7,7 @@ from django.views import View
 from django.views.generic import TemplateView
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Sum, Avg, Q
+from django.db.models import Count, Sum, Avg, Q, F, DecimalField
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.views.decorators.http import require_POST
@@ -20,14 +20,12 @@ import json
 from datetime import datetime, timedelta
 from django.utils import timezone
 import os
-from django.db.models import F, DecimalField
 
 # Import models
 from store.models import Product, ProductCategory, Order, OrderItem, ProductImage, ProductSpecification
-from services.models import ServiceRequest, ServiceCategory, TechnicianRating
+from services.models import ServiceRequest, ServiceCategory, TechnicianRating, ServiceIssue
 from users.models import CustomUser
 from users.forms import CustomUserCreationForm
-
 
 User = get_user_model()
 
@@ -43,7 +41,7 @@ class AdminDashboardView(TemplateView):
         current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         last_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
         
-        # Basic stats
+        # Basic stats - ALL REAL DATA
         context.update({
             'total_users': User.objects.count(),
             'total_customers': User.objects.filter(role='CUSTOMER').count(),
@@ -58,26 +56,29 @@ class AdminDashboardView(TemplateView):
             'unassigned_services': ServiceRequest.objects.filter(technician__isnull=True).count(),
         })
         
-        # Recent orders
+        # Recent orders - REAL DATA
         context['recent_orders'] = Order.objects.select_related('customer', 'technician').order_by('-order_date')[:10]
         
-        # Recent services
-        context['recent_services'] = ServiceRequest.objects.select_related('customer', 'technician', 'service_category').order_by('-request_date')[:10]
+        # Recent services - REAL DATA
+        context['recent_services'] = ServiceRequest.objects.select_related(
+            'customer', 'technician', 'service_category'
+        ).order_by('-request_date')[:10]
         
-        # Monthly revenue - calculate safely
+        # Monthly revenue - REAL DATA (calculated from OrderItems)
         try:
-            current_month_revenue = Order.objects.filter(
-                order_date__gte=current_month_start,
-                status__in=['PROCESSING', 'SHIPPED', 'DELIVERED']
+            current_month_revenue_data = OrderItem.objects.filter(
+                order__order_date__gte=current_month_start,
+                order__status__in=['PROCESSING', 'SHIPPED', 'DELIVERED']
             ).aggregate(
-                total=Sum('total_amount')
-            )['total'] or 0
+                total=Sum(F('quantity') * F('price'), output_field=DecimalField())
+            )
+            current_month_revenue = float(current_month_revenue_data['total'] or 0)
         except:
             current_month_revenue = 0
         
         context['current_month_revenue'] = current_month_revenue
         
-        # Top technicians by rating
+        # Top technicians by rating - REAL DATA
         context['top_technicians'] = User.objects.filter(
             role='TECHNICIAN'
         ).annotate(
@@ -240,10 +241,10 @@ class AdminCreateProductView(View):
                     product.image = request.FILES['image']
                     product.save()
                 
-                # Handle additional images (up to 10)
+                # Handle additional images
                 if 'additional_images' in request.FILES:
                     additional_images = request.FILES.getlist('additional_images')
-                    for i, image_file in enumerate(additional_images[:10]):  # Limit to 10
+                    for i, image_file in enumerate(additional_images[:10]):
                         ProductImage.objects.create(
                             product=product,
                             image=image_file,
@@ -311,7 +312,6 @@ class AdminEditProductView(View):
                 
                 # Handle new main image
                 if 'new_main_image' in request.FILES:
-                    # Delete old image if exists
                     if product.image:
                         product.image.delete()
                     product.image = request.FILES['new_main_image']
@@ -323,15 +323,15 @@ class AdminEditProductView(View):
                 for image_id in removed_images:
                     try:
                         image = ProductImage.objects.get(id=image_id, product=product)
-                        image.delete()  # This will also delete the file
+                        image.delete()
                     except ProductImage.DoesNotExist:
                         pass
                 
-                # Handle new additional images (up to 10)
+                # Handle new additional images
                 if 'new_additional_images' in request.FILES:
                     existing_count = product.additional_images.count()
                     new_images = request.FILES.getlist('new_additional_images')
-                    for i, image_file in enumerate(new_images[:10]):  # Limit to 10
+                    for i, image_file in enumerate(new_images[:10]):
                         ProductImage.objects.create(
                             product=product,
                             image=image_file,
@@ -340,10 +340,8 @@ class AdminEditProductView(View):
                         )
                 
                 # Update specifications
-                # First, delete existing specs
                 product.specifications.all().delete()
                 
-                # Add new specs
                 spec_names = request.POST.getlist('spec_names[]')
                 spec_values = request.POST.getlist('spec_values[]')
                 
@@ -370,7 +368,6 @@ class AdminDeleteProductView(View):
         product_name = product.name
         
         try:
-            # Delete product (images will be deleted automatically due to model setup)
             product.delete()
             messages.success(request, f'Product "{product_name}" deleted successfully!')
         except Exception as e:
@@ -427,7 +424,6 @@ class AdminEditUserView(View):
     def get(self, request, user_id):
         user_obj = get_object_or_404(User, id=user_id)
         
-        # Get all service categories for selection
         from services.models import ServiceCategory
         service_categories = ServiceCategory.objects.all()
         
@@ -459,7 +455,6 @@ class AdminEditUserView(View):
                     ServiceCategory.objects.filter(id__in=selected_categories)
                 )
             else:
-                # Clear free services if not AMC
                 user_obj.free_service_categories.clear()
             
             messages.success(request, f'User "{user_obj.name}" updated successfully!')
@@ -487,16 +482,14 @@ class AdminDeleteUserView(View):
         
         return redirect('admin_panel:users')
 
-# Orders Management Views
+# ==================== ORDERS MANAGEMENT ====================
 @method_decorator(staff_member_required, name='dispatch')
 class AdminOrdersView(View):
     def get(self, request):
-        # Get filter parameters
         status_filter = request.GET.get('status', '')
         technician_filter = request.GET.get('technician', '')
         search = request.GET.get('search', '')
         
-        # Build queryset
         orders = Order.objects.select_related('customer', 'technician', 'shipping_address').prefetch_related('items__product')
         
         if status_filter:
@@ -516,14 +509,13 @@ class AdminOrdersView(View):
         
         orders = orders.order_by('-order_date')
         
-        # Calculate real stats for all orders
+        # REAL STATS
         all_orders = Order.objects.all()
         pending_count = all_orders.filter(status='PENDING').count()
         unassigned_count = all_orders.filter(technician__isnull=True).count()
         processing_count = all_orders.filter(status='PROCESSING').count()
         completed_count = all_orders.filter(status='DELIVERED').count()
         
-        # Pagination
         paginator = Paginator(orders, 20)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
@@ -535,7 +527,6 @@ class AdminOrdersView(View):
             'status_filter': status_filter,
             'technician_filter': technician_filter,
             'search': search,
-            # Real stats
             'pending_count': pending_count,
             'unassigned_count': unassigned_count,
             'processing_count': processing_count,
@@ -561,12 +552,10 @@ class AdminEditOrderView(View):
     def post(self, request, order_id):
         order = get_object_or_404(Order, id=order_id)
         try:
-            # Update status if provided
             status = request.POST.get('status')
             if status:
                 order.status = status
 
-            # Assign technician if provided
             technician_id = request.POST.get('technician_id')
             if technician_id:
                 technician = get_object_or_404(User, id=technician_id, role='TECHNICIAN')
@@ -588,7 +577,6 @@ class AdminDeleteOrderView(View):
         order_number = order.id
         
         try:
-            # Delete order (related items will be deleted automatically due to CASCADE)
             order.delete()
             messages.success(request, f'Order #{order_number} deleted successfully!')
         except Exception as e:
@@ -613,18 +601,18 @@ class AdminAssignTechnicianView(View):
             messages.error(request, f'Error assigning technician: {str(e)}')
             return redirect('admin_panel:edit_order', order_id=order_id)
 
-# FIXED: Services Management View with Real Stats
+# ==================== SERVICES MANAGEMENT (FIXED WITH REAL DATA) ====================
 @method_decorator(staff_member_required, name='dispatch')
 class AdminServicesView(View):
     def get(self, request):
-        # Get filter parameters
         status_filter = request.GET.get('status', '')
         technician_filter = request.GET.get('technician', '')
         category_filter = request.GET.get('category', '')
         search = request.GET.get('search', '')
         
-        # Build queryset
-        services = ServiceRequest.objects.select_related('customer', 'technician', 'service_category', 'service_location')
+        services = ServiceRequest.objects.select_related(
+            'customer', 'technician', 'service_category', 'service_location'
+        )
         
         if status_filter:
             services = services.filter(status=status_filter)
@@ -647,14 +635,13 @@ class AdminServicesView(View):
         
         services = services.order_by('-request_date')
         
-        # Calculate REAL stats for all services (not filtered)
+        # REAL STATS - NOT MOCK DATA
         all_services = ServiceRequest.objects.all()
         submitted_count = all_services.filter(status='SUBMITTED').count()
         unassigned_count = all_services.filter(technician__isnull=True).count()
         in_progress_count = all_services.filter(status='IN_PROGRESS').count()
         completed_count = all_services.filter(status='COMPLETED').count()
         
-        # Pagination
         paginator = Paginator(services, 20)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
@@ -729,7 +716,7 @@ class AdminAssignServiceTechnicianView(View):
             messages.error(request, f'Error assigning technician: {str(e)}')
             return redirect('admin_panel:edit_service', service_id=service_id)
 
-# FIXED: Categories Management View
+# ==================== CATEGORIES MANAGEMENT (FIXED) ====================
 @method_decorator(staff_member_required, name='dispatch')
 class AdminCategoriesView(View):
     def get(self, request):
@@ -748,7 +735,6 @@ class AdminCategoriesView(View):
         
         return render(request, 'admin_panel/categories.html', context)
 
-# FIXED: Create Category View
 @method_decorator(staff_member_required, name='dispatch')
 class AdminCreateCategoryView(View):
     def post(self, request):
@@ -776,8 +762,36 @@ class AdminCreateCategoryView(View):
                 messages.success(request, f'Product category "{name}" created successfully!')
             
             elif category_type == 'service':
-                ServiceCategory.objects.create(name=name.strip())
-                messages.success(request, f'Service category "{name}" created successfully!')
+                # Create service category
+                service_category = ServiceCategory.objects.create(name=name.strip())
+                
+                # Get service issues from form
+                issue_descriptions = request.POST.getlist('issue_descriptions[]')
+                issue_prices = request.POST.getlist('issue_prices[]')
+                
+                # Create service issues
+                created_issues = 0
+                for description, price in zip(issue_descriptions, issue_prices):
+                    if description.strip():
+                        try:
+                            # Convert price to decimal, default to 0 if empty
+                            price_value = float(price) if price.strip() else 0
+                            ServiceIssue.objects.create(
+                                category=service_category,
+                                description=description.strip(),
+                                price=price_value
+                            )
+                            created_issues += 1
+                        except ValueError:
+                            messages.warning(request, f'Invalid price for issue "{description}". Set to 0.')
+                            ServiceIssue.objects.create(
+                                category=service_category,
+                                description=description.strip(),
+                                price=0
+                            )
+                            created_issues += 1
+                
+                messages.success(request, f'Service category "{name}" created with {created_issues} issues!')
             else:
                 messages.error(request, 'Invalid category type')
             
@@ -788,6 +802,24 @@ class AdminCreateCategoryView(View):
 
 @method_decorator(staff_member_required, name='dispatch')
 class AdminEditCategoryView(View):
+    def get(self, request, category_id):
+        """Show edit form for service categories with issues"""
+        category_type = request.GET.get('type', 'product')
+        
+        if category_type == 'service':
+            category = get_object_or_404(ServiceCategory, id=category_id)
+            issues = category.issues.all()
+            
+            context = {
+                'category': category,
+                'issues': issues,
+                'category_type': 'service'
+            }
+            return render(request, 'admin_panel/edit_service_category.html', context)
+        else:
+            # For product categories, handle in template modal
+            return redirect('admin_panel:categories')
+    
     def post(self, request, category_id):
         category_type = request.POST.get('type')
         name = request.POST.get('name')
@@ -810,6 +842,47 @@ class AdminEditCategoryView(View):
                 category = get_object_or_404(ServiceCategory, id=category_id)
                 category.name = name.strip()
                 category.save()
+                
+                # Get existing issue IDs to keep
+                existing_issue_ids = request.POST.getlist('existing_issue_ids[]')
+                
+                # Delete issues that are not in the existing list
+                category.issues.exclude(id__in=existing_issue_ids).delete()
+                
+                # Update existing issues
+                existing_descriptions = request.POST.getlist('existing_issue_descriptions[]')
+                existing_prices = request.POST.getlist('existing_issue_prices[]')
+                
+                for issue_id, description, price in zip(existing_issue_ids, existing_descriptions, existing_prices):
+                    if description.strip():
+                        try:
+                            issue = ServiceIssue.objects.get(id=issue_id, category=category)
+                            issue.description = description.strip()
+                            issue.price = float(price) if price.strip() else 0
+                            issue.save()
+                        except (ServiceIssue.DoesNotExist, ValueError):
+                            pass
+                
+                # Add new issues
+                new_descriptions = request.POST.getlist('new_issue_descriptions[]')
+                new_prices = request.POST.getlist('new_issue_prices[]')
+                
+                for description, price in zip(new_descriptions, new_prices):
+                    if description.strip():
+                        try:
+                            price_value = float(price) if price.strip() else 0
+                            ServiceIssue.objects.create(
+                                category=category,
+                                description=description.strip(),
+                                price=price_value
+                            )
+                        except ValueError:
+                            ServiceIssue.objects.create(
+                                category=category,
+                                description=description.strip(),
+                                price=0
+                            )
+                
                 messages.success(request, f'Service category "{name}" updated successfully!')
             
         except Exception as e:
@@ -820,7 +893,7 @@ class AdminEditCategoryView(View):
 @method_decorator(staff_member_required, name='dispatch')
 class AdminDeleteCategoryView(View):
     def post(self, request, category_id):
-        category_type = request.POST.get('type', 'product')  # Default to product if not specified
+        category_type = request.POST.get('type', 'product')
         
         try:
             if category_type == 'product':
@@ -863,6 +936,7 @@ class AdminDeleteCategoryView(View):
         
         return redirect('admin_panel:categories')
 
+# ==================== ANALYTICS (FULLY CONNECTED WITH REAL DATA) ====================
 @method_decorator(staff_member_required, name='dispatch')
 class AdminAnalyticsView(TemplateView):
     template_name = 'admin_panel/analytics.html'
@@ -883,7 +957,7 @@ class AdminAnalyticsView(TemplateView):
         current_orders = Order.objects.filter(order_date__range=[start_date, end_date])
         previous_orders = Order.objects.filter(order_date__range=[previous_start, previous_end])
         
-        # Calculate revenue from order items (no total_amount field)
+        # Calculate revenue from order items (REAL DATA)
         current_revenue_data = OrderItem.objects.filter(
             order__order_date__range=[start_date, end_date],
             order__status__in=['PROCESSING', 'SHIPPED', 'DELIVERED']
@@ -940,7 +1014,7 @@ class AdminAnalyticsView(TemplateView):
         elif current_customers > 0:
             customer_growth = 100
         
-        # Monthly revenue data for chart (last 12 months)
+        # Monthly revenue data for chart (last 12 months) - REAL DATA
         monthly_revenue = []
         for i in range(11, -1, -1):
             month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=30*i)
@@ -959,7 +1033,7 @@ class AdminAnalyticsView(TemplateView):
                 'amount': revenue
             })
         
-        # Daily orders for last 30 days
+        # Daily orders for last 30 days - REAL DATA
         daily_orders = []
         for i in range(29, -1, -1):
             day = timezone.now().date() - timedelta(days=i)
@@ -972,7 +1046,7 @@ class AdminAnalyticsView(TemplateView):
                 'count': count
             })
         
-        # Daily services for last 30 days
+        # Daily services for last 30 days - REAL DATA
         daily_services = []
         for i in range(29, -1, -1):
             day = timezone.now().date() - timedelta(days=i)
@@ -985,7 +1059,7 @@ class AdminAnalyticsView(TemplateView):
                 'count': count
             })
         
-        # Top products by sales (calculate from OrderItems)
+        # Top products by sales - REAL DATA
         top_products = OrderItem.objects.filter(
             order__order_date__range=[start_date, end_date]
         ).values('product__name').annotate(
@@ -993,7 +1067,7 @@ class AdminAnalyticsView(TemplateView):
             total_sales=Sum(F('quantity') * F('price'), output_field=DecimalField())
         ).order_by('-total_sales')[:5]
         
-        # Order status distribution
+        # Order status distribution - REAL DATA
         total_orders_count = Order.objects.filter(order_date__range=[start_date, end_date]).count()
         order_status_distribution = []
         
@@ -1005,14 +1079,14 @@ class AdminAnalyticsView(TemplateView):
             
             percentage = (count / total_orders_count * 100) if total_orders_count > 0 else 0
             
-            if count > 0:  # Only show statuses with orders
+            if count > 0:
                 order_status_distribution.append({
                     'status': status_name,
                     'count': count,
                     'percentage': percentage
                 })
         
-        # Top cities by orders
+        # Top cities by orders - REAL DATA
         top_cities = Order.objects.filter(
             order_date__range=[start_date, end_date],
             shipping_address__isnull=False
@@ -1020,7 +1094,7 @@ class AdminAnalyticsView(TemplateView):
             order_count=Count('id')
         ).order_by('-order_count')[:5]
         
-        # Recent activities
+        # Recent activities - REAL DATA
         recent_activities = []
         
         # Recent orders
@@ -1098,7 +1172,7 @@ class AdminAnalyticsView(TemplateView):
             })
         
         context.update({
-            # Summary stats
+            # Summary stats - ALL REAL
             'total_revenue': current_revenue,
             'revenue_growth': revenue_growth,
             'total_orders': current_orders.count(),
@@ -1108,12 +1182,12 @@ class AdminAnalyticsView(TemplateView):
             'total_customers': User.objects.filter(role='CUSTOMER').count(),
             'customer_growth': customer_growth,
             
-            # Chart data (JSON serialized)
+            # Chart data (JSON serialized) - ALL REAL
             'monthly_revenue': json.dumps(monthly_revenue),
             'daily_orders': json.dumps(daily_orders),
             'daily_services': json.dumps(daily_services),
             
-            # Lists
+            # Lists - ALL REAL
             'top_products': top_products,
             'order_status_distribution': order_status_distribution,
             'top_cities': top_cities,
@@ -1126,18 +1200,24 @@ class AdminAnalyticsView(TemplateView):
 class AdminSettingsView(TemplateView):
     template_name = 'admin_panel/settings.html'
 
-# API Views for AJAX operations
+# ==================== API VIEWS FOR AJAX ====================
 @staff_member_required
 def admin_stats_api(request):
-    """API endpoint for dashboard stats"""
+    """API endpoint for dashboard stats - REAL DATA"""
     try:
+        # Calculate real revenue from OrderItems
+        revenue_data = OrderItem.objects.filter(
+            order__status__in=['PROCESSING', 'SHIPPED', 'DELIVERED']
+        ).aggregate(
+            total=Sum(F('quantity') * F('price'), output_field=DecimalField())
+        )
+        total_revenue = float(revenue_data['total'] or 0)
+        
         stats = {
             'total_users': User.objects.count(),
             'total_orders': Order.objects.count(),
             'pending_orders': Order.objects.filter(status='PENDING').count(),
-            'total_revenue': float(Order.objects.filter(
-                status__in=['PROCESSING', 'SHIPPED', 'DELIVERED']
-            ).aggregate(total=Sum('total_amount'))['total'] or 0),
+            'total_revenue': total_revenue,
         }
         return JsonResponse(stats)
     except Exception as e:
@@ -1145,18 +1225,30 @@ def admin_stats_api(request):
 
 @staff_member_required
 def get_order_details_api(request, order_id):
-    """API endpoint for getting order details"""
+    """API endpoint for getting order details - REAL DATA"""
     try:
         order = get_object_or_404(
             Order.objects.select_related('customer', 'technician', 'shipping_address').prefetch_related('items__product'),
             id=order_id
         )
         
-        # Build order data
+        # Calculate total from OrderItems
+        items_data = []
+        total_amount = 0
+        for item in order.items.all():
+            item_total = float(item.price) * item.quantity
+            total_amount += item_total
+            items_data.append({
+                'product_name': item.product.name,
+                'quantity': item.quantity,
+                'price': str(item.price),
+                'total': str(item_total)
+            })
+        
         order_data = {
             'id': order.id,
             'status': order.status,
-            'total_amount': str(order.total_amount),
+            'total_amount': str(total_amount),
             'order_date': order.order_date.strftime('%B %d, %Y at %I:%M %p'),
             'customer': {
                 'name': order.customer.name,
@@ -1165,18 +1257,8 @@ def get_order_details_api(request, order_id):
             },
             'technician': order.technician.name if order.technician else None,
             'shipping_address': str(order.shipping_address) if order.shipping_address else 'N/A',
-            'items': []
+            'items': items_data
         }
-        
-        # Add items
-        for item in order.items.all():
-            item_total = float(item.price) * item.quantity
-            order_data['items'].append({
-                'product_name': item.product.name,
-                'quantity': item.quantity,
-                'price': str(item.price),
-                'total': str(item_total)
-            })
         
         return JsonResponse({
             'success': True,
