@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,7 +15,44 @@
     <!-- Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     
+    <!-- Global Admin Styles -->
+    <link rel="stylesheet" href="{% static 'admin_panel/css/admin-global.css' %}">
+    
     <style>
+
+        /* DROPDOWN FIX - Add at the very top */
+    select.form-control option,
+    .form-control option,
+    select option {
+        background-color: #1a1a1a !important;
+        color: white !important;
+        padding: 10px !important;
+        font-size: 14px !important;
+    }
+
+    select.form-control option:hover,
+    .form-control option:hover,
+    select option:hover {
+        background-color: #2a2a2a !important;
+    }
+
+    select.form-control option:checked,
+    .form-control option:checked,
+    select option:checked {
+        background-color: #3b82f6 !important;
+        color: white !important;
+    }
+
+    select.form-control,
+    .form-control {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: white !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    }
+
+    /* Original styles below */
+   
+
         * {
             margin: 0;
             padding: 0;
@@ -541,60 +579,171 @@
         }
 
         /* Responsive */
-        @media (max-width: 1024px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
+    @media (max-width: 1600px) {
+        .main-content {
+            margin-left: 280px;
+        }
+    }
 
-            .sidebar.open {
-                transform: translateX(0);
-            }
+    @media (max-width: 1400px) {
+        .stats-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
 
-            .main-content {
-                margin-left: 0;
-            }
+    @media (max-width: 1200px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .top-bar {
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .top-bar-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
 
-            .stats-grid {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            }
+    @media (max-width: 1024px) {
+        .sidebar {
+            transform: translateX(-100%);
         }
 
-        @media (max-width: 768px) {
-            .content {
-                padding: 20px;
-            }
-
-            .table-container {
-                overflow-x: auto;
-            }
-
-            .filters {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .search-box {
-                min-width: auto;
-            }
+        .sidebar.open {
+            transform: translateX(0);
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
+        .main-content {
+            margin-left: 0;
         }
 
-        ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .content {
+            padding: 15px;
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 3px;
+        .stats-grid {
+            grid-template-columns: 1fr;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.5);
+        .table-container {
+            overflow-x: auto;
         }
+
+        .table {
+            font-size: 13px;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px 15px;
+        }
+
+        .filters {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .filter-group {
+            width: 100%;
+        }
+
+        .search-box {
+            min-width: auto;
+            width: 100%;
+        }
+
+        .top-bar {
+            padding: 15px 20px;
+        }
+
+        .page-title {
+            font-size: 20px;
+        }
+
+        .btn {
+            font-size: 12px;
+            padding: 8px 14px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .content {
+            padding: 10px;
+        }
+
+        .stat-card {
+            padding: 15px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+        }
+
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+        }
+
+        .top-bar-actions {
+            flex-direction: column;
+            width: 100%;
+            gap: 10px;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .table {
+            font-size: 11px;
+        }
+
+        .user-menu {
+            padding: 6px 10px;
+        }
+
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+        }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.4);
+    }
+
+    /* Firefox scrollbar */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
+    }
     </style>
 
     {% block extra_css %}{% endblock %}

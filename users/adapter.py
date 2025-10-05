@@ -1,13 +1,13 @@
-# Update your users/adapter.py
+# users/adapter.py - Fixed version with MultipleObjectsReturned patch
 
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from allauth.socialaccount.models import SocialApp
 from django.contrib.auth import get_user_model, login as django_login
 from allauth.exceptions import ImmediateHttpResponse
 from django.http import HttpResponseRedirect
 from django.conf import settings
-from django.conf import settings
-from django.contrib.auth import get_user_model
+from allauth.socialaccount.models import SocialApp
 
 User = get_user_model()
 
@@ -17,6 +17,28 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         return 'http://127.0.0.1:8000/api/users/google-login-success/'
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
+    
+    def get_app(self, request, provider, client_id=None):
+        """
+        Override to fix MultipleObjectsReturned error
+        Completely bypass parent implementation
+        """
+        
+        # Manually get the app, filtering out any corrupt entries
+        apps = SocialApp.objects.filter(provider=provider)
+        
+        # Filter out apps with empty names or client_ids
+        valid_apps = [app for app in apps if app.name and app.client_id]
+        
+        if client_id:
+            valid_apps = [app for app in valid_apps if app.client_id == client_id]
+        
+        if len(valid_apps) == 0:
+            raise SocialApp.DoesNotExist(f"No {provider} app found")
+        
+        # Return the first valid app (ignore duplicates)
+        return valid_apps[0]
+    
     def pre_social_login(self, request, sociallogin):
         """
         Auto-link social account to existing user by verified email and log them in,
@@ -40,7 +62,6 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
             # Skip auto linking if provider didn't verify the email
             return
 
-        User = get_user_model()
         try:
             existing_user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
@@ -68,6 +89,7 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         Our urls.py intercepts that path and redirects to the frontend signup.
         """
         return super().get_signup_form_class(request, sociallogin)
+    
     def save_user(self, request, sociallogin, form=None):
         """
         Save the user from Google OAuth data

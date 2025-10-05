@@ -44,4 +44,5 @@ urlpatterns = [
     path('api/technician/complete-service/<int:service_id>/', CompleteServiceView.as_view(), name='api_complete_service'),
     
     path('admin/delete-product-image/<int:image_id>/', views.delete_product_image, name='delete_product_image'),
+
 ]

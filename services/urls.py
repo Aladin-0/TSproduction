@@ -1,4 +1,4 @@
-# services/urls.py - Updated with rating endpoints
+# services/urls.py - Updated with job sheet endpoints
 
 from django.urls import path
 from . import views
@@ -22,4 +22,13 @@ urlpatterns = [
     path('api/ratings/create/', views.create_rating, name='api_create_rating'),
     path('api/ratings/my-ratings/', views.get_user_ratings, name='api_user_ratings'),
     path('api/ratings/test/', views.test_rating_endpoint, name='api_test_rating'),
+    
+    # Job Sheet API endpoints
+    path('api/job-sheets/create/', views.create_job_sheet, name='api_create_job_sheet'),
+    path('api/job-sheets/', views.get_job_sheets, name='api_get_job_sheets'),
+    path('api/job-sheets/<int:job_sheet_id>/', views.get_job_sheet_detail, name='api_job_sheet_detail'),
+    path('api/job-sheets/<int:job_sheet_id>/approve/', views.approve_job_sheet, name='api_approve_job_sheet'),
+    path('api/job-sheets/<int:job_sheet_id>/decline/', views.decline_job_sheet, name='api_decline_job_sheet'),
+   
+    path('api/service-requests/<int:service_id>/complete/', views.complete_service_request, name='api_complete_service_request'),
 ]

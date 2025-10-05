@@ -51,4 +51,12 @@ urlpatterns = [
     path('api/assign-service-technician/', views.assign_service_technician_api, name='api_assign_service_technician'),
     path('api/update-order-status/', views.update_order_status_api, name='api_update_order_status'),
     path('api/update-service-status/', views.update_service_status_api, name='api_update_service_status'),
+
+    # Job Sheets management
+    path('job-sheets/', views.AdminJobSheetsView.as_view(), name='job_sheets'),
+    path('job-sheets/<int:job_sheet_id>/', views.AdminJobSheetDetailView.as_view(), name='job_sheet_detail'),
+    path('job-sheets/<int:job_sheet_id>/delete/', views.AdminDeleteJobSheetView.as_view(), name='delete_job_sheet'),
+    # Job Sheet API
+    path('api/job-sheets/<int:job_sheet_id>/', views.get_job_sheet_details_api, name='api_job_sheet_details'),  
+    path('api/service/<int:service_id>/', views.api_get_service_detail, name='api_service_detail'),
 ]

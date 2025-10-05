@@ -63,15 +63,28 @@ class TechnicianAssignedServicesView(APIView):
         if request.user.role != 'TECHNICIAN':
             return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
         
+        from services.models import JobSheet
+        
         services = ServiceRequest.objects.filter(
             technician=request.user
         ).select_related(
             'customer', 'service_category', 'issue', 'service_location'
         ).order_by('-request_date')
         
-        # Enhanced serializer data
+        # Enhanced serializer data with job sheet information
         services_data = []
         for service in services:
+            # Check for job sheet
+            try:
+                job_sheet = JobSheet.objects.get(service_request=service)
+                has_job_sheet = True
+                job_sheet_status = job_sheet.approval_status
+                job_sheet_id = job_sheet.id
+            except JobSheet.DoesNotExist:
+                has_job_sheet = False
+                job_sheet_status = None
+                job_sheet_id = None
+            
             service_data = {
                 'id': service.id,
                 'customer': {
@@ -93,7 +106,11 @@ class TechnicianAssignedServicesView(APIView):
                     'pincode': service.service_location.pincode if service.service_location else '',
                 } if service.service_location else None,
                 'request_date': service.request_date,
-                'status': service.status
+                'status': service.status,
+                # Job sheet fields - NEW
+                'has_job_sheet': has_job_sheet,
+                'job_sheet_status': job_sheet_status,
+                'job_sheet_id': job_sheet_id,
             }
             services_data.append(service_data)
         
@@ -168,12 +185,14 @@ class CompleteOrderView(APIView):
             return Response({'error': 'Order not found or not assigned to you'}, status=status.HTTP_404_NOT_FOUND)
 
 class CompleteServiceView(APIView):
-    """Mark a service request as completed"""
+    """Mark a service request as completed - requires approved job sheet"""
     permission_classes = [permissions.IsAuthenticated]
     
     def patch(self, request, service_id):
         if request.user.role != 'TECHNICIAN':
             return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        from services.models import JobSheet
         
         try:
             service = ServiceRequest.objects.get(id=service_id, technician=request.user)
@@ -181,6 +200,33 @@ class CompleteServiceView(APIView):
             if service.status == 'COMPLETED':
                 return Response({'error': 'Service already marked as completed'}, status=status.HTTP_400_BAD_REQUEST)
             
+            # Check if job sheet exists
+            try:
+                job_sheet = JobSheet.objects.get(service_request=service)
+            except JobSheet.DoesNotExist:
+                return Response(
+                    {'error': 'Cannot complete service. Please create a job sheet first.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check if job sheet is approved
+            if job_sheet.approval_status == 'PENDING':
+                return Response(
+                    {'error': 'Cannot complete service. Job sheet is pending customer approval.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            elif job_sheet.approval_status == 'DECLINED':
+                return Response(
+                    {'error': 'Cannot complete service. Job sheet was declined by customer.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            elif job_sheet.approval_status != 'APPROVED':
+                return Response(
+                    {'error': 'Cannot complete service. Invalid job sheet status.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Job sheet approved - allow completion
             service.status = 'COMPLETED'
             service.save()
             

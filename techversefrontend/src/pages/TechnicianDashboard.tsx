@@ -1,4 +1,4 @@
-// src/pages/TechnicianDashboard.tsx - Updated with integrated NavBar
+// src/pages/TechnicianDashboard.tsx - Updated with Job Sheet Integration
 import React, { useEffect, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { 
@@ -30,11 +30,13 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PhoneIcon from '@mui/icons-material/Phone';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { useSpring, animated } from '@react-spring/web';
 import { useUserStore } from '../stores/userStore';
 import { useSnackbar } from 'notistack';
 import { useNavigate } from 'react-router-dom';
 import { TechnicianNavBar } from '../components/TechnicianNavBar';
+import { JobSheetForm } from '../components/JobSheetForm';
 import apiClient from '../api';
 
 // Page wrapper matching your design system
@@ -216,6 +218,10 @@ interface ServiceRequest {
   };
   request_date: string;
   status: string;
+  // NEW - Add job sheet fields
+  has_job_sheet: boolean;
+  job_sheet_status: 'PENDING' | 'APPROVED' | 'DECLINED' | null;
+  job_sheet_id: number | null;
 }
 
 interface TechnicianStats {
@@ -252,6 +258,10 @@ export const TechnicianDashboard: React.FC = () => {
     id: number;
     title: string;
   }>({ open: false, type: 'order', id: 0, title: '' });
+
+  // NEW: Job Sheet states
+  const [jobSheetFormOpen, setJobSheetFormOpen] = useState(false);
+  const [selectedServiceForJobSheet, setSelectedServiceForJobSheet] = useState<ServiceRequest | null>(null);
 
   // Hero animation
   const heroAnimation = useSpring({
@@ -359,14 +369,15 @@ export const TechnicianDashboard: React.FC = () => {
 
   const handleCompleteService = async (serviceId: number) => {
     try {
-      await apiClient.patch(`/api/technician/complete-service/${serviceId}/`);
-      enqueueSnackbar('Service marked as completed!', { variant: 'success' });
-      fetchDashboardData();
-    } catch (error) {
-      console.error('Error completing service:', error);
-      enqueueSnackbar('Failed to complete service', { variant: 'error' });
-    }
-  };
+    await apiClient.patch(`/services/api/service-requests/${serviceId}/complete/`);
+    enqueueSnackbar('Service marked as completed!', { variant: 'success' });
+    fetchDashboardData();
+  } catch (error: any) {
+    console.error('Error completing service:', error);
+    const errorMessage = error.response?.data?.error || 'Failed to complete service';
+    enqueueSnackbar(errorMessage, { variant: 'error' });
+  }
+};
 
   const openConfirmDialog = (type: 'order' | 'service', id: number, title: string) => {
     setConfirmDialog({ open: true, type, id, title });
@@ -389,7 +400,6 @@ export const TechnicianDashboard: React.FC = () => {
       .toUpperCase()
       .slice(0, 2);
   };
-
   // Show loading while checking auth
   if (authChecking) {
     return (
@@ -733,13 +743,90 @@ export const TechnicianDashboard: React.FC = () => {
                               </Typography>
                             </Box>
 
+                            {/* JOB SHEET STATUS INDICATOR - NEW */}
+                            {service.has_job_sheet && (
+                              <Box sx={{ 
+                                mb: 2, 
+                                p: 2, 
+                                background: service.job_sheet_status === 'APPROVED' 
+                                  ? 'rgba(34, 197, 94, 0.1)' 
+                                  : service.job_sheet_status === 'DECLINED'
+                                  ? 'rgba(239, 68, 68, 0.1)'
+                                  : 'rgba(251, 191, 36, 0.1)',
+                                border: service.job_sheet_status === 'APPROVED'
+                                  ? '1px solid rgba(34, 197, 94, 0.3)'
+                                  : service.job_sheet_status === 'DECLINED'
+                                  ? '1px solid rgba(239, 68, 68, 0.3)'
+                                  : '1px solid rgba(251, 191, 36, 0.3)',
+                                borderRadius: '12px'
+                              }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <DescriptionIcon sx={{ 
+                                    fontSize: '20px', 
+                                    color: service.job_sheet_status === 'APPROVED' 
+                                      ? '#22c55e' 
+                                      : service.job_sheet_status === 'DECLINED'
+                                      ? '#ef4444'
+                                      : '#fbbf24'
+                                  }} />
+                                  <Box>
+                                    <Typography sx={{ 
+                                      color: service.job_sheet_status === 'APPROVED' 
+                                        ? '#22c55e' 
+                                        : service.job_sheet_status === 'DECLINED'
+                                        ? '#ef4444'
+                                        : '#fbbf24',
+                                      fontSize: '14px',
+                                      fontWeight: 600
+                                    }}>
+                                      Job Sheet: {service.job_sheet_status === 'APPROVED' 
+                                        ? '✓ Approved by Customer' 
+                                        : service.job_sheet_status === 'DECLINED'
+                                        ? '✗ Declined by Customer'
+                                        : '⏳ Pending Customer Approval'}
+                                    </Typography>
+                                    <Typography sx={{ 
+                                      color: 'rgba(255, 255, 255, 0.6)', 
+                                      fontSize: '12px',
+                                      mt: 0.5
+                                    }}>
+                                      {service.job_sheet_status === 'APPROVED' 
+                                        ? 'You can now mark this service as completed' 
+                                        : service.job_sheet_status === 'DECLINED'
+                                        ? 'Customer declined the job sheet. Please contact customer.'
+                                        : 'Waiting for customer to review and approve the job sheet'}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              </Box>
+                            )}
+
                             <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', my: 2 }} />
 
-                            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                              {/* CREATE JOB SHEET BUTTON */}
+                              {!service.has_job_sheet && (
+                                <PremiumButton
+                                  onClick={() => {
+                                    setSelectedServiceForJobSheet(service);
+                                    setJobSheetFormOpen(true);
+                                  }}
+                                >
+                                  <DescriptionIcon sx={{ mr: 1, fontSize: '16px' }} />
+                                  Create Job Sheet
+                                </PremiumButton>
+                              )}
+
+                              {/* MARK COMPLETED BUTTON - Only enabled if job sheet is approved */}
                               {service.status !== 'COMPLETED' && (
                                 <PremiumButton 
                                   className="success"
                                   onClick={() => openConfirmDialog('service', service.id, `Service Request #${service.id}`)}
+                                  disabled={!service.has_job_sheet || service.job_sheet_status !== 'APPROVED'}
+                                  sx={{
+                                    opacity: (!service.has_job_sheet || service.job_sheet_status !== 'APPROVED') ? 0.5 : 1,
+                                    cursor: (!service.has_job_sheet || service.job_sheet_status !== 'APPROVED') ? 'not-allowed' : 'pointer'
+                                  }}
                                 >
                                   <CheckCircleIcon sx={{ mr: 1, fontSize: '16px' }} />
                                   Mark Completed
@@ -797,6 +884,21 @@ export const TechnicianDashboard: React.FC = () => {
           </PremiumButton>
         </DialogActions>
       </Dialog>
+
+      {/* Job Sheet Creation Form - NEW */}
+      {selectedServiceForJobSheet && (
+        <JobSheetForm
+          open={jobSheetFormOpen}
+          onClose={() => {
+            setJobSheetFormOpen(false);
+            setSelectedServiceForJobSheet(null);
+          }}
+          serviceRequest={selectedServiceForJobSheet}
+          onSuccess={() => {
+            fetchDashboardData();
+          }}
+        />
+      )}
     </PageWrapper>
   );
 };

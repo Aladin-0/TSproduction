@@ -24,6 +24,7 @@ from store.models import Order
 from services.models import ServiceRequest, TechnicianRating
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from allauth.socialaccount.providers.google.views import oauth2_login
 
 User = get_user_model()
 
@@ -389,3 +390,11 @@ def redirect_third_party_signup(request):
     # Include an info flag so the frontend can show a helpful notice
     base = getattr(settings, 'FRONTEND_BASE_URL', 'http://localhost:5173')
     return HttpResponseRedirect(f"{base}/login?tab=signup&info=no_account")
+
+def google_login_redirect(request):
+    """
+    Directly redirect to Google OAuth without showing intermediate page
+    """
+    # Directly call the Google OAuth login view
+    # This skips the allauth intermediate "Sign in with Google" page
+    return oauth2_login(request)

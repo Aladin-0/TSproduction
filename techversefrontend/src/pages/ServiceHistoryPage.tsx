@@ -1,8 +1,14 @@
+// src/pages/ServiceHistoryPage.tsx - Updated with Job Sheet Integration
+
 import { useEffect, useMemo, useState } from 'react';
 import { Box, CircularProgress, Container, Typography, Card, CardContent, Chip, Stack, Button, Divider } from '@mui/material';
 import dayjs from 'dayjs';
 import apiClient from '../api';
 import { RatingModal } from '../components/RatingModal';
+import { JobSheetView } from '../components/JobSheetView';
+import { useJobSheetStore } from '../stores/jobSheetStore';
+import type { JobSheet } from '../stores/jobSheetStore';
+import DescriptionIcon from '@mui/icons-material/Description';
 
 type Address = {
   street_address: string;
@@ -49,13 +55,24 @@ export const ServiceHistoryPage: React.FC = () => {
   const [ratingOpen, setRatingOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequestHistory | null>(null);
 
+  // Job Sheet states - NEW
+  const [jobSheets, setJobSheets] = useState<JobSheet[]>([]);
+  const [selectedJobSheet, setSelectedJobSheet] = useState<JobSheet | null>(null);
+  const [jobSheetViewOpen, setJobSheetViewOpen] = useState(false);
+
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const res = await apiClient.get('/services/api/requests/history/');
+        // Fetch both service requests and job sheets
+        const [servicesRes, jobSheetsRes] = await Promise.all([
+          apiClient.get('/services/api/requests/history/'),
+          apiClient.get('/services/api/job-sheets/')
+        ]);
+        
         if (!mounted) return;
-        setRequests(res.data);
+        setRequests(servicesRes.data);
+        setJobSheets(jobSheetsRes.data);
       } catch (e: any) {
         setError(e?.response?.data?.detail || e?.message || 'Failed to load service history');
       } finally {
@@ -68,6 +85,11 @@ export const ServiceHistoryPage: React.FC = () => {
   }, []);
 
   const hasItems = useMemo(() => requests && requests.length > 0, [requests]);
+
+  // Find job sheet for a service request - NEW
+  const getJobSheetForService = (serviceRequestId: number) => {
+    return jobSheets.find(js => js.service_request_id === serviceRequestId);
+  };
 
   const handleOpenRating = (req: ServiceRequestHistory) => {
     setSelectedRequest(req);
@@ -84,6 +106,16 @@ export const ServiceHistoryPage: React.FC = () => {
       .then((res) => setRequests(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  // Refresh job sheets after approval/decline - NEW
+  const handleJobSheetUpdate = async () => {
+    try {
+      const res = await apiClient.get('/services/api/job-sheets/');
+      setJobSheets(res.data);
+    } catch (error) {
+      console.error('Error refreshing job sheets:', error);
+    }
   };
 
   if (loading) {
@@ -117,6 +149,9 @@ export const ServiceHistoryPage: React.FC = () => {
           const address = req.service_location
             ? `${req.service_location.street_address}, ${req.service_location.city}, ${req.service_location.state} - ${req.service_location.pincode}`
             : 'N/A';
+          
+          const jobSheet = getJobSheetForService(req.id); // Get job sheet for this service - NEW
+          
           return (
             <Card key={req.id} variant="outlined">
               <CardContent>
@@ -143,6 +178,31 @@ export const ServiceHistoryPage: React.FC = () => {
                     {req.issue_price && (
                       <Typography variant="subtitle2">₹ {req.issue_price}</Typography>
                     )}
+                    
+                    {/* VIEW JOB SHEET BUTTON - NEW */}
+                    {jobSheet && (
+                      <Button 
+                        variant="outlined" 
+                        size="small" 
+                        startIcon={<DescriptionIcon />}
+                        onClick={() => {
+                          setSelectedJobSheet(jobSheet);
+                          setJobSheetViewOpen(true);
+                        }}
+                        sx={{ mt: 1 }}
+                      >
+                        View Job Sheet
+                        {jobSheet.approval_status === 'PENDING' && (
+                          <Chip 
+                            label="Pending" 
+                            size="small" 
+                            sx={{ ml: 1, height: '20px' }}
+                            color="warning"
+                          />
+                        )}
+                      </Button>
+                    )}
+                    
                     {req.can_rate && (
                       <Button variant="contained" size="small" onClick={() => handleOpenRating(req)}>
                         Rate Service
@@ -157,6 +217,7 @@ export const ServiceHistoryPage: React.FC = () => {
         })}
       </Stack>
 
+      {/* Rating Modal */}
       <RatingModal
         open={ratingOpen}
         onClose={() => setRatingOpen(false)}
@@ -172,6 +233,17 @@ export const ServiceHistoryPage: React.FC = () => {
             : undefined
         }
       />
+
+      {/* Job Sheet View Modal - NEW */}
+      <JobSheetView
+        open={jobSheetViewOpen}
+        onClose={() => {
+          setJobSheetViewOpen(false);
+          setSelectedJobSheet(null);
+        }}
+        jobSheet={selectedJobSheet}
+        onUpdate={handleJobSheetUpdate}
+      />
     </Container>
   );
-}
+};

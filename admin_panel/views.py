@@ -1,5 +1,5 @@
 # admin_panel/views.py - FULLY FIXED with Real Data Connections
-
+from services.models import JobSheet, JobSheetMaterial
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
 from django.utils.decorators import method_decorator
@@ -26,6 +26,7 @@ from store.models import Product, ProductCategory, Order, OrderItem, ProductImag
 from services.models import ServiceRequest, ServiceCategory, TechnicianRating, ServiceIssue
 from users.models import CustomUser
 from users.forms import CustomUserCreationForm
+from django.views.decorators.http import require_http_methods
 
 User = get_user_model()
 
@@ -610,9 +611,10 @@ class AdminServicesView(View):
         category_filter = request.GET.get('category', '')
         search = request.GET.get('search', '')
         
+        # UPDATE THIS LINE - Add prefetch_related for job_sheet
         services = ServiceRequest.objects.select_related(
             'customer', 'technician', 'service_category', 'service_location'
-        )
+        ).prefetch_related('job_sheet')  # ADD THIS
         
         if status_filter:
             services = services.filter(status=status_filter)
@@ -1354,3 +1356,210 @@ def assign_service_technician_api(request):
     
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+@method_decorator(staff_member_required, name='dispatch')
+class AdminJobSheetsView(View):
+    def get(self, request):
+        # Get filter parameters
+        approval_filter = request.GET.get('approval', '')
+        technician_filter = request.GET.get('technician', '')
+        search = request.GET.get('search', '')
+        
+        # Build queryset
+        job_sheets = JobSheet.objects.select_related(
+            'service_request',
+            'service_request__customer',
+            'service_request__service_category',
+            'created_by'
+        ).prefetch_related('materials')
+        
+        if approval_filter:
+            job_sheets = job_sheets.filter(approval_status=approval_filter)
+        
+        if technician_filter:
+            job_sheets = job_sheets.filter(created_by_id=technician_filter)
+        
+        if search:
+            job_sheets = job_sheets.filter(
+                Q(id__icontains=search) |
+                Q(customer_name__icontains=search) |
+                Q(service_request__id__icontains=search) |
+                Q(equipment_type__icontains=search)
+            )
+        
+        job_sheets = job_sheets.order_by('-created_at')
+        
+        # REAL STATS
+        all_job_sheets = JobSheet.objects.all()
+        pending_count = all_job_sheets.filter(approval_status='PENDING').count()
+        approved_count = all_job_sheets.filter(approval_status='APPROVED').count()
+        declined_count = all_job_sheets.filter(approval_status='DECLINED').count()
+        
+        # Pagination
+        paginator = Paginator(job_sheets, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        context = {
+            'job_sheets': page_obj,
+            'technicians': User.objects.filter(role='TECHNICIAN'),
+            'approval_choices': JobSheet.APPROVAL_STATUS,
+            'approval_filter': approval_filter,
+            'technician_filter': technician_filter,
+            'search': search,
+            'pending_count': pending_count,
+            'approved_count': approved_count,
+            'declined_count': declined_count,
+            'total_count': all_job_sheets.count(),
+        }
+        
+        return render(request, 'admin_panel/job_sheets.html', context)
+
+
+@method_decorator(staff_member_required, name='dispatch')
+class AdminJobSheetDetailView(View):
+    def get(self, request, job_sheet_id):
+        job_sheet = get_object_or_404(
+            JobSheet.objects.select_related(
+                'service_request',
+                'service_request__customer',
+                'service_request__service_category',
+                'service_request__service_location',
+                'created_by'
+            ).prefetch_related('materials'),
+            id=job_sheet_id
+        )
+        
+        # Calculate total material cost
+        total_material_cost = sum(
+            material.total_cost for material in job_sheet.materials.all()
+        )
+        
+        context = {
+            'job_sheet': job_sheet,
+            'total_material_cost': total_material_cost,
+        }
+        
+        return render(request, 'admin_panel/job_sheet_detail.html', context)
+
+
+@method_decorator(staff_member_required, name='dispatch')
+class AdminDeleteJobSheetView(View):
+    def post(self, request, job_sheet_id):
+        job_sheet = get_object_or_404(JobSheet, id=job_sheet_id)
+        job_sheet_number = job_sheet.id
+        
+        try:
+            job_sheet.delete()
+            messages.success(request, f'Job Sheet #{job_sheet_number} deleted successfully!')
+        except Exception as e:
+            messages.error(request, f'Error deleting job sheet: {str(e)}')
+        
+        return redirect('admin_panel:job_sheets')
+
+
+# ==================== JOB SHEET API ENDPOINTS ====================
+@staff_member_required
+def get_job_sheet_details_api(request, job_sheet_id):
+    """API endpoint for getting job sheet details"""
+    try:
+        job_sheet = get_object_or_404(
+            JobSheet.objects.select_related(
+                'service_request',
+                'service_request__customer',
+                'created_by'
+            ).prefetch_related('materials'),
+            id=job_sheet_id
+        )
+        
+        # Calculate total material cost
+        total_material_cost = sum(
+            float(material.total_cost) for material in job_sheet.materials.all()
+        )
+        
+        job_sheet_data = {
+            'id': job_sheet.id,
+            'service_request_id': job_sheet.service_request.id,
+            'customer_name': job_sheet.customer_name,
+            'customer_contact': job_sheet.customer_contact,
+            'service_address': job_sheet.service_address,
+            'equipment_type': job_sheet.equipment_type,
+            'serial_number': job_sheet.serial_number,
+            'equipment_brand': job_sheet.equipment_brand,
+            'equipment_model': job_sheet.equipment_model,
+            'problem_description': job_sheet.problem_description,
+            'work_performed': job_sheet.work_performed,
+            'date_of_service': job_sheet.date_of_service.strftime('%Y-%m-%d'),
+            'start_time': job_sheet.start_time.strftime('%H:%M'),
+            'finish_time': job_sheet.finish_time.strftime('%H:%M'),
+            'total_time_taken': str(job_sheet.total_time_taken) if job_sheet.total_time_taken else None,
+            'approval_status': job_sheet.approval_status,
+            'declined_reason': job_sheet.declined_reason,
+            'technician_name': job_sheet.created_by.name,
+            'technician_phone': job_sheet.created_by.phone,
+            'created_at': job_sheet.created_at.strftime('%B %d, %Y at %I:%M %p'),
+            'materials': [
+                {
+                    'date_used': material.date_used.strftime('%Y-%m-%d'),
+                    'item_description': material.item_description,
+                    'quantity': str(material.quantity),
+                    'unit_cost': str(material.unit_cost),
+                    'total_cost': str(material.total_cost),
+                }
+                for material in job_sheet.materials.all()
+            ],
+            'total_material_cost': str(total_material_cost),
+        }
+        
+        return JsonResponse({
+            'success': True,
+            'job_sheet': job_sheet_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+@require_http_methods(["GET"])
+@staff_member_required
+def api_get_service_detail(request, service_id):
+    """Get service details as JSON"""
+    try:
+        service = ServiceRequest.objects.select_related(
+            'customer', 'service_category', 'issue', 'service_location', 'technician'
+        ).get(id=service_id)
+        
+        data = {
+            'id': service.id,
+            'customer': {
+                'name': service.customer.name,
+                'email': service.customer.email,
+                'phone': service.customer.phone or '',
+            },
+            'service_category': {
+                'name': service.service_category.name
+            },
+            'issue': {
+                'description': service.issue.description,
+                'price': str(service.issue.price)
+            } if service.issue else None,
+            'custom_description': service.custom_description,
+            'service_location': {
+                'street_address': service.service_location.street_address,
+                'city': service.service_location.city,
+                'state': service.service_location.state,
+                'pincode': service.service_location.pincode,
+            },
+            'request_date': service.request_date.isoformat(),
+            'status': service.status,
+            'technician': {
+                'name': service.technician.name
+            } if service.technician else None
+        }
+        
+        return JsonResponse(data)
+    except ServiceRequest.DoesNotExist:
+        return JsonResponse({'error': 'Service not found'}, status=404)
+    

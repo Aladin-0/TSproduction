@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from store.models import Order, Product
 from services.models import ServiceRequest, TechnicianRating
 
-User = get_user_model()
+User = get_user_model() 
 
 @staff_member_required
 def admin_dashboard(request):

@@ -14,7 +14,7 @@ SECRET_KEY = 'django-insecure-jbx!=0@9n*(ptklw&c4y#as-yw3yzsd80d8vi9nv!rj+31^^mt
 DEBUG = True
 
 # FIXED: Add allowed hosts for both localhost and 127.0.0.1
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # Application definition
 INSTALLED_APPS = [
@@ -153,6 +153,7 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
 }
 
+
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
@@ -183,6 +184,7 @@ AUTHENTICATION_BACKENDS = [
 # Redirect URLs
 LOGIN_REDIRECT_URL = 'http://localhost:5173/?login=success'
 ACCOUNT_LOGOUT_REDIRECT_URL = 'http://localhost:5173/'
+FRONTEND_BASE_URL = 'http://localhost:5173'
 
 # Frontend base URL (used for server-side redirects to the React app)
 # Configure via env var FRONTEND_BASE_URL if needed.
@@ -201,8 +203,17 @@ SOCIALACCOUNT_PROVIDERS = {
         'OAUTH_PKCE_ENABLED': True,
         'VERIFIED_EMAIL': True,
         'VERSION': 'v2',
+        # Add these two lines to skip the intermediate page
+        'REDIRECT_URI_PROTOCOL': 'http',
+        'APP': {
+            'client_id': None,  # Will be loaded from Social App in Django admin
+            'secret': None,
+        }
     }
 }
+
+# Add this new setting to automatically redirect to provider
+SOCIALACCOUNT_LOGIN_ON_GET = True
 
 # REST_AUTH SETTINGS
 REST_AUTH = {
@@ -229,3 +240,24 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
 ]
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+    'loggers': {
+        'allauth': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}

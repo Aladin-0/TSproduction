@@ -16,6 +16,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.csrf import csrf_exempt
 import os
+from services.models import ServiceRequest
 
 def product_list(request):
     products = Product.objects.filter(is_active=True)
@@ -376,3 +377,66 @@ def delete_product_image(request, image_id):
         return JsonResponse({'error': 'Image not found'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_assigned_services(request):
+    """Get services assigned to technician with job sheet status"""
+    if request.user.role != 'TECHNICIAN':
+        return Response({'error': 'Unauthorized'}, status=403)
+    
+    from services.models import JobSheet
+    
+    # Get services with related data
+    services = ServiceRequest.objects.filter(
+        technician=request.user
+    ).select_related(
+        'customer', 
+        'service_category', 
+        'service_location',
+        'issue'
+    ).prefetch_related('job_sheet')  # This is important!
+    
+    services_data = []
+    for service in services:
+        # Try to get the job sheet for this service
+        try:
+            job_sheet = JobSheet.objects.get(service_request=service)
+            has_job_sheet = True
+            job_sheet_status = job_sheet.approval_status
+            job_sheet_id = job_sheet.id
+        except JobSheet.DoesNotExist:
+            has_job_sheet = False
+            job_sheet_status = None
+            job_sheet_id = None
+        
+        service_data = {
+            'id': service.id,
+            'customer': {
+                'name': service.customer.name,
+                'phone': service.customer.phone,
+            },
+            'service_category': {
+                'name': service.service_category.name,
+            },
+            'issue': {
+                'description': service.issue.description
+            } if service.issue else None,
+            'custom_description': service.custom_description,
+            'service_location': {
+                'street_address': service.service_location.street_address,
+                'city': service.service_location.city,
+                'state': service.service_location.state,
+                'pincode': service.service_location.pincode,
+            },
+            'request_date': service.request_date.isoformat(),
+            'status': service.status,
+            # Job sheet fields - FIXED
+            'has_job_sheet': has_job_sheet,
+            'job_sheet_status': job_sheet_status,
+            'job_sheet_id': job_sheet_id,
+        }
+        services_data.append(service_data)
+    
+    return Response(services_data)
+    

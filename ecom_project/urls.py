@@ -1,4 +1,4 @@
-# ecom_project/urls.py - Updated to include custom admin panel
+# ecom_project/urls.py - Fixed Google OAuth configuration
 
 from django.contrib import admin
 from django.urls import path, include
@@ -24,17 +24,19 @@ urlpatterns = [
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
     
     # AUTH ENDPOINTS - Make sure these are included
-    path('api/auth/', include('dj_rest_auth.urls')),  # This provides /api/auth/user/ and /api/auth/login/
+    path('api/auth/', include('dj_rest_auth.urls')),
     path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
     
     # Intercept Allauth's 3rd-party signup page and redirect to frontend signup
     path('accounts/3rdparty/signup/', redirect_third_party_signup, name='redirect_3rdparty_signup'),
+    
+    # Allauth URLs - handles Google OAuth automatically
     path('accounts/', include('allauth.urls')),
+    
+    # App URLs
     path('', include('store.urls')),
     path('services/', include('services.urls')),
     path('api/users/', include('users.urls')),
-    
-    # Rating API endpoints are now included in services.urls
 ]
 
 # Override admin index view

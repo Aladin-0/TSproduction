@@ -10,6 +10,9 @@ from rest_framework.response import Response
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from .serializers import ServiceCategorySerializer, ServiceRequestSerializer, ServiceRequestHistorySerializer
+from .models import JobSheet, JobSheetMaterial
+from .serializers import JobSheetSerializer, JobSheetDetailSerializer
+from django.utils import timezone
 
 @login_required
 def select_service_category(request):
@@ -104,8 +107,25 @@ def rate_order(request, order_id):
 def update_service_status(request, request_id):
     if request.method == 'POST':
         service_request = get_object_or_404(ServiceRequest, id=request_id, technician=request.user)
+        
+        # Check if job sheet exists and is approved
+        if hasattr(service_request, 'job_sheet'):
+            job_sheet = service_request.job_sheet
+            if job_sheet.approval_status != 'APPROVED':
+                # Return error message
+                from django.contrib import messages
+                messages.error(request, 'Cannot complete service. Job sheet must be approved by customer first.')
+                return redirect('technician_dashboard')
+        else:
+            # No job sheet created yet
+            from django.contrib import messages
+            messages.error(request, 'Cannot complete service. Please create a job sheet first.')
+            return redirect('technician_dashboard')
+        
+        # If job sheet is approved, allow completion
         service_request.status = 'COMPLETED'
         service_request.save()
+        
     return redirect('technician_dashboard')
 
 # API Views
@@ -359,3 +379,336 @@ def test_rating_endpoint(request):
             'data': request.data,
             'user': request.user.email,
         })
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def create_job_sheet(request):
+    """
+    Create a job sheet for a service request (Technician only)
+    """
+    try:
+        # Check if user is a technician
+        if request.user.role != 'TECHNICIAN':
+            return Response(
+                {'error': 'Only technicians can create job sheets'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        data = request.data
+        service_request_id = data.get('service_request_id')
+        
+        # Get service request
+        try:
+            service_request = ServiceRequest.objects.get(
+                id=service_request_id,
+                technician=request.user
+            )
+        except ServiceRequest.DoesNotExist:
+            return Response(
+                {'error': 'Service request not found or not assigned to you'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if job sheet already exists
+        if hasattr(service_request, 'job_sheet'):
+            return Response(
+                {'error': 'Job sheet already exists for this service request'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Prepare job sheet data
+        job_sheet_data = {
+            'service_request': service_request.id,
+            'customer_name': data.get('customer_name', service_request.customer.name),
+            'customer_contact': data.get('customer_contact', service_request.customer.phone),
+            'service_address': data.get('service_address', str(service_request.service_location)),
+            'equipment_type': data.get('equipment_type'),
+            'serial_number': data.get('serial_number', ''),
+            'equipment_brand': data.get('equipment_brand', ''),
+            'equipment_model': data.get('equipment_model', ''),
+            'problem_description': data.get('problem_description'),
+            'work_performed': data.get('work_performed'),
+            'date_of_service': data.get('date_of_service'),
+            'start_time': data.get('start_time'),
+            'finish_time': data.get('finish_time'),
+            'materials': data.get('materials', [])
+        }
+        
+        serializer = JobSheetSerializer(data=job_sheet_data)
+        
+        if serializer.is_valid():
+            job_sheet = serializer.save(created_by=request.user)
+            
+            return Response(
+                {
+                    'message': 'Job sheet created successfully',
+                    'job_sheet': JobSheetDetailSerializer(job_sheet).data
+                },
+                status=status.HTTP_201_CREATED
+            )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    except Exception as e:
+        print(f"Error creating job sheet: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return Response(
+            {'error': f'An error occurred: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_job_sheets(request):
+    """
+    Get job sheets based on user role
+    - Technician: Their created job sheets
+    - Customer: Job sheets for their service requests
+    """
+    try:
+        if request.user.role == 'TECHNICIAN':
+            job_sheets = JobSheet.objects.filter(created_by=request.user).select_related(
+                'service_request', 'service_request__customer', 'service_request__service_category'
+            ).prefetch_related('materials')
+        
+        elif request.user.role == 'CUSTOMER':
+            job_sheets = JobSheet.objects.filter(
+                service_request__customer=request.user
+            ).select_related(
+                'service_request', 'created_by', 'service_request__service_category'
+            ).prefetch_related('materials')
+        
+        else:
+            return Response(
+                {'error': 'Unauthorized'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = JobSheetDetailSerializer(job_sheets, many=True)
+        return Response(serializer.data)
+        
+    except Exception as e:
+        print(f"Error fetching job sheets: {str(e)}")
+        return Response(
+            {'error': f'An error occurred: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_job_sheet_detail(request, job_sheet_id):
+    """
+    Get detailed job sheet information
+    """
+    try:
+        # Get job sheet with related data
+        job_sheet = JobSheet.objects.select_related(
+            'service_request',
+            'service_request__customer',
+            'service_request__service_category',
+            'created_by'
+        ).prefetch_related('materials').get(id=job_sheet_id)
+        
+        # Check permissions
+        if request.user.role == 'TECHNICIAN':
+            if job_sheet.created_by != request.user:
+                return Response(
+                    {'error': 'Not authorized to view this job sheet'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        elif request.user.role == 'CUSTOMER':
+            if job_sheet.service_request.customer != request.user:
+                return Response(
+                    {'error': 'Not authorized to view this job sheet'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        else:
+            return Response(
+                {'error': 'Unauthorized'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = JobSheetDetailSerializer(job_sheet)
+        return Response(serializer.data)
+        
+    except JobSheet.DoesNotExist:
+        return Response(
+            {'error': 'Job sheet not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        print(f"Error fetching job sheet: {str(e)}")
+        return Response(
+            {'error': f'An error occurred: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def approve_job_sheet(request, job_sheet_id):
+    """
+    Customer approves a job sheet
+    """
+    try:
+        job_sheet = JobSheet.objects.select_related('service_request').get(id=job_sheet_id)
+        
+        # Check if customer owns this service request
+        if job_sheet.service_request.customer != request.user:
+            return Response(
+                {'error': 'Not authorized to approve this job sheet'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Check if already approved or declined
+        if job_sheet.approval_status != 'PENDING':
+            return Response(
+                {'error': f'Job sheet already {job_sheet.approval_status.lower()}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Approve job sheet
+        job_sheet.approval_status = 'APPROVED'
+        job_sheet.approved_at = timezone.now()
+        job_sheet.save()
+        
+        return Response(
+            {
+                'message': 'Job sheet approved successfully',
+                'job_sheet': JobSheetDetailSerializer(job_sheet).data
+            },
+            status=status.HTTP_200_OK
+        )
+        
+    except JobSheet.DoesNotExist:
+        return Response(
+            {'error': 'Job sheet not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        print(f"Error approving job sheet: {str(e)}")
+        return Response(
+            {'error': f'An error occurred: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def decline_job_sheet(request, job_sheet_id):
+    """
+    Customer declines a job sheet with reason
+    """
+    try:
+        job_sheet = JobSheet.objects.select_related('service_request').get(id=job_sheet_id)
+        
+        # Check if customer owns this service request
+        if job_sheet.service_request.customer != request.user:
+            return Response(
+                {'error': 'Not authorized to decline this job sheet'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Check if already approved or declined
+        if job_sheet.approval_status != 'PENDING':
+            return Response(
+                {'error': f'Job sheet already {job_sheet.approval_status.lower()}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get decline reason
+        reason = request.data.get('reason', 'No reason provided')
+        
+        # Decline job sheet
+        job_sheet.approval_status = 'DECLINED'
+        job_sheet.declined_reason = reason
+        job_sheet.save()
+        
+        return Response(
+            {
+                'message': 'Job sheet declined',
+                'job_sheet': JobSheetDetailSerializer(job_sheet).data
+            },
+            status=status.HTTP_200_OK
+        )
+        
+    except JobSheet.DoesNotExist:
+        return Response(
+            {'error': 'Job sheet not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        print(f"Error declining job sheet: {str(e)}")
+        return Response(
+            {'error': f'An error occurred: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticated])
+def complete_service_request(request, service_id):
+    """
+    Technician completes a service request
+    Only allowed if job sheet is approved
+    """
+    try:
+        # Check if user is technician
+        if request.user.role != 'TECHNICIAN':
+            return Response(
+                {'error': 'Only technicians can complete service requests'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get service request
+        service_request = get_object_or_404(
+            ServiceRequest,
+            id=service_id,
+            technician=request.user
+        )
+        
+        # Check if job sheet exists
+        if not hasattr(service_request, 'job_sheet'):
+            return Response(
+                {'error': 'Cannot complete service. Please create a job sheet first.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        job_sheet = service_request.job_sheet
+        
+        # Check if job sheet is approved
+        if job_sheet.approval_status == 'PENDING':
+            return Response(
+                {'error': 'Cannot complete service. Job sheet is pending customer approval.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        elif job_sheet.approval_status == 'DECLINED':
+            return Response(
+                {'error': 'Cannot complete service. Job sheet was declined by customer.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        elif job_sheet.approval_status != 'APPROVED':
+            return Response(
+                {'error': 'Cannot complete service. Invalid job sheet status.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Job sheet is approved - allow completion
+        service_request.status = 'COMPLETED'
+        service_request.save()
+        
+        return Response(
+            {'message': 'Service completed successfully'},
+            status=status.HTTP_200_OK
+        )
+        
+    except Exception as e:
+        print(f"Error completing service: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return Response(
+            {'error': f'An error occurred: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
