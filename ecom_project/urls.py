@@ -6,6 +6,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from users.admin_views import admin_dashboard
 from users.views import redirect_third_party_signup
+from users.views import mobile_google_callback
 
 # Customize admin site
 admin.site.site_header = "TechVerse Administration"
@@ -37,6 +38,11 @@ urlpatterns = [
     path('', include('store.urls')),
     path('services/', include('services.urls')),
     path('api/users/', include('users.urls')),
+
+    # Mobile-specific Google callback handler
+    path('accounts/google/mobile/callback/', mobile_google_callback, name='mobile_google_callback'),
+    path('accounts/', include('allauth.urls')),
+
 ]
 
 # Override admin index view

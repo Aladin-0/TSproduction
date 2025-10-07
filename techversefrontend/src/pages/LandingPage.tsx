@@ -1,4 +1,5 @@
-// src/pages/LandingPage.tsx
+// ==================== CORRECTED PART 1 START ====================
+
 import React, { useRef, useEffect, Suspense, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { styled, ThemeProvider, createTheme } from '@mui/material/styles';
@@ -25,7 +26,7 @@ const PageWrapper = styled(Box)({
   overflowX: 'hidden',
 });
 
-// Hero section styles
+// Hero section styles - KEEP BACKGROUND IMAGE
 const HeroSection = styled(Box)({
   backgroundImage: 'url("/src/assets/hero-bg.png")',
   backgroundSize: 'cover',
@@ -38,11 +39,14 @@ const HeroSection = styled(Box)({
   flexDirection: 'column',
   backgroundColor: '#0a0a0a',
   '@media (max-width:900px)': {
-    minHeight: 'auto',
+    minHeight: '75vh',
+    backgroundImage: 'url("/src/assets/hero-bg.png")', // KEEP IT ON MOBILE
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
   },
 });
 
-// Navigation styles
+// Navigation styles - PROFESSIONAL MOBILE NAV
 const Nav = styled(Box)({
   position: 'relative',
   zIndex: 10,
@@ -51,7 +55,10 @@ const Nav = styled(Box)({
   alignItems: 'center',
   padding: '32px 55px',
   '@media (max-width:900px)': {
-    padding: '24px',
+    padding: '16px 20px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'rgba(10, 10, 10, 0.8)',
+    backdropFilter: 'blur(10px)',
   },
 });
 
@@ -60,6 +67,10 @@ const Logo = styled(Typography)({
   fontWeight: 700,
   letterSpacing: '1.5px',
   color: '#ffffff',
+  '@media (max-width:900px)': {
+    fontSize: '16px',
+    letterSpacing: '2px',
+  },
 });
 
 const BlankButton = styled(Button)({
@@ -78,9 +89,14 @@ const BlankButton = styled(Button)({
     background: 'rgba(255, 255, 255, 0.04)',
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
+  '@media (max-width:900px)': {
+    padding: '6px 16px',
+    fontSize: '9px',
+    borderRadius: '14px',
+  },
 });
 
-// Hero container styles
+// Hero container styles - MOBILE OPTIMIZED
 const HeroContainer = styled(Box)({
   position: 'relative',
   zIndex: 5,
@@ -93,8 +109,9 @@ const HeroContainer = styled(Box)({
   width: '100%',
   '@media (max-width:900px)': {
     flexDirection: 'column',
-    padding: '20px 24px 40px',
+    padding: '30px 20px 20px',
     textAlign: 'center',
+    gap: '20px',
   },
 });
 
@@ -105,7 +122,7 @@ const HeroLeft = styled(Box)({
   zIndex: 2,
   '@media (max-width:900px)': {
     flex: 'none',
-    paddingTop: '0',
+    paddingTop: '10px',
     width: '100%',
     display: 'flex',
     flexDirection: 'column',
@@ -122,8 +139,10 @@ const HeroTitle = styled(Typography)({
   lineHeight: 1,
   marginLeft: '-60px',
   '@media (max-width:900px)': {
-    fontSize: '40px',
+    fontSize: '36px',
     marginLeft: '0',
+    marginBottom: '12px',
+    letterSpacing: '1px',
   },
 });
 
@@ -135,8 +154,11 @@ const HeroSubtitle = styled(Typography)({
   letterSpacing: '0.1px',
   marginLeft: '-60px',
   '@media (max-width:900px)': {
-    fontSize: '18px',
+    fontSize: '14px',
     marginLeft: '0',
+    marginBottom: '20px',
+    maxWidth: '280px',
+    lineHeight: 1.4,
   },
 });
 
@@ -161,6 +183,10 @@ const ExploreButton = styled(Button)({
   },
   '@media (max-width:900px)': {
     marginLeft: '0',
+    padding: '8px 24px',
+    fontSize: '11px',
+    borderRadius: '18px',
+    fontWeight: 700,
   },
 });
 
@@ -169,6 +195,11 @@ const ArrowButton = styled(IconButton)({
   color: 'rgba(255, 255, 255, 0.7)',
   '&:hover': {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  '@media (max-width:900px)': {
+    width: '36px',
+    height: '36px',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
   },
 });
 
@@ -179,33 +210,37 @@ const CanvasWrapper = styled(Box)({
   transform: 'translate(-50%, -50%)',
   width: '290%',
   height: '290%',
-  zIndex: 1, // Lower z-index so it stays behind category section
+  zIndex: 1,
   overflow: 'visible',
   '@media (max-width:900px)': {
     position: 'relative',
     top: 'auto',
     left: 'auto',
     transform: 'none',
-    width: '100vw',
-    height: '400px',
-    marginTop: '40px',
+    width: '100%',
+    height: '280px',
+    marginTop: '15px',
   },
 });
 
+// CATEGORY SECTION - 3 CARDS PER ROW ON MOBILE
 const CategorySection = styled(Box)({
   padding: '100px 55px',
   background: 'radial-gradient(circle at 50% 0%, #1a1a1a 0%, #0a0a0a 40%)',
   position: 'relative',
   overflow: 'hidden',
-  zIndex: 10, // Higher z-index so it appears above the 3D canvas
+  zIndex: 10,
   '@media (max-width:900px)': {
-    padding: '60px 24px',
+    padding: '50px 20px',
   },
 });
 
 const SectionHeader = styled(Box)({
   textAlign: 'center',
   marginBottom: '64px',
+  '@media (max-width:900px)': {
+    marginBottom: '35px',
+  },
 });
 
 const SectionTitle = styled(Typography)({
@@ -214,10 +249,13 @@ const SectionTitle = styled(Typography)({
   marginBottom: '16px',
   color: 'rgba(255, 255, 255, 0.95)',
   '@media (max-width:900px)': {
-    fontSize: '28px',
+    fontSize: '24px',
+    marginBottom: '8px',
+    letterSpacing: '0.3px',
   },
 });
 
+// UPDATED: 4 columns desktop, 3 columns mobile (600px+), 2 columns small mobile
 const CategoryGrid = styled(Box)({
   display: 'grid',
   gridTemplateColumns: 'repeat(4, 1fr)',
@@ -226,9 +264,15 @@ const CategoryGrid = styled(Box)({
   margin: '0 auto',
   '@media (max-width:1024px)': {
     gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '30px 16px',
   },
-  '@media (max-width:600px)': {
-    gridTemplateColumns: '1fr',
+  '@media (max-width:900px)': {
+    gridTemplateColumns: 'repeat(3, 1fr)', // 3 CARDS PER ROW
+    gap: '24px 10px',
+  },
+  '@media (max-width:500px)': {
+    gridTemplateColumns: 'repeat(2, 1fr)', // 2 cards on very small screens
+    gap: '20px 10px',
   },
 });
 
@@ -238,10 +282,12 @@ const CategoryItemWrapper = styled(Box)({
   alignItems: 'center',
   gap: '16px',
   position: 'relative',
-  zIndex: 11, // Even higher z-index for the category items to ensure clickability
+  zIndex: 11,
+  '@media (max-width:900px)': {
+    gap: '8px',
+  },
 });
 
-// CORRECTED Animated Card Component Structure
 const AnimatedCardBase = a(Box);
 const AnimatedCardContainer = styled(AnimatedCardBase)({
     position: 'relative',
@@ -253,7 +299,11 @@ const AnimatedCardContainer = styled(AnimatedCardBase)({
     cursor: 'pointer',
     transformStyle: 'preserve-3d',
     willChange: 'transform, box-shadow',
-    zIndex: 12, // Highest z-index for the cards themselves
+    zIndex: 12,
+    '@media (max-width:900px)': {
+      borderRadius: '8px',
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+    },
 });
 
 const ProductImage = styled('img')({
@@ -268,6 +318,12 @@ const ProductImage = styled('img')({
     transform: 'translateZ(0px) scale(0.9)',
     transition: 'all 0.6s cubic-bezier(0.23, 1, 0.320, 1)',
     filter: 'brightness(0.8) contrast(1.1)',
+    '@media (max-width:900px)': {
+      borderRadius: '8px',
+      opacity: 0.95,
+      transform: 'translateZ(0px) scale(1)',
+      filter: 'brightness(0.85) contrast(1.05)',
+    },
 });
 
 const CardGlow = styled(Box)({
@@ -284,6 +340,9 @@ const CardGlow = styled(Box)({
         0 0 30px 10px rgba(255, 255, 255, 0.05),
         inset 0 0 25px 5px rgba(255, 255, 255, 0.08)
     `,
+    '@media (max-width:900px)': {
+      borderRadius: '8px',
+    },
 });
 
 const CategoryOverlay = styled(Box)({
@@ -300,6 +359,10 @@ const CategoryOverlay = styled(Box)({
     alignItems: 'center',
     justifyContent: 'center',
     backdropFilter: 'blur(2px)',
+    '@media (max-width:900px)': {
+      borderRadius: '8px',
+      opacity: 0.1,
+    },
 });
 
 const PlaceholderBox = styled(Box)({
@@ -318,6 +381,10 @@ const PlaceholderBox = styled(Box)({
     fontWeight: 500,
     letterSpacing: '0.5px',
     transition: 'all 0.6s cubic-bezier(0.23, 1, 0.320, 1)',
+    '@media (max-width:900px)': {
+      borderRadius: '8px',
+      fontSize: '10px',
+    },
 });
 
 const CategoryName = styled(Typography)({
@@ -329,8 +396,17 @@ const CategoryName = styled(Typography)({
     fontSize: '14px',
     letterSpacing: '0.5px',
     textAlign: 'center',
+    '@media (max-width:900px)': {
+      fontSize: '9px',
+      opacity: 0.85,
+      transform: 'translateY(0px)',
+      color: 'rgba(255, 255, 255, 0.75)',
+      letterSpacing: '0.2px',
+      fontWeight: 500,
+    },
 });
 
+// ABOUT SECTION - MOBILE OPTIMIZED
 const AboutSection = styled(Box)({
   background: 'linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)',
   borderRadius: '24px',
@@ -346,10 +422,11 @@ const AboutSection = styled(Box)({
   boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
   '@media (max-width:900px)': {
     gridTemplateColumns: '1fr',
-    gap: '40px',
-    margin: '30px 24px',
-    padding: '40px 35px',
+    gap: '35px',
+    margin: '30px 20px',
+    padding: '35px 25px',
     textAlign: 'center',
+    borderRadius: '16px',
   },
 });
 
@@ -362,14 +439,23 @@ const AboutContent = styled(Box)({
     background: 'linear-gradient(135deg, #ffffff, #e0e0e0)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
-    letterSpacing: '0.5px'
+    letterSpacing: '0.5px',
+    '@media (max-width:900px)': {
+      fontSize: '20px',
+      marginBottom: '14px',
+    },
   }, 
   '& p': { 
     fontSize: '14px', 
     lineHeight: 1.8, 
     color: 'rgba(255, 255, 255, 0.6)', 
     fontWeight: 400,
-    marginBottom: '20px'
+    marginBottom: '20px',
+    '@media (max-width:900px)': {
+      fontSize: '13px',
+      lineHeight: 1.6,
+      marginBottom: '15px',
+    },
   } 
 });
 
@@ -378,11 +464,15 @@ const ServicesWrapper = styled(Box)({
   gap: '45px', 
   justifyContent: 'center', 
   paddingTop: '15px',
+  '@media (max-width:900px)': {
+    gap: '20px',
+    paddingTop: '10px',
+  },
   '@media (max-width:600px)': {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '30px'
-  }
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: '20px',
+  },
 });
 
 const ServiceBox = styled(Box)({ 
@@ -390,7 +480,10 @@ const ServiceBox = styled(Box)({
   transition: 'transform 0.3s ease',
   '&:hover': {
     transform: 'translateY(-5px)'
-  }
+  },
+  '@media (max-width:900px)': {
+    flex: '0 0 auto',
+  },
 });
 
 const ServiceIconBox = styled(Box)({ 
@@ -411,14 +504,24 @@ const ServiceIconBox = styled(Box)({
     borderColor: 'rgba(255, 255, 255, 0.2)',
     transform: 'translateY(-3px)',
     boxShadow: '0 12px 25px rgba(0, 0, 0, 0.4)'
-  } 
+  },
+  '@media (max-width:900px)': {
+    width: '50px',
+    height: '50px',
+    fontSize: '22px',
+    borderRadius: '10px',
+    margin: '0 auto 10px',
+  },
 });
 
 const ServiceText = styled(Typography)({ 
   fontSize: '12px', 
   color: 'rgba(255, 255, 255, 0.7)', 
   fontWeight: 500,
-  letterSpacing: '0.3px'
+  letterSpacing: '0.3px',
+  '@media (max-width:900px)': {
+    fontSize: '10px',
+  },
 });
 
 const StatsSection = styled(Box)({ 
@@ -430,13 +533,20 @@ const StatsSection = styled(Box)({
     background: 'linear-gradient(135deg, #ffffff, #e0e0e0)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
-    letterSpacing: '0.5px'
+    letterSpacing: '0.5px',
+    '@media (max-width:900px)': {
+      fontSize: '20px',
+    },
   }, 
   '& .subtext': { 
     fontSize: '12px', 
     color: 'rgba(255, 255, 255, 0.4)', 
     marginBottom: '25px', 
-    fontWeight: 400 
+    fontWeight: 400,
+    '@media (max-width:900px)': {
+      fontSize: '11px',
+      marginBottom: '20px',
+    },
   } 
 });
 
@@ -444,10 +554,9 @@ const StatsGrid = styled(Box)({
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
   gap: '20px',
-  '@media (max-width:600px)': {
-    gridTemplateColumns: '1fr',
-    gap: '15px'
-  }
+  '@media (max-width:900px)': {
+    gap: '12px',
+  },
 });
 
 const StatItem = styled(Box)({
@@ -461,7 +570,11 @@ const StatItem = styled(Box)({
     background: 'rgba(255, 255, 255, 0.05)',
     borderColor: 'rgba(255, 255, 255, 0.1)',
     transform: 'translateY(-2px)'
-  }
+  },
+  '@media (max-width:900px)': {
+    padding: '16px 12px',
+    borderRadius: '10px',
+  },
 });
 
 const StatNumber = styled(Typography)({
@@ -471,15 +584,156 @@ const StatNumber = styled(Typography)({
   marginBottom: '5px',
   background: 'linear-gradient(135deg, #60a5fa, #3b82f6)',
   WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent'
+  WebkitTextFillColor: 'transparent',
+  '@media (max-width:900px)': {
+    fontSize: '22px',
+  },
 });
 
 const StatLabel = styled(Typography)({
   fontSize: '11px',
   color: 'rgba(255, 255, 255, 0.6)',
   fontWeight: 400,
-  letterSpacing: '0.3px'
+  letterSpacing: '0.3px',
+  '@media (max-width:900px)': {
+    fontSize: '10px',
+  },
 });
+
+// 3D Model components
+function GamingLaptop(props) {
+  const { scene } = useGLTF('/gaming_laptop.glb');
+  return <primitive object={scene} scale={2.0} position={[0, 1, 0]} {...props} />;
+}
+
+function MechanicalKeyboard(props) {
+  const { scene } = useGLTF('/aula_f75_mechanical_keyboard.glb');
+  return <primitive object={scene} scale={1.0} position={[0, 2, 0]} {...props} />;
+}
+
+function GamingHeadphone(props) {
+  const { scene } = useGLTF('/gaming_headphone.glb');
+  return <primitive object={scene} scale={20.0} position={[0, -1, 0]} {...props} />;
+}
+
+// Data for categories
+const categories = [
+    { name: 'Laptop / PC', image: '/src/assets/laptop.jpg', hoverColor: 'rgba(59, 130, 246, 0.1)' },
+    { name: 'Printer', image: '/src/assets/Printer.png', hoverColor: 'rgba(16, 185, 129, 0.1)' },
+    { name: 'Keyboard', image: '/src/assets/Keyboard.png', hoverColor: 'rgba(139, 92, 246, 0.1)' },
+    { name: 'Mouse', image: '/src/assets/Mouse.jpeg', hoverColor: 'rgba(245, 101, 101, 0.1)' },
+    { name: 'Monitor', image: '/src/assets/Monitor.jpg', hoverColor: 'rgba(251, 191, 36, 0.1)' },
+    { name: 'CCTV / Analog', image: '/src/assets/CCTV.jpg', hoverColor: 'rgba(236, 72, 153, 0.1)' },
+    { name: 'Headphones', image: '/src/assets/Headphones.jpg', hoverColor: 'rgba(6, 182, 212, 0.1)' },
+    { name: 'Refurbished', image: '/src/assets/Refurbished.jpg', hoverColor: 'rgba(34, 197, 94, 0.1)' },
+];
+
+const AnimatedCategoryCard = ({ category }) => {
+    const navigate = useNavigate();
+    const [hovered, setHovered] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    
+    useEffect(() => {
+      const checkMobile = () => setIsMobile(window.innerWidth <= 900);
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    const [props, api] = useSpringWeb(() => ({
+        scale: 1,
+        rotateX: 0,
+        rotateY: 0,
+        rotateZ: 0,
+        config: { mass: 0.8, tension: 280, friction: 35 },
+    }));
+
+    const handleMouseMove = (e) => {
+        if (!hovered || isMobile) return;
+        const { clientX, clientY, currentTarget } = e;
+        const { left, top, width, height } = currentTarget.getBoundingClientRect();
+        const centerX = left + width / 2;
+        const centerY = top + height / 2;
+        const rotateX = (clientY - centerY) / 8;
+        const rotateY = (centerX - clientX) / 8;
+        const rotateZ = (clientX - centerX) / 25;
+        
+        api.start({ 
+            rotateX: Math.max(-25, Math.min(25, rotateX)), 
+            rotateY: Math.max(-25, Math.min(25, rotateY)),
+            rotateZ: Math.max(-10, Math.min(10, rotateZ))
+        });
+    };
+
+    const handleMouseEnter = () => { 
+        if (isMobile) return;
+        setHovered(true); 
+        api.start({ scale: 1.08 }); 
+    };
+    
+    const handleMouseLeave = () => { 
+        if (isMobile) return;
+        setHovered(false); 
+        api.start({ scale: 1, rotateX: 0, rotateY: 0, rotateZ: 0 }); 
+    };
+
+    const handleCategoryClick = () => {
+        const target = encodeURIComponent(category.name);
+        navigate(`/store?category=${target}`);
+    };
+
+    return (
+        <CategoryItemWrapper>
+            <AnimatedCardContainer
+                onMouseMove={handleMouseMove}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                onClick={handleCategoryClick}
+                style={isMobile ? {} : {
+                    transform: 'perspective(1200px)',
+                    scale: props.scale,
+                    rotateX: props.rotateX.to(val => `${val}deg`),
+                    rotateY: props.rotateY.to(val => `${val}deg`),
+                    rotateZ: props.rotateZ.to(val => `${val}deg`),
+                }}
+            >
+                {category.image && (
+                  <ProductImage 
+                    src={category.image}
+                    alt={category.name}
+                    style={{ 
+                      opacity: hovered ? 1 : 0.95,
+                      transform: hovered && !isMobile ? 'translateZ(6px) scale(1.02)' : 'translateZ(0px) scale(1)',
+                      filter: hovered && !isMobile ? 'brightness(0.95) contrast(1.05)' : 'brightness(0.85) contrast(1.08)'
+                    }}
+                  />
+                )}
+                
+                <CardGlow 
+                    style={{ 
+                        opacity: hovered && !isMobile ? 1 : 0,
+                        background: hovered ? category.hoverColor : 'rgba(255, 255, 255, 0.05)'
+                    }} 
+                />
+                
+                <CategoryOverlay style={{ opacity: hovered && !isMobile ? 0.6 : 0 }} />
+            </AnimatedCardContainer>
+            
+            <CategoryName 
+                style={{ 
+                    opacity: hovered && !isMobile ? 1 : 0.7, 
+                    transform: hovered && !isMobile ? 'translateY(0px)' : 'translateY(10px)',
+                    color: hovered && !isMobile ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.5)'
+                }}
+            >
+                {category.name}
+            </CategoryName>
+        </CategoryItemWrapper>
+    );
+};
+
+// ==================== PART 1 END - Confirm before Part 2 ====================
+// ==================== CORRECTED PART 2 START ====================
 
 const SendButton = styled(Button)({ 
   background: 'linear-gradient(135deg, #f8f8f8, #ffffff)', 
@@ -502,7 +756,12 @@ const SendButton = styled(Button)({
     background: 'linear-gradient(135deg, #ffffff, #f0f0f0)', 
     transform: 'translateY(-3px)', 
     boxShadow: '0 12px 25px rgba(248, 248, 248, 0.3)' 
-  } 
+  },
+  '@media (max-width:900px)': {
+    padding: '12px 28px',
+    fontSize: '12px',
+    borderRadius: '20px',
+  },
 });
 
 const FeaturedWrapper = styled(Box)({ 
@@ -510,7 +769,9 @@ const FeaturedWrapper = styled(Box)({
   background: 'linear-gradient(135deg, #0f0f0f 0%, #0a0a0a 100%)', 
   position: 'relative', 
   zIndex: 5, 
-  '@media (max-width:900px)': { padding: '50px 24px' } 
+  '@media (max-width:900px)': { 
+    padding: '50px 20px',
+  } 
 });
 
 const FeaturedContainer = styled(Box)({ 
@@ -518,12 +779,24 @@ const FeaturedContainer = styled(Box)({
   gap: '60px', 
   maxWidth: '1400px', 
   margin: '0 auto', 
-  '@media (max-width:1024px)': { flexDirection: 'column', alignItems: 'center' } 
+  '@media (max-width:1024px)': { 
+    flexDirection: 'column', 
+    alignItems: 'center',
+    gap: '40px',
+  } 
 });
 
 const FeaturedLeft = styled(Box)({ 
   flex: '0 0 360px', 
-  '@media (max-width:1024px)': { flex: 'none', width: '100%', maxWidth: '600px', textAlign: 'center' }, 
+  '@media (max-width:1024px)': { 
+    flex: 'none', 
+    width: '100%', 
+    maxWidth: '600px', 
+    textAlign: 'center',
+  }, 
+  '@media (max-width:900px)': {
+    maxWidth: '100%',
+  },
   '& h2': { 
     fontSize: '36px', 
     fontWeight: 700, 
@@ -532,14 +805,23 @@ const FeaturedLeft = styled(Box)({
     background: 'linear-gradient(135deg, #ffffff, #e0e0e0)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
-    letterSpacing: '0.5px'
+    letterSpacing: '0.5px',
+    '@media (max-width:900px)': {
+      fontSize: '26px',
+      marginBottom: '16px',
+    },
   }, 
   '& p': { 
     fontSize: '16px', 
     lineHeight: 1.7, 
     color: 'rgba(255, 255, 255, 0.6)', 
     marginBottom: '50px',
-    fontWeight: 400
+    fontWeight: 400,
+    '@media (max-width:900px)': {
+      fontSize: '14px',
+      lineHeight: 1.6,
+      marginBottom: '35px',
+    },
   } 
 });
 
@@ -549,6 +831,10 @@ const ContactBox = styled(Box)({
   padding: '35px', 
   border: '1px solid rgba(255, 255, 255, 0.08)', 
   boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+  '@media (max-width:900px)': {
+    padding: '28px 22px',
+    borderRadius: '14px',
+  },
   '& h3': { 
     fontSize: '22px', 
     fontWeight: 700, 
@@ -557,7 +843,11 @@ const ContactBox = styled(Box)({
     background: 'linear-gradient(135deg, #ffffff, #e0e0e0)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
-    letterSpacing: '0.5px'
+    letterSpacing: '0.5px',
+    '@media (max-width:900px)': {
+      fontSize: '18px',
+      marginBottom: '16px',
+    },
   } 
 });
 
@@ -578,7 +868,12 @@ const ContactInput = styled('input')({
     borderColor: 'rgba(255, 255, 255, 0.3)',
     background: 'rgba(0, 0, 0, 0.6)',
     boxShadow: '0 0 0 3px rgba(255, 255, 255, 0.05)'
-  }
+  },
+  '@media (max-width:900px)': {
+    padding: '12px 16px',
+    fontSize: '13px',
+    marginBottom: '14px',
+  },
 });
 
 const FeaturedRight = styled(Box)({ 
@@ -586,8 +881,14 @@ const FeaturedRight = styled(Box)({
   display: 'grid', 
   gridTemplateColumns: 'repeat(3, 1fr)', 
   gap: '30px', 
-  '@media (max-width:1024px)': { width: '100%', maxWidth: '800px' }, 
-  '@media (max-width:900px)': { gridTemplateColumns: '1fr', gap: '25px' } 
+  '@media (max-width:1024px)': { 
+    width: '100%', 
+    maxWidth: '800px',
+  }, 
+  '@media (max-width:900px)': { 
+    gridTemplateColumns: '1fr', 
+    gap: '20px',
+  } 
 });
 
 const FeaturedCard = styled(Box)({ 
@@ -602,7 +903,13 @@ const FeaturedCard = styled(Box)({
     transform: 'translateY(-8px)', 
     boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)', 
     borderColor: 'rgba(255, 255, 255, 0.15)' 
-  } 
+  },
+  '@media (max-width:900px)': {
+    borderRadius: '12px',
+    '&:hover': {
+      transform: 'translateY(-4px)',
+    },
+  },
 });
 
 const FeaturedImg = styled(Box)({ 
@@ -617,17 +924,30 @@ const FeaturedImg = styled(Box)({
   transition: 'all 0.3s ease',
   '.featured-card:hover &': {
     background: 'linear-gradient(135deg, #3a3a3a, #2a2a2a)'
-  }
+  },
+  '@media (max-width:900px)': {
+    height: '160px',
+    fontSize: '40px',
+  },
 });
 
-const FeaturedDetails = styled(Box)({ padding: '25px' });
+const FeaturedDetails = styled(Box)({ 
+  padding: '25px',
+  '@media (max-width:900px)': {
+    padding: '20px',
+  },
+});
 
 const FeaturedTitle = styled(Typography)({ 
   fontSize: '20px', 
   fontWeight: 700, 
   marginBottom: '12px', 
   color: 'rgba(255, 255, 255, 0.95)',
-  letterSpacing: '0.3px'
+  letterSpacing: '0.3px',
+  '@media (max-width:900px)': {
+    fontSize: '17px',
+    marginBottom: '10px',
+  },
 });
 
 const FeaturedDesc = styled(Typography)({ 
@@ -635,13 +955,21 @@ const FeaturedDesc = styled(Typography)({
   color: 'rgba(255, 255, 255, 0.6)', 
   lineHeight: 1.6, 
   marginBottom: '20px', 
-  fontWeight: 400 
+  fontWeight: 400,
+  '@media (max-width:900px)': {
+    fontSize: '13px',
+    lineHeight: 1.5,
+    marginBottom: '16px',
+  },
 });
 
 const AuthorInfo = styled(Box)({ 
   display: 'flex', 
   alignItems: 'center', 
-  gap: '12px' 
+  gap: '12px',
+  '@media (max-width:900px)': {
+    gap: '10px',
+  },
 });
 
 const AuthorAvatar = styled(Box)({ 
@@ -649,7 +977,11 @@ const AuthorAvatar = styled(Box)({
   height: '32px', 
   borderRadius: '50%', 
   background: 'linear-gradient(135deg, #404040, #2a2a2a)',
-  border: '1px solid rgba(255, 255, 255, 0.1)'
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  '@media (max-width:900px)': {
+    width: '28px',
+    height: '28px',
+  },
 });
 
 const AuthorDetails = styled(Box)({ 
@@ -661,175 +993,22 @@ const AuthorName = styled(Typography)({
   fontSize: '14px', 
   fontWeight: 600, 
   color: 'rgba(255, 255, 255, 0.9)',
-  letterSpacing: '0.2px'
+  letterSpacing: '0.2px',
+  '@media (max-width:900px)': {
+    fontSize: '12px',
+  },
 });
 
 const AuthorRole = styled(Typography)({ 
   fontSize: '12px', 
   color: 'rgba(255, 255, 255, 0.5)', 
-  fontWeight: 400 
+  fontWeight: 400,
+  '@media (max-width:900px)': {
+    fontSize: '11px',
+  },
 });
 
-
-// 3D Model components with your exact values
-function GamingLaptop(props) {
-  const { scene } = useGLTF('/gaming_laptop.glb');
-  return <primitive object={scene} scale={2.0} position={[0, 1, 0]} {...props} />;
-}
-
-function MechanicalKeyboard(props) {
-  const { scene } = useGLTF('/aula_f75_mechanical_keyboard.glb');
-  return <primitive object={scene} scale={1.0} position={[0, 2, 0]} {...props} />;
-}
-
-function GamingHeadphone(props) {
-  const { scene } = useGLTF('/gaming_headphone.glb');
-  return <primitive object={scene} scale={20.0} position={[0, -1, 0]} {...props} />;
-}
-
-// Data for the new Category section with simple placeholders
-const categories = [
-    { 
-        name: 'Laptop / PC', 
-        image: '/src/assets/laptop.jpg',
-        hoverColor: 'rgba(59, 130, 246, 0.1)' // Blue
-    },
-    { 
-        name: 'Printer', 
-        image: '/src/assets/Printer.png',
-        hoverColor: 'rgba(16, 185, 129, 0.1)' // Green
-    },
-    { 
-        name: 'Keyboard', 
-        image: '/src/assets/Keyboard.png',
-        hoverColor: 'rgba(139, 92, 246, 0.1)' // Purple
-    },
-    { 
-        name: 'Mouse', 
-        image: '/src/assets/Mouse.jpeg',
-        hoverColor: 'rgba(245, 101, 101, 0.1)' // Red
-    },
-    { 
-        name: 'Monitor', 
-        image: '/src/assets/Monitor.jpg',
-        hoverColor: 'rgba(251, 191, 36, 0.1)' // Yellow
-    },
-    { 
-        name: 'CCTV / Analog', 
-        image: '/src/assets/CCTV.jpg',
-        hoverColor: 'rgba(236, 72, 153, 0.1)' // Pink
-    },
-    { 
-        name: 'Headphones', 
-        image: '/src/assets/Headphones.jpg',
-        hoverColor: 'rgba(6, 182, 212, 0.1)' // Cyan
-    },
-    { 
-        name: 'Refurbished', 
-        image: '/src/assets/Refurbished.jpg',
-        hoverColor: 'rgba(34, 197, 94, 0.1)' // Emerald
-    },
-];
-
-const AnimatedCategoryCard = ({ category }) => {
-    const navigate = useNavigate();
-    const [hovered, setHovered] = useState(false);
-    const [props, api] = useSpringWeb(() => ({
-        scale: 1,
-        rotateX: 0,
-        rotateY: 0,
-        rotateZ: 0,
-        config: { mass: 0.8, tension: 280, friction: 35 },
-    }));
-
-    // Enhanced 3D mouse tracking
-    const handleMouseMove = (e) => {
-        if (!hovered) return;
-        const { clientX, clientY, currentTarget } = e;
-        const { left, top, width, height } = currentTarget.getBoundingClientRect();
-        const centerX = left + width / 2;
-        const centerY = top + height / 2;
-        const rotateX = (clientY - centerY) / 8;
-        const rotateY = (centerX - clientX) / 8;
-        const rotateZ = (clientX - centerX) / 25;
-        
-        api.start({ 
-            rotateX: Math.max(-25, Math.min(25, rotateX)), 
-            rotateY: Math.max(-25, Math.min(25, rotateY)),
-            rotateZ: Math.max(-10, Math.min(10, rotateZ))
-        });
-    };
-
-    const handleMouseEnter = () => { 
-        setHovered(true); 
-        api.start({ scale: 1.08 }); 
-    };
-    
-    const handleMouseLeave = () => { 
-        setHovered(false); 
-        api.start({ scale: 1, rotateX: 0, rotateY: 0, rotateZ: 0 }); 
-    };
-
-    // Navigate to store filtered by this category
-    const handleCategoryClick = () => {
-        const target = encodeURIComponent(category.name);
-        navigate(`/store?category=${target}`);
-    };
-
-    return (
-        <CategoryItemWrapper>
-            <AnimatedCardContainer
-                onMouseMove={handleMouseMove}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                onClick={handleCategoryClick}
-                style={{
-                    transform: 'perspective(1200px)',
-                    scale: props.scale,
-                    rotateX: props.rotateX.to(val => `${val}deg`),
-                    rotateY: props.rotateY.to(val => `${val}deg`),
-                    rotateZ: props.rotateZ.to(val => `${val}deg`),
-                }}
-            >
-                {/* Product Image */}
-                {category.image && (
-                  <ProductImage 
-                    src={category.image}
-                    alt={category.name}
-                    style={{ 
-                      opacity: hovered ? 1 : 0.95,
-                      transform: hovered ? 'translateZ(6px) scale(1.02)' : 'translateZ(0px) scale(1)',
-                      filter: hovered ? 'brightness(0.95) contrast(1.05)' : 'brightness(0.85) contrast(1.08)'
-                    }}
-                  />
-                )}
-                
-                {/* Glow Effect */}
-                <CardGlow 
-                    style={{ 
-                        opacity: hovered ? 1 : 0,
-                        background: hovered ? category.hoverColor : 'rgba(255, 255, 255, 0.05)'
-                    }} 
-                />
-                
-                {/* Overlay without Icon */}
-                <CategoryOverlay style={{ opacity: hovered ? 0.6 : 0 }} />
-            </AnimatedCardContainer>
-            
-            <CategoryName 
-                style={{ 
-                    opacity: hovered ? 1 : 0.7, 
-                    transform: hovered ? 'translateY(0px)' : 'translateY(10px)',
-                    color: hovered ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.5)'
-                }}
-            >
-                {category.name}
-            </CategoryName>
-        </CategoryItemWrapper>
-    );
-};
-
-
+// Main Component
 export const LandingPage = () => {
   const [currentModel, setCurrentModel] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -883,12 +1062,18 @@ export const LandingPage = () => {
             <HeroTitle>TECHVERSE</HeroTitle>
             <HeroSubtitle>Your Gateway to Innovation</HeroSubtitle>
             <ExploreButton>Explore Now</ExploreButton>
-            <Box sx={{ display: 'flex', gap: 2, marginTop: 4, marginLeft: { xs: 0, md: '-60px' }, justifyContent: { xs: 'center', md: 'flex-start'} }}>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 2, 
+              marginTop: { xs: 3, md: 4 }, 
+              marginLeft: { xs: 0, md: '-60px' }, 
+              justifyContent: { xs: 'center', md: 'flex-start'}
+            }}>
               <ArrowButton onClick={() => runAnimation('prev')}>
-                <ArrowBackIosNewIcon sx={{ fontSize: '1rem' }} />
+                <ArrowBackIosNewIcon sx={{ fontSize: { xs: '0.9rem', md: '1rem' } }} />
               </ArrowButton>
               <ArrowButton onClick={() => runAnimation('next')}>
-                <ArrowForwardIosIcon sx={{ fontSize: '1rem' }} />
+                <ArrowForwardIosIcon sx={{ fontSize: { xs: '0.9rem', md: '1rem' } }} />
               </ArrowButton>
             </Box>
           </HeroLeft>
@@ -923,9 +1108,12 @@ export const LandingPage = () => {
                   <div
                     key={index}
                     style={{
-                      width: '10px', height: '10px', borderRadius: '50%',
+                      width: window.innerWidth <= 900 ? '8px' : '10px', 
+                      height: window.innerWidth <= 900 ? '8px' : '10px', 
+                      borderRadius: '50%',
                       backgroundColor: currentModel === index ? 'white' : 'rgba(255, 255, 255, 0.3)',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
                     }}
                     onClick={() => {
                       if (index > currentModel) runAnimation('next');
@@ -998,6 +1186,7 @@ export const LandingPage = () => {
           </StatsGrid>
         </StatsSection>
       </AboutSection>
+
       <FeaturedWrapper>
         <FeaturedContainer>
           <FeaturedLeft>
@@ -1049,3 +1238,5 @@ export const LandingPage = () => {
 };
 
 export default LandingPage;
+
+// ==================== PART 2 END ====================

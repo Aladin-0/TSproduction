@@ -133,6 +133,9 @@ SOCIALACCOUNT_ADAPTER = 'users.adapter.CustomSocialAccountAdapter'
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_REQUIRED = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_STORE_TOKENS = True
+SOCIALACCOUNT_QUERY_EMAIL = True
+SOCIALACCOUNT_LOGIN_ON_GET = True
 
 # REST Framework
 REST_FRAMEWORK = {
@@ -145,14 +148,12 @@ REST_FRAMEWORK = {
     ],
 }
 
-
 # SIMPLE JWT SETTINGS
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
 }
-
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
@@ -171,7 +172,6 @@ CORS_ALLOWED_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
-    'x-csrftoken',
     'cache-control',
 ]
 
@@ -184,13 +184,9 @@ AUTHENTICATION_BACKENDS = [
 # Redirect URLs
 LOGIN_REDIRECT_URL = 'http://localhost:5173/?login=success'
 ACCOUNT_LOGOUT_REDIRECT_URL = 'http://localhost:5173/'
-FRONTEND_BASE_URL = 'http://localhost:5173'
-
-# Frontend base URL (used for server-side redirects to the React app)
-# Configure via env var FRONTEND_BASE_URL if needed.
 FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:5173')
 
-# Google OAuth Provider - No hardcoded credentials
+# Google OAuth Provider
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': [
@@ -203,17 +199,21 @@ SOCIALACCOUNT_PROVIDERS = {
         'OAUTH_PKCE_ENABLED': True,
         'VERIFIED_EMAIL': True,
         'VERSION': 'v2',
-        # Add these two lines to skip the intermediate page
         'REDIRECT_URI_PROTOCOL': 'http',
         'APP': {
-            'client_id': None,  # Will be loaded from Social App in Django admin
+            'client_id': None,
             'secret': None,
         }
     }
 }
 
-# Add this new setting to automatically redirect to provider
-SOCIALACCOUNT_LOGIN_ON_GET = True
+# Add this after SOCIALACCOUNT_PROVIDERS
+SOCIALACCOUNT_ADAPTER = 'users.adapter.CustomSocialAccountAdapter'
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
+# Prevent duplicate OAuth callback processing
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http'
 
 # REST_AUTH SETTINGS
 REST_AUTH = {
@@ -222,25 +222,37 @@ REST_AUTH = {
     'JWT_AUTH_REFRESH_COOKIE': 'techverse-refresh',
     'REGISTER_SERIALIZER': 'users.serializers.CustomRegisterSerializer',
     'REGISTER_PERMISSION_CLASSES': ('rest_framework.permissions.AllowAny',),
-    'USER_DETAILS_SERIALIZER': 'users.serializers.UserSerializer',  # Add this line
+    'USER_DETAILS_SERIALIZER': 'users.serializers.UserSerializer',
 }
 
-# Session settings
-SESSION_COOKIE_SAMESITE = None
-SESSION_COOKIE_SECURE = False
-SESSION_COOKIE_HTTPONLY = False
+
+# Session settings - MOBILE CRITICAL
+SESSION_COOKIE_SAMESITE = 'None'  # MUST be None for cross-origin OAuth
+SESSION_COOKIE_SECURE = False     # Set True in production with HTTPS
+SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_DOMAIN = None
+SESSION_COOKIE_AGE = 86400
 SESSION_SAVE_EVERY_REQUEST = True
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+# CRITICAL: Add this to allow session cookies in iframes/mobile
+SESSION_COOKIE_NAME = 'techverse_session'
+SESSION_COOKIE_PATH = '/'
 
 # CSRF settings
-CSRF_COOKIE_SAMESITE = None     # Changed to None for cross-origin  
-CSRF_COOKIE_SECURE = False      # False for development
-CSRF_COOKIE_HTTPONLY = False    # False so JavaScript can access
+CSRF_COOKIE_SAMESITE = 'None'     # MUST be None 
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_NAME = 'techverse_csrf'
 CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
 ]
 
+# Logging for debugging OAuth issues
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -249,15 +261,14 @@ LOGGING = {
             'class': 'logging.StreamHandler',
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
-    },
     'loggers': {
         'allauth': {
             'handlers': ['console'],
             'level': 'DEBUG',
-            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
         },
     },
 }

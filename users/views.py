@@ -398,3 +398,26 @@ def google_login_redirect(request):
     # Directly call the Google OAuth login view
     # This skips the allauth intermediate "Sign in with Google" page
     return oauth2_login(request)
+
+
+@csrf_exempt
+def mobile_google_callback(request):
+    """
+    Mobile-specific callback that handles state issues
+    """
+    # Get the state and code from Google
+    state = request.GET.get('state')
+    code = request.GET.get('code')
+    
+    if not state or not code:
+        return HttpResponseRedirect('http://localhost:5173/login?error=oauth_failed')
+    
+    # Redirect to the standard allauth callback with proper headers
+    callback_url = f"/accounts/google/login/callback/?state={state}&code={code}"
+    response = HttpResponseRedirect(callback_url)
+    
+    # Ensure cookies are set for mobile
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    
+    return response

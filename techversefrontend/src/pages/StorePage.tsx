@@ -1,4 +1,4 @@
-// src/pages/StorePage.tsx - Updated with product links and shortened descriptions
+// src/pages/StorePage.tsx - PART 1 - PROPER MOBILE FIX
 import React, { useEffect, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -26,7 +26,6 @@ import { useProductStore } from '../stores/productStore';
 import { useCartStore } from '../stores/cartStore';
 import { useSnackbar } from 'notistack';
 
-// Main page wrapper with exact black background
 const PageWrapper = styled(Box)({
   backgroundColor: '#000000',
   color: 'white',
@@ -36,7 +35,6 @@ const PageWrapper = styled(Box)({
   overflow: 'hidden',
 });
 
-// Premium header with exact spacing
 const Header = styled(Box)({
   display: 'flex',
   justifyContent: 'space-between',
@@ -47,6 +45,9 @@ const Header = styled(Box)({
   borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
   position: 'relative',
   zIndex: 100,
+  '@media (max-width:900px)': {
+    padding: '14px 20px',
+  },
 });
 
 const Logo = styled(Typography)({
@@ -55,6 +56,10 @@ const Logo = styled(Typography)({
   letterSpacing: '3.2px',
   color: '#ffffff',
   fontFamily: "'Arial Black', sans-serif",
+  '@media (max-width:900px)': {
+    fontSize: '14px',
+    letterSpacing: '2.5px',
+  },
 });
 
 const BlankButton = styled(Button)({
@@ -74,9 +79,12 @@ const BlankButton = styled(Button)({
     transform: 'translateY(-1px)',
     boxShadow: '0 8px 25px rgba(255, 255, 255, 0.1)',
   },
+  '@media (max-width:900px)': {
+    padding: '6px 18px',
+    fontSize: '10px',
+  },
 });
 
-// Premium hero section with sophisticated gradients
 const HeroSection = styled(Box)({
   background: `
     radial-gradient(ellipse 1200px 800px at 50% 20%, rgba(64, 64, 64, 0.15) 0%, transparent 50%),
@@ -102,6 +110,9 @@ const HeroSection = styled(Box)({
     `,
     pointerEvents: 'none',
   },
+  '@media (max-width:900px)': {
+    minHeight: '300px',
+  },
 });
 
 const HeroContent = styled(Box)({
@@ -109,6 +120,11 @@ const HeroContent = styled(Box)({
   zIndex: 10,
   padding: '80px 0 80px 60px',
   maxWidth: '50%',
+  '@media (max-width:900px)': {
+    padding: '40px 20px',
+    maxWidth: '100%',
+    textAlign: 'center',
+  },
 });
 
 const HeroTitle = styled(Typography)({
@@ -119,6 +135,9 @@ const HeroTitle = styled(Typography)({
   color: '#ffffff',
   fontFamily: "'Helvetica Neue', sans-serif",
   letterSpacing: '-1.5px',
+  '@media (max-width:900px)': {
+    fontSize: '36px',
+  },
 });
 
 const HeroSubtitle = styled(Typography)({
@@ -129,6 +148,9 @@ const HeroSubtitle = styled(Typography)({
   color: '#ffffff',
   fontFamily: "'Helvetica Neue', sans-serif",
   letterSpacing: '-1.5px',
+  '@media (max-width:900px)': {
+    fontSize: '36px',
+  },
 });
 
 const HeroDescription = styled(Typography)({
@@ -137,6 +159,10 @@ const HeroDescription = styled(Typography)({
   marginBottom: '36px',
   fontWeight: 300,
   letterSpacing: '0.3px',
+  '@media (max-width:900px)': {
+    fontSize: '16px',
+    marginBottom: '24px',
+  },
 });
 
 const LearnMoreButton = styled(Button)({
@@ -155,6 +181,10 @@ const LearnMoreButton = styled(Button)({
     borderColor: 'rgba(255, 255, 255, 0.4)',
     transform: 'translateY(-2px)',
     boxShadow: '0 12px 30px rgba(255, 255, 255, 0.15)',
+  },
+  '@media (max-width:900px)': {
+    padding: '10px 24px',
+    fontSize: '12px',
   },
 });
 
@@ -183,9 +213,11 @@ const HeadphonesContainer = styled(Box)({
     borderRadius: '50%',
     filter: 'blur(20px)',
   },
+  '@media (max-width:900px)': {
+    display: 'none',
+  },
 });
 
-// Premium search and filter section
 const SearchFilterSection = styled(Box)({
   padding: '32px 60px',
   background: `
@@ -194,6 +226,9 @@ const SearchFilterSection = styled(Box)({
   backdropFilter: 'blur(20px)',
   borderTop: '1px solid rgba(255, 255, 255, 0.05)',
   borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+  '@media (max-width:900px)': {
+    padding: '20px 20px',
+  },
 });
 
 const SearchContainer = styled(Box)({
@@ -201,6 +236,10 @@ const SearchContainer = styled(Box)({
   gap: '20px',
   alignItems: 'center',
   maxWidth: '1000px',
+  '@media (max-width:900px)': {
+    flexDirection: 'column',
+    gap: '12px',
+  },
 });
 
 const PremiumTextField = styled(TextField)({
@@ -236,6 +275,9 @@ const PremiumTextField = styled(TextField)({
       color: 'rgba(255, 255, 255, 0.4)',
     },
   },
+  '@media (max-width:900px)': {
+    width: '100%',
+  },
 });
 
 const PremiumSelect = styled(FormControl)({
@@ -264,9 +306,11 @@ const PremiumSelect = styled(FormControl)({
   '& .MuiSvgIcon-root': {
     color: 'rgba(255, 255, 255, 0.6)',
   },
+  '@media (max-width:900px)': {
+    width: '100%',
+  },
 });
 
-// Ultra-premium products section
 const ProductsSection = styled(Box)({
   padding: '60px',
   background: `
@@ -286,6 +330,9 @@ const ProductsSection = styled(Box)({
     `,
     pointerEvents: 'none',
   },
+  '@media (max-width:900px)': {
+    padding: '30px 16px',
+  },
 });
 
 const BrowseTitle = styled(Typography)({
@@ -296,9 +343,12 @@ const BrowseTitle = styled(Typography)({
   letterSpacing: '0.5px',
   position: 'relative',
   zIndex: 2,
+  '@media (max-width:900px)': {
+    fontSize: '22px',
+    marginBottom: '24px',
+  },
 });
 
-// Premium category tabs
 const CategoryTabs = styled(Box)({
   display: 'flex',
   gap: '1px',
@@ -311,6 +361,11 @@ const CategoryTabs = styled(Box)({
   border: '1px solid rgba(255, 255, 255, 0.08)',
   position: 'relative',
   zIndex: 2,
+  '@media (max-width:900px)': {
+    flexWrap: 'wrap',
+    marginBottom: '30px',
+    gap: '6px',
+  },
 });
 
 const CategoryTab = styled(Button)<{ active?: boolean }>(({ active }) => ({
@@ -339,9 +394,13 @@ const CategoryTab = styled(Button)<{ active?: boolean }>(({ active }) => ({
     height: '2px',
     background: 'linear-gradient(90deg, transparent, #ffffff, transparent)',
   } : {},
+  '@media (max-width:900px)': {
+    padding: '8px 16px',
+    fontSize: '11px',
+    flex: '0 0 auto',
+  },
 }));
 
-// Ultra-premium product grid
 const ProductGrid = styled(Box)({
   display: 'grid',
   gridTemplateColumns: 'repeat(4, 1fr)',
@@ -355,9 +414,9 @@ const ProductGrid = styled(Box)({
   '@media (max-width: 1000px)': {
     gridTemplateColumns: 'repeat(2, 1fr)',
   },
-  '@media (max-width: 600px)': {
+  '@media (max-width: 900px)': {
     gridTemplateColumns: '1fr',
-    gap: '24px',
+    gap: '16px',
   },
 });
 
@@ -410,6 +469,15 @@ const ProductCard = styled(AnimatedProductCard)({
   '&:hover::before': {
     opacity: 1,
   },
+  '@media (max-width:900px)': {
+    display: 'flex',
+    flexDirection: 'row',
+    borderRadius: '12px',
+    '&:hover': {
+      transform: 'none',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+    },
+  },
 });
 
 const ProductImageArea = styled(Box)({
@@ -452,11 +520,41 @@ const ProductImageArea = styled(Box)({
       )
     `,
   },
+  '@media (max-width:900px)': {
+    width: '140px',
+    minWidth: '140px',
+    height: '180px',
+    background: `
+      radial-gradient(ellipse at center, 
+        rgba(60, 60, 60, 0.5) 0%, 
+        rgba(30, 30, 30, 0.8) 50%, 
+        rgba(15, 15, 15, 0.95) 100%
+      )
+    `,
+    '& img': {
+      width: '100%',
+      height: '100%',
+      padding: '12px',
+    },
+    '&:hover img': {
+      transform: 'none',
+    },
+    '&::after': {
+      display: 'none',
+    },
+  },
 });
 
 const ProductInfo = styled(Box)({
   padding: '24px',
   position: 'relative',
+  '@media (max-width:900px)': {
+    padding: '16px',
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+  },
 });
 
 const ProductName = styled(Typography)({
@@ -466,9 +564,16 @@ const ProductName = styled(Typography)({
   marginBottom: '8px',
   letterSpacing: '0.3px',
   lineHeight: 1.3,
+  '@media (max-width:900px)': {
+    fontSize: '15px',
+    marginBottom: '6px',
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+  },
 });
 
-// Shortened description - only one line
 const ProductDescription = styled(Typography)({
   fontSize: '13px',
   color: 'rgba(255, 255, 255, 0.6)',
@@ -476,10 +581,14 @@ const ProductDescription = styled(Typography)({
   lineHeight: 1.5,
   fontWeight: 300,
   display: '-webkit-box',
-  WebkitLineClamp: 1, // Only show 1 line
+  WebkitLineClamp: 1,
   WebkitBoxOrient: 'vertical',
   overflow: 'hidden',
-  height: '18px', // Fixed height for consistency
+  height: '18px',
+  '@media (max-width:900px)': {
+    fontSize: '12px',
+    marginBottom: '10px',
+  },
 });
 
 const ActionButton = styled(Button)({
@@ -521,7 +630,21 @@ const ActionButton = styled(Button)({
       borderColor: 'rgba(255, 255, 255, 0.2)',
     },
   },
+  '@media (max-width:900px)': {
+    padding: '10px 12px',
+    fontSize: '11px',
+    gap: '4px',
+    '&:hover': {
+      transform: 'none',
+    },
+    '& .MuiSvgIcon-root': {
+      fontSize: '14px',
+    },
+  },
 });
+
+// ==================== PART 1 END - Confirm before Part 2 ====================
+// ==================== PART 2 START ====================
 
 const LoadMoreButton = styled(Button)({
   backgroundColor: 'rgba(255, 255, 255, 0.04)',
@@ -544,9 +667,15 @@ const LoadMoreButton = styled(Button)({
     transform: 'translateY(-4px)',
     boxShadow: '0 15px 35px rgba(0, 0, 0, 0.4)',
   },
+  '@media (max-width:900px)': {
+    padding: '12px 32px',
+    fontSize: '13px',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+    },
+  },
 });
 
-// Premium footer
 const Footer = styled(Box)({
   background: `
     linear-gradient(135deg, #000000 0%, #0a0a0a 100%)
@@ -603,72 +732,36 @@ const SocialIcons = styled(Box)({
   },
 });
 
-// Loading skeleton for premium look
 const ProductSkeleton = () => (
   <Box sx={{ 
     background: 'rgba(255, 255, 255, 0.02)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '20px',
     overflow: 'hidden',
-    backdropFilter: 'blur(20px)'
+    backdropFilter: 'blur(20px)',
+    display: { xs: 'flex', md: 'block' },
+    flexDirection: { xs: 'row', md: 'column' },
   }}>
     <Skeleton 
       variant="rectangular" 
-      height={220} 
+      width={{ xs: 140, md: '100%' }}
+      height={{ xs: 180, md: 220 }}
       sx={{ 
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        minWidth: { xs: '140px', md: 'auto' },
         '&::after': {
           background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)',
         }
       }}
     />
-    <Box sx={{ p: 3 }}>
-      <Skeleton 
-        variant="text" 
-        height={24} 
-        sx={{ 
-          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-          marginBottom: '8px',
-          borderRadius: '4px'
-        }} 
-      />
-      <Skeleton 
-        variant="text" 
-        height={18} 
-        sx={{ 
-          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-          marginBottom: '20px',
-          borderRadius: '4px'
-        }} 
-      />
+    <Box sx={{ p: { xs: 2, md: 3 }, flex: 1 }}>
+      <Skeleton variant="text" height={24} sx={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', marginBottom: '8px', borderRadius: '4px' }} />
+      <Skeleton variant="text" height={18} sx={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', marginBottom: '20px', borderRadius: '4px' }} />
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-        <Skeleton 
-          variant="rectangular" 
-          height={48} 
-          sx={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-            borderRadius: '12px',
-            flex: 1
-          }} 
-        />
-        <Skeleton 
-          variant="rectangular" 
-          height={48} 
-          sx={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-            borderRadius: '12px',
-            flex: 1
-          }} 
-        />
+        <Skeleton variant="rectangular" height={48} sx={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', flex: 1 }} />
+        <Skeleton variant="rectangular" height={48} sx={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', flex: 1 }} />
       </Box>
-      <Skeleton 
-        variant="rectangular" 
-        height={48} 
-        sx={{ 
-          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-          borderRadius: '12px'
-        }} 
-      />
+      <Skeleton variant="rectangular" height={48} sx={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', display: { xs: 'none', md: 'block' } }} />
     </Box>
   </Box>
 );
@@ -691,11 +784,8 @@ export const StorePage: React.FC = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   
-  // Product store
   const products = useProductStore((state) => state.products);
   const fetchProducts = useProductStore((state) => state.fetchProducts);
-  
-  // Cart store
   const addToCart = useCartStore((state) => state.addToCart);
   
   const [loading, setLoading] = useState(true);
@@ -706,7 +796,6 @@ export const StorePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
 
-  // Hero animation
   const heroAnimation = useSpring({
     from: { opacity: 0, transform: 'translateX(-60px)' },
     to: { opacity: 1, transform: 'translateX(0px)' },
@@ -714,7 +803,6 @@ export const StorePage: React.FC = () => {
     delay: 300,
   });
 
-  // Filter products based on search and category
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -722,10 +810,8 @@ export const StorePage: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
-  // Get unique categories from backend
   const categories = ['All Products', ...Array.from(new Set(products.map(p => p.category.name)))];
 
-  // Initialize category from URL query param (?category=...)
   useEffect(() => {
     const catParam = searchParams.get('category');
     if (!catParam) return;
@@ -733,7 +819,6 @@ export const StorePage: React.FC = () => {
     const normalize = (s: string) => s.trim().toLowerCase();
     const normalizedParam = normalize(catParam);
 
-    // If explicitly "all", reset filters
     if (normalizedParam === 'all' || normalizedParam === normalize('All Products')) {
       setSelectedCategory('All Products');
       setActiveTab('All Products');
@@ -741,41 +826,23 @@ export const StorePage: React.FC = () => {
       return;
     }
 
-    // Build category name/slug sets from products
     const categoryNames = ['All Products', ...Array.from(new Set(products.map(p => p.category.name)))];
-    const categorySlugs = Array.from(new Set(products.map(p => p.category.slug)));
-
-    // 1) Exact name match
     let matchName = categoryNames.find(c => normalize(c) === normalizedParam);
 
-    // 2) Exact slug match (map slug -> name)
-    let matchSlugName: string | undefined;
     if (!matchName) {
       const matchProduct = products.find(p => normalize(p.category.slug) === normalizedParam);
-      if (matchProduct) {
-        matchSlugName = matchProduct.category.name;
-      }
+      if (matchProduct) matchName = matchProduct.category.name;
     }
 
-    // 3) Partial name match (handles cases like "Laptop / PC" vs "Laptop")
-    let partialMatch: string | undefined;
-    if (!matchName && !matchSlugName) {
-      partialMatch = categoryNames.find(c => {
+    if (!matchName) {
+      const partialMatch = categoryNames.find(c => {
         const nc = normalize(c);
         return nc.includes(normalizedParam) || normalizedParam.includes(nc);
       });
+      matchName = partialMatch;
     }
 
-    const finalMatch = matchName || matchSlugName || partialMatch;
-
-    if (!finalMatch) {
-      // Fallback to All Products if no good match
-      setSelectedCategory('All Products');
-      setActiveTab('All Products');
-      setVisibleProducts(8);
-      return;
-    }
-
+    const finalMatch = matchName || 'All Products';
     setSelectedCategory(finalMatch);
     setActiveTab(finalMatch);
     setVisibleProducts(8);
@@ -786,27 +853,16 @@ export const StorePage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        console.log('Starting to fetch products...');
         await fetchProducts();
-        console.log('Products fetched successfully');
       } catch (err) {
         console.error('Error fetching products:', err);
         setError('Failed to load products. Please check your connection.');
       } finally {
-        setTimeout(() => {
-          setLoading(false);
-          console.log('Loading state set to false');
-        }, 500);
+        setTimeout(() => setLoading(false), 500);
       }
     };
     loadProducts();
   }, [fetchProducts]);
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Products state changed:', products);
-    console.log('Products length:', products.length);
-  }, [products]);
 
   const handleAddToCart = (product: Product) => {
     addToCart(product, 1);
@@ -818,7 +874,6 @@ export const StorePage: React.FC = () => {
 
   const handleBuyNow = (product: Product) => {
     addToCart(product, 1);
-    // Navigate to checkout
     navigate('/checkout');
   };
 
@@ -833,18 +888,16 @@ export const StorePage: React.FC = () => {
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
     setActiveTab(category);
-    setVisibleProducts(8); // Reset visible products when changing category
+    setVisibleProducts(8);
   };
 
   return (
     <PageWrapper>
-      {/* Premium Header */}
       <Header>
         <Logo>TECHVERSE</Logo>
         <BlankButton>BLANK</BlankButton>
       </Header>
 
-      {/* Premium Hero Section */}
       <HeroSection>
         <animated.div style={heroAnimation}>
           <HeroContent>
@@ -856,20 +909,12 @@ export const StorePage: React.FC = () => {
         </animated.div>
         
         <HeadphonesContainer>
-          <Typography sx={{ 
-            color: 'rgba(255, 255, 255, 0.3)', 
-            fontSize: '16px',
-            fontWeight: 300,
-            textAlign: 'center'
-          }}>
-            Premium Headphones
-            <br />
-            Visualization
+          <Typography sx={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '16px', fontWeight: 300, textAlign: 'center' }}>
+            Premium Headphones<br />Visualization
           </Typography>
         </HeadphonesContainer>
       </HeroSection>
 
-      {/* Premium Search and Filter */}
       <SearchFilterSection>
         <SearchContainer>
           <PremiumTextField
@@ -900,305 +945,103 @@ export const StorePage: React.FC = () => {
                     '& .MuiMenuItem-root': {
                       color: 'white',
                       fontSize: '14px',
-                      '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                      },
-                      '&.Mui-selected': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                      },
+                      '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
+                      '&.Mui-selected': { backgroundColor: 'rgba(255, 255, 255, 0.12)' },
                     },
                   },
                 },
               }}
             >
               {categories.map((category) => (
-                <MenuItem key={category} value={category}>
-                  {category}
-                </MenuItem>
+                <MenuItem key={category} value={category}>{category}</MenuItem>
               ))}
             </Select>
           </PremiumSelect>
         </SearchContainer>
       </SearchFilterSection>
 
-      {/* Ultra-Premium Products Section */}
       <ProductsSection>
         <BrowseTitle>Browse Categories</BrowseTitle>
 
-        {/* Dynamic Category Tabs */}
         <CategoryTabs>
           {categories.slice(0, 6).map((category) => (
-            <CategoryTab 
-              key={category}
-              active={activeTab === category}
-              onClick={() => handleCategoryChange(category)}
-            >
+            <CategoryTab key={category} active={activeTab === category} onClick={() => handleCategoryChange(category)}>
               {category}
             </CategoryTab>
           ))}
         </CategoryTabs>
 
-        {/* Ultra-Premium Product Grid */}
         <ProductGrid>
           {loading ? (
-            // Premium loading skeletons
-            Array.from({ length: 8 }).map((_, index) => (
-              <ProductSkeleton key={index} />
-            ))
+            Array.from({ length: 8 }).map((_, index) => <ProductSkeleton key={index} />)
           ) : error ? (
-            // Error state
-            <Box 
-              sx={{ 
-                gridColumn: '1 / -1',
-                textAlign: 'center', 
-                py: 8,
-                position: 'relative',
-                zIndex: 2
-              }}
-            >
-              <Typography 
-                variant="h5" 
-                sx={{ 
-                  mb: 2, 
-                  color: 'rgba(255, 100, 100, 0.8)',
-                  fontWeight: 300,
-                  fontSize: '24px'
-                }}
-              >
-                {error}
-              </Typography>
-              <Typography 
-                sx={{ 
-                  color: 'rgba(255, 255, 255, 0.5)',
-                  fontSize: '14px',
-                  fontWeight: 300,
-                  mb: 3
-                }}
-              >
-                Make sure your Django server is running on http://127.0.0.1:8000
-              </Typography>
-              <Button
-                onClick={() => window.location.reload()}
-                sx={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                  color: '#ffffff',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '12px',
-                  padding: '12px 24px',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                  }
-                }}
-              >
+            <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 8, position: 'relative', zIndex: 2 }}>
+              <Typography variant="h5" sx={{ mb: 2, color: 'rgba(255, 100, 100, 0.8)', fontWeight: 300, fontSize: '24px' }}>{error}</Typography>
+              <Button onClick={() => window.location.reload()} sx={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '12px', padding: '12px 24px', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.15)' } }}>
                 Retry Loading
               </Button>
             </Box>
-          ) : products.length === 0 ? (
-            // No products from API
-            <Box 
-              sx={{ 
-                gridColumn: '1 / -1',
-                textAlign: 'center', 
-                py: 8,
-                position: 'relative',
-                zIndex: 2
-              }}
-            >
-              <Typography 
-                variant="h5" 
-                sx={{ 
-                  mb: 2, 
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  fontWeight: 300,
-                  fontSize: '24px'
-                }}
-              >
-                No products available
-              </Typography>
-              <Typography 
-                sx={{ 
-                  color: 'rgba(255, 255, 255, 0.5)',
-                  fontSize: '14px',
-                  fontWeight: 300
-                }}
-              >
-                Add some products through the Django admin panel
-              </Typography>
-            </Box>
           ) : filteredProducts.length === 0 ? (
-            // Products exist but filtered out
-            <Box 
-              sx={{ 
-                gridColumn: '1 / -1',
-                textAlign: 'center', 
-                py: 8,
-                position: 'relative',
-                zIndex: 2
-              }}
-            >
-              <Typography 
-                variant="h5" 
-                sx={{ 
-                  mb: 2, 
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  fontWeight: 300,
-                  fontSize: '24px'
-                }}
-              >
-                No products match your filters
-              </Typography>
-              <Typography 
-                sx={{ 
-                  color: 'rgba(255, 255, 255, 0.5)',
-                  fontSize: '14px',
-                  fontWeight: 300
-                }}
-              >
-                Try adjusting your search criteria or category selection
-              </Typography>
-              <Button
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedCategory('All Products');
-                  setActiveTab('All Products');
-                }}
-                sx={{
-                  mt: 2,
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                  color: '#ffffff',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '12px',
-                  padding: '8px 16px',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                  }
-                }}
-              >
+            <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 8, position: 'relative', zIndex: 2 }}>
+              <Typography variant="h5" sx={{ mb: 2, color: 'rgba(255, 255, 255, 0.8)', fontWeight: 300, fontSize: '24px' }}>No products match your filters</Typography>
+              <Button onClick={() => { setSearchTerm(''); setSelectedCategory('All Products'); setActiveTab('All Products'); }} sx={{ mt: 2, backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '12px', padding: '8px 16px', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.15)' } }}>
                 Clear Filters
               </Button>
             </Box>
           ) : (
-            // Render products
-            filteredProducts.slice(0, visibleProducts).map((product, index) => {
-              return (
-                <ProductCard 
-                  key={`product-${product.id}-${index}`}
-                  style={{
-                    opacity: 1,
-                    transform: 'translateY(0px) scale(1)'
-                  }}
-                >
-                  <ProductImageArea onClick={() => handleViewDetails(product)}>
-                    <img 
-                      src={
-                        product.image 
-                          ? (product.image.startsWith('http') 
-                              ? product.image 
-                              : `http://127.0.0.1:8000${product.image}`)
-                          : `https://via.placeholder.com/140x140/333333/ffffff?text=${encodeURIComponent(product.name || 'Product')}`
+            filteredProducts.slice(0, visibleProducts).map((product) => (
+              <ProductCard key={product.id}>
+                <ProductImageArea onClick={() => handleViewDetails(product)}>
+                  <img 
+                    src={product.image ? (product.image.startsWith('http') ? product.image : `http://127.0.0.1:8000${product.image}`) : `https://via.placeholder.com/300x300/333333/ffffff?text=${encodeURIComponent(product.name)}`}
+                    alt={product.name}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (!target.src.includes('placeholder')) {
+                        target.src = `https://via.placeholder.com/300x300/333333/ffffff?text=${encodeURIComponent(product.name)}`;
                       }
-                      alt={product.name || 'Product'}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        if (!target.src.includes('placeholder')) {
-                          if (product.image && !product.image.startsWith('/media/')) {
-                            target.src = `http://127.0.0.1:8000/media/${product.image}`;
-                          } else if (product.image && product.image.startsWith('/media/')) {
-                            target.src = `http://127.0.0.1:8000${product.image}`;
-                          } else {
-                            target.src = `https://via.placeholder.com/140x140/333333/ffffff?text=${encodeURIComponent(product.name || 'Product')}`;
-                          }
-                        }
-                      }}
-                      onLoad={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.opacity = '1';
-                        target.style.transform = 'scale(1)';
-                      }}
-                      style={{
-                        width: '350px',
-                        height: '350px',
-                        objectFit: 'contain',
-                        opacity: '0',
-                        transform: 'scale(0.9)',
-                        transition: 'all 0.3s ease'
-                      }}
-                    />
-                  </ProductImageArea>
-                  <ProductInfo>
-                    <ProductName>
-                      {product.name ? String(product.name).trim() : 'Premium Product'}
-                    </ProductName>
-                    <ProductDescription>
-                      {product.description && String(product.description).trim() 
-                        ? String(product.description).trim()
-                        : 'Premium technology product with advanced features.'
-                      }
-                    </ProductDescription>
-                    <Box sx={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center',
-                      mb: 2
-                    }}>
-                      <Typography sx={{
-                        fontSize: '20px',
-                        fontWeight: 600,
-                        color: '#60a5fa',
-                        background: 'linear-gradient(135deg, #60a5fa, #3b82f6)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent'
-                      }}>
-                        ₹{product.price ? String(product.price) : '0.00'}
+                    }}
+                  />
+                </ProductImageArea>
+                <ProductInfo>
+                  <Box>
+                    <ProductName onClick={() => handleViewDetails(product)}>{product.name}</ProductName>
+                    <ProductDescription>{product.description || 'Premium technology product with advanced features.'}</ProductDescription>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Typography sx={{ fontSize: '20px', fontWeight: 600, color: '#60a5fa', background: 'linear-gradient(135deg, #60a5fa, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        ₹{product.price}
                       </Typography>
-                      <Typography sx={{
-                        fontSize: '12px',
-                        color: 'rgba(255, 255, 255, 0.4)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                        padding: '4px 8px',
-                        borderRadius: '6px'
-                      }}>
-                        {product.category?.name ? String(product.category.name).trim() : 'General'}
+                      <Typography sx={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)', backgroundColor: 'rgba(255, 255, 255, 0.06)', padding: '4px 8px', borderRadius: '6px' }}>
+                        {product.category?.name || 'General'}
                       </Typography>
                     </Box>
-                    
-                    {/* Action Buttons */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <ActionButton 
-                          onClick={() => handleAddToCart(product)}
-                          sx={{ flex: 1 }}
-                        >
-                          <ShoppingCartIcon sx={{ fontSize: '16px' }} />
-                          Add to Cart
-                        </ActionButton>
-                        <ActionButton 
-                          onClick={() => handleBuyNow(product)}
-                          className="buy-now"
-                          sx={{ flex: 1 }}
-                        >
-                          <FlashOnIcon sx={{ fontSize: '16px' }} />
-                          Buy Now
-                        </ActionButton>
-                      </Box>
-                      
-                      <ActionButton 
-                        onClick={() => handleViewDetails(product)}
-                        className="view-details"
-                        fullWidth
-                      >
-                        <VisibilityIcon sx={{ fontSize: '16px' }} />
-                        View Details
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <ActionButton onClick={() => handleAddToCart(product)} sx={{ flex: 1 }}>
+                        <ShoppingCartIcon />
+                        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Add to Cart</Box>
+                        <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Add</Box>
+                      </ActionButton>
+                      <ActionButton onClick={() => handleBuyNow(product)} className="buy-now" sx={{ flex: 1 }}>
+                        <FlashOnIcon />
+                        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Buy Now</Box>
+                        <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Buy</Box>
                       </ActionButton>
                     </Box>
-                  </ProductInfo>
-                </ProductCard>
-              );
-            })
+                    
+                    <ActionButton onClick={() => handleViewDetails(product)} className="view-details" fullWidth sx={{ display: { xs: 'none', md: 'flex' } }}>
+                      <VisibilityIcon />
+                      View Details
+                    </ActionButton>
+                  </Box>
+                </ProductInfo>
+              </ProductCard>
+            ))
           )}
         </ProductGrid>
 
-        {/* Load More Button */}
         {!loading && !error && visibleProducts < filteredProducts.length && (
           <LoadMoreButton onClick={loadMoreProducts}>
             Load More Products ({filteredProducts.length - visibleProducts} remaining)
@@ -1206,7 +1049,6 @@ export const StorePage: React.FC = () => {
         )}
       </ProductsSection>
 
-      {/* Premium Footer */}
       <Footer>
         <FooterLogo>TECHVERSE</FooterLogo>
         <FooterLinks>
@@ -1222,3 +1064,5 @@ export const StorePage: React.FC = () => {
     </PageWrapper>
   );
 };
+
+// ==================== PART 2 END ====================

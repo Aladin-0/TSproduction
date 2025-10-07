@@ -1,4 +1,4 @@
-// src/pages/ServiceCategoryPage.tsx - Updated to show only service names
+// src/pages/ServiceCategoryPage.tsx - PART 1 - Premium Mobile Design
 import React, { useEffect, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
@@ -24,7 +24,6 @@ import RouterIcon from '@mui/icons-material/Router';
 import { useSpring, animated } from '@react-spring/web';
 import { useServiceStore } from '../stores/serviceStore';
 
-// Main page wrapper
 const PageWrapper = styled(Box)({
   backgroundColor: '#000000',
   color: 'white',
@@ -32,9 +31,12 @@ const PageWrapper = styled(Box)({
   minHeight: '100vh',
   width: '100%',
   paddingTop: '80px',
+  '@media (max-width:900px)': {
+    paddingTop: '0',
+  },
 });
 
-// Premium hero section for services
+// Premium hero section - MOBILE OPTIMIZED
 const ServiceHero = styled(Box)({
   background: `
     radial-gradient(ellipse 1200px 800px at 50% 20%, rgba(64, 64, 64, 0.15) 0%, transparent 50%),
@@ -46,6 +48,9 @@ const ServiceHero = styled(Box)({
   position: 'relative',
   overflow: 'hidden',
   borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+  '@media (max-width:900px)': {
+    padding: '60px 20px 40px',
+  },
 });
 
 const ServiceTitle = styled(Typography)({
@@ -59,7 +64,8 @@ const ServiceTitle = styled(Typography)({
   WebkitTextFillColor: 'transparent',
   fontFamily: "'Helvetica Neue', sans-serif",
   '@media (max-width:900px)': {
-    fontSize: '42px',
+    fontSize: '36px',
+    marginBottom: '12px',
   },
 });
 
@@ -72,11 +78,14 @@ const ServiceSubtitle = styled(Typography)({
   margin: '0 auto 40px',
   lineHeight: 1.6,
   '@media (max-width:900px)': {
-    fontSize: '18px',
+    fontSize: '15px',
+    lineHeight: 1.5,
+    maxWidth: '100%',
+    marginBottom: '30px',
   },
 });
 
-// Premium search section
+// Premium search section - MOBILE OPTIMIZED
 const SearchSection = styled(Box)({
   padding: '40px 60px',
   background: `
@@ -84,6 +93,9 @@ const SearchSection = styled(Box)({
   `,
   backdropFilter: 'blur(20px)',
   borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+  '@media (max-width:900px)': {
+    padding: '24px 20px',
+  },
 });
 
 const SearchContainer = styled(Box)({
@@ -127,15 +139,28 @@ const PremiumSearchField = styled(TextField)({
       color: 'rgba(255, 255, 255, 0.4)',
     },
   },
+  '@media (max-width:900px)': {
+    maxWidth: '100%',
+    '& .MuiOutlinedInput-root': {
+      height: '48px',
+      borderRadius: '12px',
+    },
+    '& .MuiInputBase-input': {
+      fontSize: '14px',
+    },
+  },
 });
 
-// Categories section
+// Categories section - MOBILE OPTIMIZED
 const CategoriesSection = styled(Box)({
   padding: '80px 60px 100px',
   background: `
     linear-gradient(135deg, #000000 0%, #0a0a0a 25%, #111111 50%, #0a0a0a 75%, #000000 100%)
   `,
   position: 'relative',
+  '@media (max-width:900px)': {
+    padding: '40px 16px 60px',
+  },
 });
 
 const CategoriesContainer = styled(Box)({
@@ -148,6 +173,9 @@ const CategoriesContainer = styled(Box)({
 const SectionHeader = styled(Box)({
   textAlign: 'center',
   marginBottom: '60px',
+  '@media (max-width:900px)': {
+    marginBottom: '30px',
+  },
 });
 
 const SectionTitle = styled(Typography)({
@@ -160,7 +188,8 @@ const SectionTitle = styled(Typography)({
   WebkitTextFillColor: 'transparent',
   letterSpacing: '0.5px',
   '@media (max-width:900px)': {
-    fontSize: '32px',
+    fontSize: '24px',
+    marginBottom: '12px',
   },
 });
 
@@ -170,21 +199,31 @@ const SectionDescription = styled(Typography)({
   maxWidth: '600px',
   margin: '0 auto',
   lineHeight: 1.6,
+  '@media (max-width:900px)': {
+    fontSize: '14px',
+    lineHeight: 1.5,
+    padding: '0 10px',
+  },
 });
 
-// Premium category grid
+// Premium category grid - MOBILE: 2 COLUMNS
 const CategoryGrid = styled(Box)({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
   gap: '32px',
-  '@media (max-width: 768px)': {
+  '@media (max-width: 900px)': {
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '16px',
+  },
+  '@media (max-width: 500px)': {
     gridTemplateColumns: '1fr',
-    gap: '24px',
+    gap: '16px',
   },
 });
 
 const AnimatedCategoryCard = animated(Card);
 
+// MOBILE: Compact vertical card
 const CategoryCard = styled(AnimatedCategoryCard)({
   background: `
     linear-gradient(135deg, 
@@ -211,6 +250,13 @@ const CategoryCard = styled(AnimatedCategoryCard)({
       inset 0 1px 0 rgba(255, 255, 255, 0.1)
     `,
   },
+  '@media (max-width:900px)': {
+    borderRadius: '16px',
+    '&:hover': {
+      transform: 'translateY(-4px)',
+      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+    },
+  },
 });
 
 const CategoryHeader = styled(Box)({
@@ -220,6 +266,10 @@ const CategoryHeader = styled(Box)({
   flexDirection: 'column',
   alignItems: 'center',
   gap: '20px',
+  '@media (max-width:900px)': {
+    padding: '24px 16px',
+    gap: '12px',
+  },
 });
 
 const CategoryIcon = styled(Box)({
@@ -241,6 +291,17 @@ const CategoryIcon = styled(Box)({
     fontSize: '40px',
     color: 'rgba(255, 255, 255, 0.8)',
   },
+  '@media (max-width:900px)': {
+    width: '60px',
+    height: '60px',
+    borderRadius: '14px',
+    '& .MuiSvgIcon-root': {
+      fontSize: '30px',
+    },
+    '.category-card:hover &': {
+      transform: 'none',
+    },
+  },
 });
 
 const CategoryName = styled(Typography)({
@@ -249,6 +310,10 @@ const CategoryName = styled(Typography)({
   color: 'rgba(255, 255, 255, 0.95)',
   letterSpacing: '0.3px',
   textAlign: 'center',
+  '@media (max-width:900px)': {
+    fontSize: '16px',
+    letterSpacing: '0.2px',
+  },
 });
 
 const CategoryCount = styled(Typography)({
@@ -256,6 +321,9 @@ const CategoryCount = styled(Typography)({
   color: 'rgba(255, 255, 255, 0.5)',
   fontWeight: 400,
   textAlign: 'center',
+  '@media (max-width:900px)': {
+    fontSize: '12px',
+  },
 });
 
 const RequestServiceButton = styled(Button)({
@@ -277,32 +345,41 @@ const RequestServiceButton = styled(Button)({
     transform: 'translateY(-2px)',
     boxShadow: '0 8px 20px rgba(255, 255, 255, 0.1)',
   },
+  '@media (max-width:900px)': {
+    padding: '12px',
+    fontSize: '12px',
+    borderRadius: '12px',
+    marginTop: '12px',
+    '&:hover': {
+      transform: 'none',
+    },
+  },
 });
 
-// Loading skeleton for categories
+// Loading skeleton - MOBILE OPTIMIZED
 const CategorySkeleton = () => (
   <Card sx={{ 
     background: 'rgba(255, 255, 255, 0.02)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '24px',
+    borderRadius: { xs: '16px', md: '24px' },
     overflow: 'hidden',
     backdropFilter: 'blur(20px)'
   }}>
-    <Box sx={{ p: 5, textAlign: 'center' }}>
+    <Box sx={{ p: { xs: 3, md: 5 }, textAlign: 'center' }}>
       <Skeleton 
         variant="rectangular" 
-        width={80} 
-        height={80} 
+        width={{ xs: 60, md: 80 }}
+        height={{ xs: 60, md: 80 }}
         sx={{ 
           backgroundColor: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '20px',
+          borderRadius: { xs: '14px', md: '20px' },
           margin: '0 auto 20px'
         }}
       />
       <Skeleton 
         variant="text" 
         width={150} 
-        height={32} 
+        height={{ xs: 24, md: 32 }}
         sx={{ 
           backgroundColor: 'rgba(255, 255, 255, 0.05)',
           margin: '0 auto 10px'
@@ -311,7 +388,7 @@ const CategorySkeleton = () => (
       <Skeleton 
         variant="text" 
         width={100} 
-        height={20} 
+        height={{ xs: 16, md: 20 }}
         sx={{ 
           backgroundColor: 'rgba(255, 255, 255, 0.05)',
           margin: '0 auto 20px'
@@ -319,17 +396,17 @@ const CategorySkeleton = () => (
       />
       <Skeleton 
         variant="rectangular" 
-        height={56} 
+        height={{ xs: 44, md: 56 }}
         sx={{ 
           backgroundColor: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '16px'
+          borderRadius: { xs: '12px', md: '16px' }
         }}
       />
     </Box>
   </Card>
 );
 
-// Icon mapping for different service categories
+// Icon mapping
 const getCategoryIcon = (categoryName: string) => {
   const name = categoryName.toLowerCase();
   if (name.includes('computer') || name.includes('laptop') || name.includes('pc')) {
@@ -363,6 +440,9 @@ interface ServiceCategory {
   issues: ServiceIssue[];
 }
 
+// ==================== PART 1 END - Confirm before Part 2 ====================
+// ==================== PART 2 START ====================
+
 export const ServiceCategoryPage: React.FC = () => {
   const navigate = useNavigate();
   const categories = useServiceStore((state) => state.categories);
@@ -371,7 +451,6 @@ export const ServiceCategoryPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  // Hero animation
   const heroAnimation = useSpring({
     from: { opacity: 0, transform: 'translateY(40px)' },
     to: { opacity: 1, transform: 'translateY(0px)' },
@@ -379,7 +458,6 @@ export const ServiceCategoryPage: React.FC = () => {
     delay: 200,
   });
 
-  // Filter categories based on search
   const filteredCategories = categories.filter(category => 
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -428,7 +506,10 @@ export const ServiceCategoryPage: React.FC = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '24px' }} />
+                  <SearchIcon sx={{ 
+                    color: 'rgba(255, 255, 255, 0.4)', 
+                    fontSize: { xs: '20px', md: '24px' }
+                  }} />
                 </InputAdornment>
               ),
             }}
@@ -449,12 +530,10 @@ export const ServiceCategoryPage: React.FC = () => {
 
           <CategoryGrid>
             {loading ? (
-              // Loading skeletons
               Array.from({ length: 6 }).map((_, index) => (
                 <CategorySkeleton key={index} />
               ))
             ) : error ? (
-              // Error state
               <Box sx={{ 
                 gridColumn: '1 / -1',
                 textAlign: 'center', 
@@ -463,7 +542,8 @@ export const ServiceCategoryPage: React.FC = () => {
                 <Typography variant="h5" sx={{ 
                   mb: 2, 
                   color: 'rgba(255, 100, 100, 0.8)',
-                  fontWeight: 300
+                  fontWeight: 300,
+                  fontSize: { xs: '20px', md: '24px' }
                 }}>
                   {error}
                 </Typography>
@@ -474,7 +554,8 @@ export const ServiceCategoryPage: React.FC = () => {
                     color: '#ffffff',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     borderRadius: '12px',
-                    padding: '12px 24px',
+                    padding: { xs: '10px 20px', md: '12px 24px' },
+                    fontSize: { xs: '13px', md: '14px' },
                     '&:hover': {
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
                     }
@@ -484,7 +565,6 @@ export const ServiceCategoryPage: React.FC = () => {
                 </Button>
               </Box>
             ) : filteredCategories.length === 0 ? (
-              // No categories found
               <Box sx={{ 
                 gridColumn: '1 / -1',
                 textAlign: 'center', 
@@ -493,13 +573,15 @@ export const ServiceCategoryPage: React.FC = () => {
                 <Typography variant="h5" sx={{ 
                   mb: 2, 
                   color: 'rgba(255, 255, 255, 0.8)',
-                  fontWeight: 300
+                  fontWeight: 300,
+                  fontSize: { xs: '20px', md: '24px' }
                 }}>
                   {categories.length === 0 ? 'No service categories available' : 'No services found'}
                 </Typography>
                 <Typography sx={{ 
                   color: 'rgba(255, 255, 255, 0.5)',
-                  fontSize: '14px'
+                  fontSize: { xs: '13px', md: '14px' },
+                  padding: { xs: '0 20px', md: '0' }
                 }}>
                   {categories.length === 0 
                     ? 'Please add service categories through the admin panel'
@@ -508,7 +590,6 @@ export const ServiceCategoryPage: React.FC = () => {
                 </Typography>
               </Box>
             ) : (
-              // Display categories
               filteredCategories.map((category, index) => (
                 <CategoryCard 
                   key={category.id}
@@ -541,3 +622,5 @@ export const ServiceCategoryPage: React.FC = () => {
     </PageWrapper>
   );
 };
+
+// ==================== PART 2 END ====================
