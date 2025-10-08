@@ -3,6 +3,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 
+
 class CustomUserManager(BaseUserManager):
     """
     Custom user model manager where email is the unique identifier
@@ -73,3 +74,5 @@ class CustomUser(AbstractUser):
         if self.role != 'AMC':
             return False
         return self.free_service_categories.filter(id=service_category.id).exists()
+
+

@@ -21,32 +21,40 @@ import PersonIcon from '@mui/icons-material/Person';
 import { useSnackbar } from 'notistack';
 import { useRating } from '../hooks/useRating';
 
-const StyledDialog = styled(Dialog)({
+const StyledDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialog-paper': {
     background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.98) 0%, rgba(10, 10, 10, 0.99) 100%)',
     backdropFilter: 'blur(20px)',
     border: '1px solid rgba(255, 255, 255, 0.12)',
     borderRadius: '20px',
     color: 'white',
-    minWidth: '500px',
-    maxWidth: '600px',
+    width: 'calc(100% - 32px)',
+    maxWidth: '500px',
+    margin: '16px',
   }
-});
+}));
 
-const StyledDialogTitle = styled(DialogTitle)({
+const StyledDialogTitle = styled(DialogTitle)(({ theme }) => ({
   color: 'rgba(255, 255, 255, 0.95)',
   fontSize: '20px',
   fontWeight: 600,
   textAlign: 'center',
   borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-  paddingBottom: '16px',
-});
+  padding: '16px 24px',
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '18px',
+    padding: '16px',
+  },
+}));
 
-const StyledDialogContent = styled(DialogContent)({
+const StyledDialogContent = styled(DialogContent)(({ theme }) => ({
   padding: '24px',
-});
+  [theme.breakpoints.down('sm')]: {
+    padding: '16px',
+  },
+}));
 
-const StyledRating = styled(Rating)({
+const StyledRating = styled(Rating)(({ theme }) => ({
   fontSize: '3rem',
   color: '#fbbf24',
   '& .MuiRating-iconEmpty': {
@@ -58,9 +66,12 @@ const StyledRating = styled(Rating)({
   '& .MuiRating-iconHover': {
     color: '#f59e0b',
   },
-});
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '2.5rem',
+  },
+}));
 
-const TechnicianCard = styled(Box)({
+const TechnicianCard = styled(Box)(({ theme }) => ({
   background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
   border: '1px solid rgba(255, 255, 255, 0.08)',
   borderRadius: '12px',
@@ -69,7 +80,12 @@ const TechnicianCard = styled(Box)({
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
-});
+  [theme.breakpoints.down('sm')]: {
+    flexDirection: 'column',
+    textAlign: 'center',
+    gap: '16px',
+  },
+}));
 
 const SubmitButton = styled(Button)({
   backgroundColor: 'rgba(34, 197, 94, 0.15)',
@@ -187,43 +203,15 @@ export const RatingModal: React.FC<RatingModalProps> = ({
       ...(serviceRequest && { service_request_id: serviceRequest.id }),
     };
 
-    console.log('Submitting rating to /services/api/ratings/create/ with payload:', payload);
+    const success = await submitRating(payload);
 
-    try {
-      // Use the correct URL path
-      const response = await fetch('http://127.0.0.1:8000/services/api/ratings/create/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
-
-      console.log('Response status:', response.status);
-      const responseData = await response.json();
-      console.log('Response data:', responseData);
-
-      if (response.ok) {
-        enqueueSnackbar('Thank you for your rating!', { variant: 'success' });
-        
-        // Reset form
-        setRating(null);
-        setComment('');
-        
-        // Call callback and close modal
-        if (onRatingSubmitted) {
-          onRatingSubmitted();
-        }
-        onClose();
-      } else {
-        throw new Error(responseData.error || 'Failed to submit rating');
+    if (success) {
+      setRating(null);
+      setComment('');
+      if (onRatingSubmitted) {
+        onRatingSubmitted();
       }
-    } catch (error: any) {
-      console.error('Error submitting rating:', error);
-      const errorMessage = error.message || 'Failed to submit rating. Please try again.';
-      enqueueSnackbar(errorMessage, { variant: 'error' });
+      onClose();
     }
   };
 
@@ -368,7 +356,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
         )}
       </StyledDialogContent>
 
-      <DialogActions sx={{ p: 3, gap: 2 }}>
+      <DialogActions sx={{ p: { xs: 2, sm: 3 }, gap: 2 }}>
         <CancelButton onClick={handleClose} disabled={submitting}>
           Cancel
         </CancelButton>

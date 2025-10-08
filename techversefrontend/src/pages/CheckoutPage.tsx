@@ -30,27 +30,33 @@ import { styled } from '@mui/material/styles';
 import apiClient from '../api';
 
 // Styled components matching your design system
-const PageWrapper = styled(Box)({
+const PageWrapper = styled(Box)(({ theme }) => ({
   backgroundColor: '#000000',
   color: 'white',
   fontFamily: "'Inter', sans-serif",
   minHeight: '100vh',
   width: '100%',
   paddingTop: '80px',
-});
+  [theme.breakpoints.down('sm')]: {
+    paddingTop: '60px',
+  },
+}));
 
-const CheckoutHero = styled(Box)({
+const CheckoutHero = styled(Box)(({ theme }) => ({
   background: `
     radial-gradient(ellipse 1200px 800px at 50% 20%, rgba(64, 64, 64, 0.15) 0%, transparent 50%),
     linear-gradient(135deg, #000000 0%, #111111 50%, #000000 100%)
   `,
-  padding: '60px 60px 40px',
+  padding: '60px',
   textAlign: 'center',
   position: 'relative',
   borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-});
+  [theme.breakpoints.down('sm')]: {
+    padding: '40px 20px',
+  },
+}));
 
-const HeroTitle = styled(Typography)({
+const HeroTitle = styled(Typography)(({ theme }) => ({
   fontSize: '36px',
   fontWeight: 700,
   marginBottom: '16px',
@@ -58,13 +64,19 @@ const HeroTitle = styled(Typography)({
   background: 'linear-gradient(135deg, #ffffff, #e0e0e0)',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
-});
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '28px',
+  },
+}));
 
-const CheckoutContent = styled(Box)({
+const CheckoutContent = styled(Box)(({ theme }) => ({
   padding: '60px',
   background: `linear-gradient(135deg, #000000 0%, #0a0a0a 25%, #111111 50%, #0a0a0a 75%, #000000 100%)`,
   position: 'relative',
-});
+  [theme.breakpoints.down('sm')]: {
+    padding: '30px 20px',
+  },
+}));
 
 const ContentContainer = styled(Box)({
   maxWidth: '1200px',
@@ -81,14 +93,17 @@ const SectionCard = styled(Card)({
   backdropFilter: 'blur(20px)',
 });
 
-const SectionTitle = styled(Typography)({
+const SectionTitle = styled(Typography)(({ theme }) => ({
   fontSize: '24px',
   fontWeight: 600,
   marginBottom: '24px',
   color: 'rgba(255, 255, 255, 0.95)',
-});
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '20px',
+  },
+}));
 
-const PremiumButton = styled(Button)({
+const PremiumButton = styled(Button)(({ theme }) => ({
   backgroundColor: 'rgba(96, 165, 250, 0.15)',
   border: '1px solid rgba(96, 165, 250, 0.3)',
   color: '#60a5fa',
@@ -108,7 +123,10 @@ const PremiumButton = styled(Button)({
     color: 'rgba(96, 165, 250, 0.5)',
     cursor: 'not-allowed',
   },
-});
+  [theme.breakpoints.down('sm')]: {
+    width: '100%',
+  },
+}));
 
 const PremiumTextField = styled(TextField)({
   '& .MuiOutlinedInput-root': {
@@ -446,7 +464,7 @@ const CheckoutPage: React.FC = () => {
 
       {/* Profile Incomplete Warning */}
       {profileIncomplete && (
-        <Box sx={{ padding: '20px 60px' }}>
+        <Box sx={{ padding: { xs: '20px', sm: '20px 60px' } }}>
           <Alert 
             severity="warning" 
             sx={{ 
@@ -514,7 +532,7 @@ const CheckoutPage: React.FC = () => {
               
               {/* Order Summary */}
               <SectionCard>
-                <CardContent sx={{ p: 4 }}>
+                <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                   <SectionTitle>Order Summary</SectionTitle>
                   
                   {items.map((item) => (
@@ -543,7 +561,7 @@ const CheckoutPage: React.FC = () => {
                       </Box>
                       
                       <Box sx={{ flex: 1 }}>
-                        <Typography sx={{ color: 'white', fontWeight: 500, mb: 0.5 }}>
+                        <Typography sx={{ color: 'white', fontWeight: 500, mb: 0.5, fontSize: { xs: '14px', sm: '16px' } }}>
                           {item.product.name}
                         </Typography>
                         <Typography sx={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '14px' }}>
@@ -551,7 +569,7 @@ const CheckoutPage: React.FC = () => {
                         </Typography>
                       </Box>
                       
-                      <Typography sx={{ color: '#60a5fa', fontWeight: 600, fontSize: '18px' }}>
+                      <Typography sx={{ color: '#60a5fa', fontWeight: 600, fontSize: { xs: '16px', sm: '18px' } }}>
                         ₹{(parseFloat(item.product.price) * item.quantity).toFixed(2)}
                       </Typography>
                     </OrderItemCard>
@@ -561,7 +579,7 @@ const CheckoutPage: React.FC = () => {
 
               {/* Delivery Address */}
               <SectionCard>
-                <CardContent sx={{ p: 4 }}>
+                <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
                     <SectionTitle sx={{ mb: 0 }}>
                       <HomeIcon sx={{ mr: 1, verticalAlign: 'middle' }} />

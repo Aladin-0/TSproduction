@@ -28,30 +28,36 @@ import { RatingModal } from '../components/RatingModal';
 import apiClient from '../api';
 
 // Page wrapper matching your dark design system
-const PageWrapper = styled(Box)({
+const PageWrapper = styled(Box)(({ theme }) => ({
   backgroundColor: '#000000',
   color: 'white',
   fontFamily: "'Inter', sans-serif",
   minHeight: '100vh',
   width: '100%',
-  paddingTop: '100px',
-});
+  paddingTop: '80px', // Adjusted for mobile
+  [theme.breakpoints.down('sm')]: {
+    paddingTop: '60px',
+  },
+}));
 
 // Hero section
-const OrdersHero = styled(Box)({
+const OrdersHero = styled(Box)(({ theme }) => ({
   background: `
     radial-gradient(ellipse 1200px 800px at 50% 20%, rgba(64, 64, 64, 0.15) 0%, transparent 50%),
     radial-gradient(ellipse 800px 600px at 20% 80%, rgba(32, 32, 32, 0.2) 0%, transparent 50%),
     linear-gradient(135deg, #000000 0%, #111111 50%, #000000 100%)
   `,
-  padding: '60px 60px 40px',
+  padding: '60px',
   textAlign: 'center',
   position: 'relative',
   overflow: 'hidden',
   borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-});
+  [theme.breakpoints.down('sm')]: {
+    padding: '40px 20px',
+  },
+}));
 
-const HeroTitle = styled(Typography)({
+const HeroTitle = styled(Typography)(({ theme }) => ({
   fontSize: '42px',
   fontWeight: 700,
   marginBottom: '16px',
@@ -59,20 +65,29 @@ const HeroTitle = styled(Typography)({
   background: 'linear-gradient(135deg, #ffffff, #e0e0e0)',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
-});
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '32px',
+  },
+}));
 
-const HeroSubtitle = styled(Typography)({
+const HeroSubtitle = styled(Typography)(({ theme }) => ({
   fontSize: '18px',
   color: 'rgba(255, 255, 255, 0.6)',
   marginBottom: '20px',
-});
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '16px',
+  },
+}));
 
 // Content section
-const OrdersContent = styled(Box)({
+const OrdersContent = styled(Box)(({ theme }) => ({
   padding: '60px',
   background: `linear-gradient(135deg, #000000 0%, #0a0a0a 25%, #111111 50%, #0a0a0a 75%, #000000 100%)`,
   position: 'relative',
-});
+  [theme.breakpoints.down('sm')]: {
+    padding: '30px 20px',
+  },
+}));
 
 const ContentContainer = styled(Box)({
   maxWidth: '1200px',
@@ -98,11 +113,16 @@ const OrderCard = styled(Card)({
   },
 });
 
-const OrderHeader = styled(Box)({
+const OrderHeader = styled(Box)(({ theme }) => ({
   background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%)',
   padding: '24px',
   borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-});
+  [theme.breakpoints.down('sm')]: {
+    padding: '16px',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+}));
 
 const ProductCard = styled(Box)({
   background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)',
@@ -140,7 +160,7 @@ const ProductPlaceholder = styled(Box)({
   textAlign: 'center',
 });
 
-const StatusChip = styled(Chip)<{ status: string }>(({ status }) => {
+const StatusChip = styled(Chip)<{ status: string }>(({ status, theme }) => {
   const getStatusColor = () => {
     switch (status?.toLowerCase()) {
       case 'pending':
@@ -165,6 +185,10 @@ const StatusChip = styled(Chip)<{ status: string }>(({ status }) => {
     border: `1px solid ${colors.border}`,
     fontWeight: 600,
     fontSize: '12px',
+    [theme.breakpoints.down('sm')]: {
+      fontSize: '10px',
+      height: '24px',
+    },
   };
 });
 
@@ -375,9 +399,9 @@ export const OrdersPage: React.FC = () => {
                     <OrderCard>
                       {/* Order Header */}
                       <OrderHeader>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: { xs: 2, sm: 0 } }}>
                           <Box>
-                            <Typography variant="h5" sx={{ color: 'white', fontWeight: 700, mb: 1 }}>
+                            <Typography variant="h5" sx={{ color: 'white', fontWeight: 700, mb: 1, fontSize: { xs: '20px', sm: '24px' } }}>
                               Order #{order.id}
                             </Typography>
                             <InfoRow>
@@ -391,13 +415,14 @@ export const OrdersPage: React.FC = () => {
                               </Typography>
                             </InfoRow>
                           </Box>
-                          <Box sx={{ textAlign: 'right' }}>
+                          <Box sx={{ textAlign: 'right', mt: { xs: 2, sm: 0 } }}>
                             <StatusChip label={order.status} status={order.status} />
                             <Typography variant="h4" sx={{ 
                               fontWeight: 700, 
                               color: '#60a5fa', 
                               mt: 1,
-                              textShadow: '0 2px 10px rgba(96, 165, 250, 0.3)'
+                              textShadow: '0 2px 10px rgba(96, 165, 250, 0.3)',
+                              fontSize: { xs: '24px', sm: '32px' },
                             }}>
                               ₹{order.total_amount}
                             </Typography>
@@ -405,9 +430,9 @@ export const OrdersPage: React.FC = () => {
                         </Box>
                       </OrderHeader>
 
-                      <CardContent sx={{ p: 3 }}>
+                      <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                         {/* Products Section */}
-                        <Typography variant="h6" sx={{ color: 'white', fontWeight: 600, mb: 2 }}>
+                        <Typography variant="h6" sx={{ color: 'white', fontWeight: 600, mb: 2, fontSize: { xs: '18px', sm: '20px' } }}>
                           Items Ordered ({order.items.length} {order.items.length === 1 ? 'item' : 'items'})
                         </Typography>
                         
@@ -436,11 +461,12 @@ export const OrdersPage: React.FC = () => {
                                   color: 'white', 
                                   fontWeight: 600, 
                                   fontSize: '16px', 
-                                  mb: 1 
+                                  mb: 1,
+                                  lineHeight: 1.3,
                                 }}>
                                   {item.product_name}
                                 </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, flexWrap: 'wrap' }}>
                                   <Chip 
                                     label={`Qty: ${item.quantity}`}
                                     size="small"
@@ -557,12 +583,14 @@ export const OrdersPage: React.FC = () => {
                           gap: 2, 
                           pt: 3, 
                           borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                          mt: 3
+                          mt: 3,
+                          flexDirection: { xs: 'column', sm: 'row' },
                         }}>
                           {order.status === 'DELIVERED' && order.can_rate && order.technician_name && (
                             <PremiumButton
                               onClick={() => handleRateClick(order)}
                               startIcon={<StarIcon />}
+                              fullWidth={{ xs: true, sm: false }}
                             >
                               Rate Technician
                             </PremiumButton>
@@ -576,7 +604,8 @@ export const OrdersPage: React.FC = () => {
                                 backgroundColor: 'rgba(34, 197, 94, 0.15)',
                                 color: '#22c55e',
                                 border: '1px solid rgba(34, 197, 94, 0.3)',
-                                fontWeight: 600
+                                fontWeight: 600,
+                                margin: { xs: '0 auto', sm: '0 0 0 auto' },
                               }}
                             />
                           )}
@@ -584,6 +613,7 @@ export const OrdersPage: React.FC = () => {
                           {order.status === 'PENDING' && (
                             <CancelButton 
                               onClick={() => handleCancelOrder(order.id)}
+                              fullWidth={{ xs: true, sm: false }}
                             >
                               Cancel Order
                             </CancelButton>

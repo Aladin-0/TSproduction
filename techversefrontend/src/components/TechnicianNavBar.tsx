@@ -1,12 +1,12 @@
-// src/components/TechnicianNavBar.tsx - NavBar specifically for technicians
+// src/components/TechnicianNavBar.tsx - FULLY MOBILE-RESPONSIVE
 import { useState, useEffect } from 'react';
-import { 
-  AppBar, 
-  Toolbar, 
-  Typography, 
-  Button, 
-  Box, 
-  Container, 
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Box,
+  Container,
   Avatar,
   Menu,
   MenuItem,
@@ -19,7 +19,7 @@ import { styled } from '@mui/material/styles';
 import PersonIcon from '@mui/icons-material/Person';
 import LogoutIcon from '@mui/icons-material/Logout';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { useUserStore } from '../stores/userStore'; 
+import { useUserStore } from '../stores/userStore';
 import logoImage from './Tlogo.png';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
@@ -28,41 +28,44 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
   borderBottom: 'none',
   boxShadow: 'none',
   position: 'fixed',
-  top: 0, 
+  top: 0,
   zIndex: 1000,
   transition: 'all 0.3s ease-in-out',
   '&.scrolled': {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     backdropFilter: 'blur(12px)',
-    borderBottom: '1px solid var(--border-color,rgb(154, 124, 124))',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
   }
 }));
 
 const NavContainer = styled(Container)(({ theme }) => ({
-  width: '90%',
-  maxWidth: '1200px',
-  margin: '0 auto',
+  width: '100%',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
 }));
 
-const LogoContainer = styled(Box)(({ theme }) => ({
+const LogoContainer = styled(Box)({
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
-}));
+});
 
-const LogoImg = styled('img')(({ theme }) => ({
+const LogoImg = styled('img')({
   width: '40px',
   height: '40px',
   objectFit: 'contain',
-}));
+});
 
+// MODIFIED: Added responsive font size
 const Logo = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
-  fontSize: '1.5rem',
   letterSpacing: '-0.025em',
   color: 'var(--text-color, #FAFAFA)',
+  fontSize: '1.25rem',
+  [theme.breakpoints.up('sm')]: {
+    fontSize: '1.5rem',
+  },
 }));
 
 const TechnicianBadge = styled(Chip)({
@@ -75,10 +78,10 @@ const TechnicianBadge = styled(Chip)({
   marginLeft: '16px',
 });
 
+// MODIFIED: Added responsive padding, gap, and minWidth for mobile
 const ProfileButton = styled(Button)(({ theme }) => ({
   backgroundColor: 'transparent',
   color: 'var(--text-color, #FAFAFA)',
-  padding: '8px 16px',
   fontWeight: 600,
   fontSize: '1rem',
   textTransform: 'none',
@@ -88,7 +91,13 @@ const ProfileButton = styled(Button)(({ theme }) => ({
   backdropFilter: 'blur(10px)',
   display: 'flex',
   alignItems: 'center',
-  gap: '12px',
+  padding: theme.spacing(1),
+  minWidth: 'auto',
+  gap: 0,
+  [theme.breakpoints.up('md')]: {
+    padding: theme.spacing(1, 2),
+    gap: '12px',
+  },
   '&:hover': {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -96,6 +105,7 @@ const ProfileButton = styled(Button)(({ theme }) => ({
   },
 }));
 
+// MODIFIED: Added responsive margin
 const RefreshButton = styled(IconButton)(({ theme }) => ({
   color: 'var(--text-color, #FAFAFA)',
   backgroundColor: 'transparent',
@@ -103,7 +113,10 @@ const RefreshButton = styled(IconButton)(({ theme }) => ({
   borderRadius: '12px',
   padding: '12px',
   transition: 'all 0.3s ease',
-  marginRight: '16px',
+  marginRight: theme.spacing(1),
+  [theme.breakpoints.up('md')]: {
+    marginRight: theme.spacing(2),
+  },
   '&:hover': {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -111,13 +124,13 @@ const RefreshButton = styled(IconButton)(({ theme }) => ({
   },
 }));
 
-const UserAvatar = styled(Avatar)(({ theme }) => ({
+const UserAvatar = styled(Avatar)({
   width: 32,
   height: 32,
   background: 'linear-gradient(135deg, rgba(96, 165, 250, 0.8), rgba(59, 130, 246, 0.9))',
   fontSize: '14px',
   fontWeight: 600,
-}));
+});
 
 const ProfileMenu = styled(Menu)(({ theme }) => ({
   '& .MuiPaper-root': {
@@ -149,24 +162,24 @@ const ProfileMenu = styled(Menu)(({ theme }) => ({
   },
 }));
 
-const UserInfo = styled(Box)(({ theme }) => ({
+const UserInfo = styled(Box)({
   padding: '16px 20px 12px',
   borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
   margin: '0 8px 8px',
-}));
+});
 
-const UserName = styled(Typography)(({ theme }) => ({
+const UserName = styled(Typography)({
   color: 'rgba(255, 255, 255, 0.95)',
   fontSize: '16px',
   fontWeight: 600,
   marginBottom: '4px',
-}));
+});
 
-const UserEmail = styled(Typography)(({ theme }) => ({
+const UserEmail = styled(Typography)({
   color: 'rgba(255, 255, 255, 0.6)',
   fontSize: '12px',
   fontWeight: 400,
-}));
+});
 
 interface TechnicianNavBarProps {
   onRefresh?: () => void;
@@ -175,10 +188,10 @@ interface TechnicianNavBarProps {
 export const TechnicianNavBar: React.FC<TechnicianNavBarProps> = ({ onRefresh }) => {
   const [scrolled, setScrolled] = useState(false);
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null);
-  
+
   const user = useUserStore((state) => state.user);
   const logout = useUserStore((state) => state.logout);
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -216,41 +229,37 @@ export const TechnicianNavBar: React.FC<TechnicianNavBarProps> = ({ onRefresh })
   return (
     <>
       <StyledAppBar className={scrolled ? 'scrolled' : ''}>
-        <Toolbar sx={{ py: 1.5 }}>
+        <Toolbar sx={{ py: 1, px: { xs: 2, sm: 3 } }}>
           <NavContainer>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <LogoContainer>
                 <LogoImg src={logoImage} alt="TechVerse Logo" />
                 <Logo>TechVerse</Logo>
               </LogoContainer>
-              <TechnicianBadge label="TECHNICIAN DASHBOARD" />
+              {/* MODIFIED: Badge is now hidden on mobile */}
+              <TechnicianBadge
+                label="TECHNICIAN DASHBOARD"
+                sx={{ display: { xs: 'none', md: 'inline-flex' } }}
+              />
             </Box>
-            
+
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               {onRefresh && (
                 <RefreshButton onClick={onRefresh} title="Refresh Dashboard">
                   <RefreshIcon />
                 </RefreshButton>
               )}
-              
+
               <ProfileButton onClick={handleProfileMenuOpen}>
                 <UserAvatar>
                   {user?.name ? getUserInitials(user.name) : <PersonIcon fontSize="small" />}
                 </UserAvatar>
-                <Box sx={{ textAlign: 'left' }}>
-                  <Typography sx={{ 
-                    fontSize: '14px', 
-                    fontWeight: 600, 
-                    lineHeight: 1,
-                    color: 'inherit'
-                  }}>
+                {/* MODIFIED: User name/role are now hidden on mobile */}
+                <Box sx={{ display: { xs: 'none', md: 'block' }, textAlign: 'left' }}>
+                  <Typography sx={{ fontSize: '14px', fontWeight: 600, lineHeight: 1.2, color: 'inherit' }}>
                     {user?.name || 'Technician'}
                   </Typography>
-                  <Typography sx={{ 
-                    fontSize: '11px', 
-                    color: 'rgba(255, 255, 255, 0.7)', 
-                    lineHeight: 1 
-                  }}>
+                  <Typography sx={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.7)', lineHeight: 1 }}>
                     {user?.role}
                   </Typography>
                 </Box>
@@ -260,35 +269,28 @@ export const TechnicianNavBar: React.FC<TechnicianNavBarProps> = ({ onRefresh })
         </Toolbar>
       </StyledAppBar>
 
-      {/* Profile Menu */}
       <ProfileMenu
         anchorEl={profileAnchor}
         open={Boolean(profileAnchor)}
         onClose={handleProfileMenuClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <UserInfo>
           <UserName>{user?.name || 'Technician'}</UserName>
           <UserEmail>{user?.email}</UserEmail>
-          <TechnicianBadge label="TECHNICIAN" size="small" />
         </UserInfo>
-        
-        <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', margin: '8px' }} />
-        
+
+        <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', my: 1 }} />
+
         <MenuItem onClick={handleLogout} className="logout-item">
           <LogoutIcon sx={{ mr: 2, fontSize: '18px' }} />
           Logout
         </MenuItem>
       </ProfileMenu>
       
-      <Toolbar sx={{ mb: 2 }} />
+      {/* Spacer to prevent content from hiding behind the fixed AppBar */}
+      <Toolbar sx={{ mb: 1 }} />
     </>
   );
 };

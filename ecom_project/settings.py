@@ -227,7 +227,7 @@ REST_AUTH = {
 
 
 # Session settings - MOBILE CRITICAL
-SESSION_COOKIE_SAMESITE = 'None'  # MUST be None for cross-origin OAuth
+SESSION_COOKIE_SAMESITE = 'Lax'  # MUST be None for cross-origin OAuth
 SESSION_COOKIE_SECURE = False     # Set True in production with HTTPS
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_DOMAIN = None
@@ -240,7 +240,7 @@ SESSION_COOKIE_NAME = 'techverse_session'
 SESSION_COOKIE_PATH = '/'
 
 # CSRF settings
-CSRF_COOKIE_SAMESITE = 'None'     # MUST be None 
+CSRF_COOKIE_SAMESITE = 'Lax'     # MUST be None 
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
 CSRF_USE_SESSIONS = False

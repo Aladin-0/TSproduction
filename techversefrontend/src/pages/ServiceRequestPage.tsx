@@ -1,10 +1,10 @@
-// src/pages/ServiceRequestPage.tsx - COMPLETE FIXED VERSION - PART 1/2
+// src/pages/ServiceRequestPage.tsx - COMPLETE MOBILE-RESPONSIVE VERSION
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
-import { 
-  Box, 
-  Typography, 
+import {
+  Box,
+  Typography,
   Button,
   TextField,
   Card,
@@ -26,7 +26,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
 import HandymanIcon from '@mui/icons-material/Handyman';
-import { useSpring, animated } from '@react-spring/web';
 import { useServiceStore } from '../stores/serviceStore';
 import { useProductStore } from '../stores/productStore';
 import { useUserStore } from '../stores/userStore';
@@ -40,16 +39,27 @@ const PageWrapper = styled(Box)({
   fontFamily: "'Segoe UI', 'Roboto', sans-serif",
   minHeight: '100vh',
   width: '100%',
-  paddingTop: '80px',
+  // MODIFIED: Adjusted padding to account for the new fixed header
+  paddingTop: '70px',
 });
 
+// MODIFIED: Header is now fixed and has responsive padding
 const Header = styled(Box)({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '20px 60px',
-  background: 'rgba(10, 10, 10, 0.8)',
+  padding: '15px 60px',
+  background: 'rgba(10, 10, 10, 0.9)',
+  backdropFilter: 'blur(10px)',
   borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  zIndex: 1000,
+  '@media (max-width: 768px)': {
+    padding: '15px 20px',
+  },
 });
 
 const BackButton = styled(Button)({
@@ -78,45 +88,16 @@ const BreadcrumbText = styled(Typography)({
   fontWeight: 400,
 });
 
-const ServiceHero = styled(Box)({
-  background: `
-    radial-gradient(ellipse 1200px 800px at 50% 20%, rgba(64, 64, 64, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse 800px 600px at 80% 60%, rgba(32, 32, 32, 0.2) 0%, transparent 50%),
-    linear-gradient(135deg, #000000 0%, #111111 50%, #000000 100%)
-  `,
-  padding: '60px 60px 40px',
-  textAlign: 'center',
-  position: 'relative',
-  overflow: 'hidden',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-});
+// REMOVED: ServiceHero, HeroTitle, HeroSubtitle styled components are no longer needed
 
-const HeroTitle = styled(Typography)({
-  fontSize: '36px',
-  fontWeight: 700,
-  letterSpacing: '-0.5px',
-  marginBottom: '16px',
-  color: '#ffffff',
-  background: 'linear-gradient(135deg, #ffffff, #e0e0e0)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  fontFamily: "'Helvetica Neue', sans-serif",
-});
-
-const HeroSubtitle = styled(Typography)({
-  fontSize: '18px',
-  color: 'rgba(255, 255, 255, 0.65)',
-  fontWeight: 300,
-  marginBottom: '20px',
-  letterSpacing: '0.1px',
-  maxWidth: '600px',
-  margin: '0 auto 20px',
-});
-
+// MODIFIED: ServiceContent now has responsive padding
 const ServiceContent = styled(Box)({
-  padding: '60px',
+  padding: '40px 60px',
   background: `linear-gradient(135deg, #000000 0%, #0a0a0a 25%, #111111 50%, #0a0a0a 75%, #000000 100%)`,
   position: 'relative',
+  '@media (max-width: 768px)': {
+    padding: '30px 20px',
+  },
 });
 
 const ContentContainer = styled(Box)({
@@ -137,9 +118,10 @@ const SectionTitle = styled(Typography)({
   letterSpacing: '0.5px',
 });
 
+// MODIFIED: Adjusted grid for better fit on small screens
 const ServiceGrid = styled(Box)({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
   gap: '32px',
   marginBottom: '60px',
   '@media (max-width: 768px)': {
@@ -148,14 +130,12 @@ const ServiceGrid = styled(Box)({
   },
 });
 
-const AnimatedServiceCard = animated(Card);
-
-const ServiceCard = styled(AnimatedServiceCard)<{ selected?: boolean }>(({ selected }) => ({
-  background: selected 
+const ServiceCard = styled(Card)<{ selected?: boolean }>(({ selected }) => ({
+  background: selected
     ? `linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(96, 165, 250, 0.08) 50%, rgba(96, 165, 250, 0.15) 100%)`
     : `linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0.05) 100%)`,
-  border: selected 
-    ? '1px solid rgba(96, 165, 250, 0.3)' 
+  border: selected
+    ? '1px solid rgba(96, 165, 250, 0.3)'
     : '1px solid rgba(255, 255, 255, 0.08)',
   borderRadius: '20px',
   overflow: 'hidden',
@@ -361,7 +341,6 @@ const PremiumDialog = styled(Dialog)({
   },
 });
 
-// UPDATED INTERFACES - FIXED
 interface ServiceIssue {
   id: number;
   description: string;
@@ -372,7 +351,7 @@ interface ServiceCategory {
   id: number;
   name: string;
   issues: ServiceIssue[];
-  is_free_for_user?: boolean; // CRITICAL: Added this field
+  is_free_for_user?: boolean;
 }
 
 interface Address {
@@ -383,17 +362,16 @@ interface Address {
   pincode: string;
   is_default: boolean;
 }
-// PART 2/2 - Component Logic and JSX
 
 export const ServiceRequestPage: React.FC = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
-  
+
   const { categories, fetchCategories } = useServiceStore();
   const { addresses, fetchAddresses } = useProductStore();
   const { user } = useUserStore();
-  
+
   const [loading, setLoading] = useState(true);
   const [selectedIssue, setSelectedIssue] = useState<ServiceIssue | null>(null);
   const [customDescription, setCustomDescription] = useState('');
@@ -401,7 +379,7 @@ export const ServiceRequestPage: React.FC = () => {
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isCustomSelected, setIsCustomSelected] = useState(false);
-  
+
   const [addressForm, setAddressForm] = useState({
     street_address: '',
     city: '',
@@ -410,12 +388,7 @@ export const ServiceRequestPage: React.FC = () => {
     is_default: false
   });
 
-  const heroAnimation = useSpring({
-    from: { opacity: 0, transform: 'translateY(40px)' },
-    to: { opacity: 1, transform: 'translateY(0px)' },
-    config: { tension: 280, friction: 60 },
-    delay: 200,
-  });
+  // REMOVED: heroAnimation hook is no longer needed
 
   const category = categories.find(cat => cat.id === parseInt(categoryId || ''));
 
@@ -451,8 +424,8 @@ export const ServiceRequestPage: React.FC = () => {
   };
 
   const handleAddAddress = async () => {
-    if (!addressForm.street_address.trim() || !addressForm.city.trim() || 
-        !addressForm.state.trim() || !addressForm.pincode.trim()) {
+    if (!addressForm.street_address.trim() || !addressForm.city.trim() ||
+      !addressForm.state.trim() || !addressForm.pincode.trim()) {
       enqueueSnackbar('Please fill all address fields', { variant: 'error' });
       return;
     }
@@ -492,12 +465,12 @@ export const ServiceRequestPage: React.FC = () => {
 
       const response = await apiClient.post('/services/api/requests/create/', requestData);
       console.log('Service request created:', response.data);
-      
+
       enqueueSnackbar('Service request submitted successfully!', { variant: 'success' });
-      navigate('/services', { 
+      navigate('/services', {
         state: { message: 'Service request submitted successfully! We will contact you within 24 hours.' }
       });
-      
+
     } catch (error) {
       console.error('Failed to submit service request:', error);
       enqueueSnackbar('Failed to submit service request', { variant: 'error' });
@@ -520,13 +493,15 @@ export const ServiceRequestPage: React.FC = () => {
           </BackButton>
           <BreadcrumbText>Services / Category Not Found</BreadcrumbText>
         </Header>
-        <ServiceHero>
-          <HeroTitle>Service Category Not Found</HeroTitle>
-          <HeroSubtitle>The requested service category could not be found.</HeroSubtitle>
-          <PremiumButton onClick={() => navigate('/services')}>
-            Back to Services
-          </PremiumButton>
-        </ServiceHero>
+        <ServiceContent>
+            <Typography variant="h4" sx={{textAlign: 'center', color: 'white'}}>Service Category Not Found</Typography>
+            <Typography sx={{textAlign: 'center', color: 'rgba(255,255,255,0.6)', mt: 2, mb: 3}}>The requested service category could not be found.</Typography>
+            <Box sx={{textAlign: 'center'}}>
+                <PremiumButton onClick={() => navigate('/services')}>
+                    Back to Services
+                </PremiumButton>
+            </Box>
+        </ServiceContent>
       </PageWrapper>
     );
   }
@@ -538,34 +513,41 @@ export const ServiceRequestPage: React.FC = () => {
           <ArrowBackIcon sx={{ fontSize: '16px' }} />
           Back to Services
         </BackButton>
-        <BreadcrumbText>Services / {category.name} / Request Service</BreadcrumbText>
+        <BreadcrumbText>Services / {category.name}</BreadcrumbText>
       </Header>
 
-      <ServiceHero>
-        <animated.div style={heroAnimation}>
-          <HeroTitle>Request Service: {category.name}</HeroTitle>
-          <HeroSubtitle>
-            Select the issue you're experiencing or describe your custom problem. 
-            Our expert technicians will provide professional repair services.
-          </HeroSubtitle>
-        </animated.div>
-      </ServiceHero>
+      {/* REMOVED: The ServiceHero JSX block has been deleted */}
 
       <ServiceContent>
         <ContentContainer>
-          {/* FIXED: Show AMC benefit alert */}
+          <SectionTitle sx={{ textAlign: 'center' }}>
+            Request Service: {category.name}
+          </SectionTitle>
+          <Typography sx={{ 
+            fontSize: '16px', 
+            color: 'rgba(255, 255, 255, 0.65)', 
+            fontWeight: 300, 
+            mb: 5,
+            letterSpacing: '0.1px',
+            maxWidth: '600px',
+            textAlign: 'center',
+            margin: '0 auto 40px'
+          }}>
+            Select an issue you're experiencing or describe it yourself. Our expert technicians are here to help.
+          </Typography>
+
           {category.is_free_for_user && (
-            <Alert 
+            <Alert
               icon={<CheckCircleIcon />}
-              severity="success" 
-              sx={{ 
+              severity="success"
+              sx={{
                 mb: 3,
                 backgroundColor: 'rgba(34, 197, 94, 0.15)',
                 color: '#22c55e',
                 border: '1px solid rgba(34, 197, 94, 0.3)',
                 borderRadius: '16px',
                 '& .MuiAlert-icon': { color: '#22c55e' },
-                '& .MuiAlert-message': { 
+                '& .MuiAlert-message': {
                   fontSize: '14px',
                   fontWeight: 500
                 }
@@ -575,7 +557,7 @@ export const ServiceRequestPage: React.FC = () => {
                 🎉 AMC Benefit Active!
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                All services in this category are FREE for you as an AMC customer. 
+                All services in this category are FREE for you as an AMC customer.
                 No service charges will be applied!
               </Typography>
             </Alert>
@@ -590,12 +572,11 @@ export const ServiceRequestPage: React.FC = () => {
               ))
             ) : (
               <>
-                {/* FIXED: Predefined Issues with FREE indicator */}
                 {category.issues.map((issue) => {
                   const isFreeService = category.is_free_for_user === true;
-                  
+
                   return (
-                    <ServiceCard 
+                    <ServiceCard
                       key={issue.id}
                       selected={selectedIssue?.id === issue.id}
                       onClick={() => handleIssueSelect(issue)}
@@ -608,8 +589,8 @@ export const ServiceRequestPage: React.FC = () => {
                           <ServiceName>
                             {issue.description}
                             {isFreeService && (
-                              <Chip 
-                                label="FREE" 
+                              <Chip
+                                label="FREE"
                                 size="small"
                                 sx={{
                                   ml: 1,
@@ -623,7 +604,7 @@ export const ServiceRequestPage: React.FC = () => {
                               />
                             )}
                           </ServiceName>
-                          <ServicePrice 
+                          <ServicePrice
                             label={isFreeService ? 'FREE for AMC' : `₹${issue.price}`}
                             sx={isFreeService ? {
                               backgroundColor: 'rgba(34, 197, 94, 0.15)',
@@ -647,8 +628,7 @@ export const ServiceRequestPage: React.FC = () => {
                   );
                 })}
 
-                {/* Custom Issue Option */}
-                <CustomServiceCard 
+                <CustomServiceCard
                   selected={isCustomSelected}
                   onClick={handleCustomIssue}
                 >
@@ -658,9 +638,9 @@ export const ServiceRequestPage: React.FC = () => {
                     </ServiceIcon>
                     <ServiceInfo>
                       <ServiceName>Custom Issue</ServiceName>
-                      <ServicePrice 
-                        label="Quote on Request" 
-                        sx={{ 
+                      <ServicePrice
+                        label="Quote on Request"
+                        sx={{
                           backgroundColor: 'rgba(139, 92, 246, 0.15)',
                           color: '#8b5cf6',
                           border: '1px solid rgba(139, 92, 246, 0.3)'
@@ -696,7 +676,6 @@ export const ServiceRequestPage: React.FC = () => {
             )}
           </ServiceGrid>
 
-          {/* Address Section */}
           <AddressSection>
             <SectionHeader>
               <SectionHeaderTitle>
@@ -708,8 +687,8 @@ export const ServiceRequestPage: React.FC = () => {
                 Add Address
               </PremiumButton>
             </SectionHeader>
-            
-            <CardContent sx={{ p: 4 }}>
+
+            <CardContent sx={{ p: { xs: 2.5, md: 4 } }}>
               {addresses.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 4 }}>
                   <LocationOnIcon sx={{ fontSize: '48px', color: 'rgba(255, 255, 255, 0.3)', mb: 2 }} />
@@ -726,9 +705,9 @@ export const ServiceRequestPage: React.FC = () => {
                 </Box>
               ) : (
                 <>
-                  <Typography sx={{ 
-                    color: 'rgba(255, 255, 255, 0.8)', 
-                    fontSize: '14px', 
+                  <Typography sx={{
+                    color: 'rgba(255, 255, 255, 0.8)',
+                    fontSize: '14px',
                     mb: 3,
                     fontWeight: 400
                   }}>
@@ -753,27 +732,27 @@ export const ServiceRequestPage: React.FC = () => {
                                 mt: 0.5
                               }}
                             />
-                            
+
                             <Box sx={{ flex: 1 }}>
                               {address.is_default && (
-                                <Chip 
-                                  label="Default" 
-                                  size="small" 
-                                  sx={{ 
-                                    mb: 1, 
+                                <Chip
+                                  label="Default"
+                                  size="small"
+                                  sx={{
+                                    mb: 1,
                                     backgroundColor: 'rgba(34, 197, 94, 0.15)',
                                     color: '#22c55e',
                                     border: '1px solid rgba(34, 197, 94, 0.3)',
                                     fontSize: '11px',
                                     height: '24px'
-                                  }} 
+                                  }}
                                 />
                               )}
-                              
+
                               <Typography sx={{ color: 'white', fontWeight: 500, mb: 0.5, fontSize: '15px' }}>
                                 {address.street_address}
                               </Typography>
-                              
+
                               <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '13px' }}>
                                 {address.city}, {address.state} - {address.pincode}
                               </Typography>
@@ -788,27 +767,26 @@ export const ServiceRequestPage: React.FC = () => {
             </CardContent>
           </AddressSection>
 
-          {/* Submit Section */}
-          <Box sx={{ 
+          <Box sx={{
             background: `linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0.05) 100%)`,
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '20px',
-            padding: '32px',
+            padding: { xs: '24px', md: '32px' },
             textAlign: 'center',
             backdropFilter: 'blur(20px)',
           }}>
-            <Typography sx={{ 
-              fontSize: '20px', 
-              fontWeight: 600, 
-              color: 'rgba(255, 255, 255, 0.95)', 
-              mb: 2 
+            <Typography sx={{
+              fontSize: '20px',
+              fontWeight: 600,
+              color: 'rgba(255, 255, 255, 0.95)',
+              mb: 2
             }}>
               Ready to Submit Your Request?
             </Typography>
-            
-            <Typography sx={{ 
-              fontSize: '14px', 
-              color: 'rgba(255, 255, 255, 0.6)', 
+
+            <Typography sx={{
+              fontSize: '14px',
+              color: 'rgba(255, 255, 255, 0.6)',
               mb: 3,
               maxWidth: '500px',
               margin: '0 auto 24px'
@@ -816,20 +794,29 @@ export const ServiceRequestPage: React.FC = () => {
               Our expert technician will contact you within 24 hours to schedule the service.
             </Typography>
 
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3 }}>
-              <PremiumButton 
+            {/* MODIFIED: Button container is now responsive */}
+            <Box sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: 2,
+                flexDirection: { xs: 'column-reverse', sm: 'row' },
+                '& .MuiButton-root': {
+                    width: { xs: '100%', sm: 'auto' },
+                }
+            }}>
+              <PremiumButton
                 onClick={() => navigate('/services')}
-                sx={{ minWidth: '140px' }}
+                sx={{ minWidth: {sm: '140px'} }}
               >
                 <ArrowBackIcon sx={{ mr: 1, fontSize: '16px' }} />
                 Back
               </PremiumButton>
-              
-              <PremiumButton 
+
+              <PremiumButton
                 className="primary"
                 onClick={handleSubmitRequest}
                 disabled={submitting || !isFormValid()}
-                sx={{ minWidth: '200px' }}
+                sx={{ minWidth: {sm: '200px'} }}
               >
                 {submitting ? 'Submitting...' : (
                   <>
@@ -842,10 +829,10 @@ export const ServiceRequestPage: React.FC = () => {
           </Box>
 
           {isFormValid() && (
-            <Alert 
+            <Alert
               icon={<CheckCircleIcon />}
-              severity="info" 
-              sx={{ 
+              severity="info"
+              sx={{
                 mt: 3,
                 backgroundColor: 'rgba(96, 165, 250, 0.15)',
                 color: '#60a5fa',
@@ -857,7 +844,7 @@ export const ServiceRequestPage: React.FC = () => {
                 Request Ready
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                Service: {selectedIssue ? selectedIssue.description : 'Custom'} | 
+                Service: {selectedIssue ? selectedIssue.description : 'Custom'} |
                 Location: {addresses.find(a => a.id.toString() === selectedAddress)?.city || 'Selected'}
                 {selectedIssue && !category.is_free_for_user && ` | Price: ₹${selectedIssue.price}`}
                 {category.is_free_for_user && ` | FREE Service`}
@@ -867,7 +854,6 @@ export const ServiceRequestPage: React.FC = () => {
         </ContentContainer>
       </ServiceContent>
 
-      {/* Add Address Dialog */}
       <PremiumDialog
         open={showAddressDialog}
         onClose={() => !submitting && setShowAddressDialog(false)}
@@ -884,7 +870,7 @@ export const ServiceRequestPage: React.FC = () => {
           <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '14px', mb: 3 }}>
             Add the address where you'd like our technician to provide the service.
           </Typography>
-          
+
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <PremiumTextField
               label="Street Address"
@@ -894,7 +880,7 @@ export const ServiceRequestPage: React.FC = () => {
               required
               placeholder="Enter your complete street address"
             />
-            
+
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <PremiumTextField
@@ -917,7 +903,7 @@ export const ServiceRequestPage: React.FC = () => {
                 />
               </Grid>
             </Grid>
-            
+
             <PremiumTextField
               label="Pincode"
               value={addressForm.pincode}
@@ -928,9 +914,9 @@ export const ServiceRequestPage: React.FC = () => {
               inputProps={{ maxLength: 6 }}
             />
 
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'space-between',
               p: 2,
               background: 'rgba(255, 255, 255, 0.02)',
@@ -960,24 +946,24 @@ export const ServiceRequestPage: React.FC = () => {
             </Box>
           </Box>
         </DialogContent>
-        
+
         <DialogActions sx={{ p: 3, gap: 2 }}>
           <Button
             onClick={() => setShowAddressDialog(false)}
             disabled={submitting}
-            sx={{ 
+            sx={{
               color: 'rgba(255, 255, 255, 0.7)',
               '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' }
             }}
           >
             Cancel
           </Button>
-          
-          <PremiumButton 
+
+          <PremiumButton
             className="primary"
             onClick={handleAddAddress}
-            disabled={!addressForm.street_address.trim() || !addressForm.city.trim() || 
-                     !addressForm.state.trim() || !addressForm.pincode.trim()}
+            disabled={!addressForm.street_address.trim() || !addressForm.city.trim() ||
+              !addressForm.state.trim() || !addressForm.pincode.trim()}
           >
             <AddIcon sx={{ mr: 1, fontSize: '16px' }} />
             Add Address
