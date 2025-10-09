@@ -1,4 +1,4 @@
-# ecom_project/settings.py - CRITICAL FIXES FOR GOOGLE OAUTH
+# ecom_project/settings.py - COMPLETE FIX FOR USERNAME ISSUE
 
 from pathlib import Path
 from datetime import timedelta
@@ -96,8 +96,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.CustomUser'
 SITE_ID = 1
 
-# ============= CRITICAL: ACCOUNT SETTINGS =============
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+# ============= CRITICAL: DJANGO-ALLAUTH SETTINGS =============
+# This is THE KEY setting that fixes the "username" field error
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None  # Tell allauth we don't use username
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
@@ -124,8 +125,15 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # CHANGED: Allow unauthenticated for OAuth
+        'rest_framework.permissions.AllowAny',  # Allow unauthenticated for OAuth
     ],
+}
+
+# ============= DJ-REST-AUTH SETTINGS =============
+# Tell dj-rest-auth to use our custom serializer that doesn't require username
+REST_AUTH = {
+    'REGISTER_SERIALIZER': 'users.serializers.CustomRegisterSerializer',
+    'USER_DETAILS_SERIALIZER': 'users.serializers.UserSerializer',
 }
 
 # ============= SIMPLE JWT SETTINGS =============
@@ -133,11 +141,11 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': False,  # CHANGED: Disable blacklist for now
+    'BLACKLIST_AFTER_ROTATION': False,
     'UPDATE_LAST_LOGIN': True,
 }
 
-# ============= CRITICAL: CORS SETTINGS =============
+# ============= CORS SETTINGS =============
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
@@ -177,6 +185,7 @@ SOCIALACCOUNT_PROVIDERS = {
         ],
         'AUTH_PARAMS': {
             'access_type': 'online',
+            'prompt': 'select_account',  # Force account selection every time
         },
         'OAUTH_PKCE_ENABLED': True,
         'VERIFIED_EMAIL': True,
@@ -192,62 +201,3 @@ SOCIALACCOUNT_PROVIDERS = {
 SOCIALACCOUNT_ADAPTER = 'users.adapter.CustomSocialAccountAdapter'
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http'
-
-# ============= CRITICAL: SESSION SETTINGS =============
-SESSION_COOKIE_SAMESITE = None  # CHANGED: Must be None for OAuth
-SESSION_COOKIE_SECURE = False
-SESSION_COOKIE_HTTPONLY = False  # CHANGED: Allow JS access
-SESSION_COOKIE_DOMAIN = None
-SESSION_COOKIE_AGE = 86400
-SESSION_SAVE_EVERY_REQUEST = True
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_NAME = 'techverse_session'
-SESSION_COOKIE_PATH = '/'
-
-# ============= CRITICAL: CSRF SETTINGS =============
-CSRF_COOKIE_SAMESITE = None  # CHANGED: Must be None for OAuth
-CSRF_COOKIE_SECURE = False
-CSRF_COOKIE_HTTPONLY = False
-CSRF_USE_SESSIONS = False
-CSRF_COOKIE_NAME = 'techverse_csrf'
-CSRF_TRUSTED_ORIGINS = [
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
-]
-
-# ============= REST AUTH SETTINGS =============
-REST_AUTH = {
-    'USE_JWT': True,
-    'JWT_AUTH_COOKIE': 'techverse-auth',
-    'JWT_AUTH_REFRESH_COOKIE': 'techverse-refresh',
-    'JWT_AUTH_HTTPONLY': False,  # CHANGED: Allow JS access
-    'JWT_AUTH_SAMESITE': None,  # CHANGED: None for OAuth
-    'REGISTER_SERIALIZER': 'users.serializers.CustomRegisterSerializer',
-    'REGISTER_PERMISSION_CLASSES': ('rest_framework.permissions.AllowAny',),
-    'USER_DETAILS_SERIALIZER': 'users.serializers.UserSerializer',
-    'SESSION_LOGIN': True,  # ADDED: Enable session login
-}
-
-# ============= LOGGING =============
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'allauth': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
-        'django.request': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
-    },
-}

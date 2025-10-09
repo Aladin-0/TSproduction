@@ -1,4 +1,4 @@
-// src/pages/LoginPage.tsx - Fixed version
+// src/pages/LoginPage.tsx - Updated with custom Google login URL
 import { useState, useEffect } from 'react';
 import { Container, Typography, Button, Box, Tabs, Tab, TextField, Alert } from '@mui/material';
 import apiClient from '../api';
@@ -76,27 +76,14 @@ export const LoginPage = () => {
                 || data?.email?.[0]
                 || data?.password1?.[0]
                 || data?.password2?.[0]
-                || data?.non_field_errors?.[0]
-                || data?.detail;
-
-            if (!msg && data && typeof data === 'object') {
-                try {
-                    const parts: string[] = [];
-                    Object.entries(data).forEach(([key, val]) => {
-                        if (Array.isArray(val)) {
-                            parts.push(`${key}: ${val.join(', ')}`);
-                        } else if (typeof val === 'string') {
-                            parts.push(`${key}: ${val}`);
-                        } else if (val && typeof val === 'object') {
-                            parts.push(`${key}: ${JSON.stringify(val)}`);
-                        }
-                    });
-                    msg = parts.join('\n');
-                } catch {}
-            }
-
-            setError(msg || 'Registration failed. Please try again.');
+                || 'Registration failed. Please try again.';
+            setError(msg);
         }
+    };
+
+    const handleGoogleLogin = () => {
+        // Use the custom Google login endpoint that forces account selection
+        window.location.href = "http://127.0.0.1:8000/auth/google/login/";
     };
 
     return (
@@ -138,9 +125,7 @@ export const LoginPage = () => {
                     variant="outlined"
                     size="large"
                     fullWidth
-                    onClick={() => {
-                        window.location.href = "http://127.0.0.1:8000/accounts/google/login/";
-                    }}
+                    onClick={handleGoogleLogin}
                 >
                     Sign in with Google
                 </Button>
@@ -149,9 +134,7 @@ export const LoginPage = () => {
                     variant="outlined"
                     size="large"
                     fullWidth
-                    onClick={() => {
-                        window.location.href = "http://127.0.0.1:8000/accounts/google/login/";
-                    }}
+                    onClick={handleGoogleLogin}
                 >
                     Sign up with Google
                 </Button>

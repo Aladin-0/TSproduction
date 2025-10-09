@@ -1,4 +1,4 @@
-# users/adapter.py - Complete working version with JWT token generation
+# users/adapter.py - Fixed with enhanced logging and proper redirect
 
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.http import HttpResponseRedirect
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
+import sys
 
 User = get_user_model()
 
@@ -38,16 +39,17 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     
     def on_authentication_error(self, request, provider, error=None, exception=None, extra_context=None):
         """
-        Handle authentication errors - CORRECT METHOD NAME for allauth 0.50+
+        Handle authentication errors
         """
-        print(f"=== OAuth Authentication Error ===")
-        print(f"Provider: {provider}")
-        print(f"Error: {error}")
-        print(f"Exception: {exception}")
+        print(f"=== OAuth Authentication Error ===", flush=True)
+        print(f"Provider: {provider}", flush=True)
+        print(f"Error: {error}", flush=True)
+        print(f"Exception: {exception}", flush=True)
+        sys.stdout.flush()
         
         # For "unknown" errors (usually state mismatch)
         if error == "unknown":
-            print("⚠️ State mismatch detected - likely mobile browser retry issue")
+            print("⚠️ State mismatch detected - likely mobile browser retry issue", flush=True)
             return HttpResponseRedirect(f'{settings.FRONTEND_BASE_URL}/login?error=oauth_retry')
         
         # For other errors, redirect to frontend with error message
@@ -56,111 +58,68 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
             f'{settings.FRONTEND_BASE_URL}/login?error=oauth_failed&message={error_msg}'
         )
     
-    def pre_social_login(self, request, sociallogin):
-        """
-        Auto-link social account to existing user by verified email
-        """
-        if request.user.is_authenticated:
-            print(f"✓ User already authenticated: {request.user.email}")
-            return
-
-        email = (sociallogin.user.email or '').strip().lower()
-        if not email:
-            print("⚠️ No email provided in social login")
-            return
-
-        # Check if email is verified from Google
-        email_verified = bool(
-            sociallogin.account.extra_data.get('email_verified', False) or
-            sociallogin.account.extra_data.get('verified_email', False)
-        )
-
-        if not email_verified:
-            print(f"⚠️ Email not verified: {email}")
-            return
-
-        # Try to find existing user with this email
-        try:
-            existing_user = User.objects.get(email__iexact=email)
-            print(f"✓ Found existing user: {existing_user.email}")
-            
-            # Connect social account to existing user
-            if not sociallogin.is_existing:
-                sociallogin.connect(request, existing_user)
-                print(f"✓ Connected social account to existing user")
-                
-        except User.DoesNotExist:
-            print(f"✓ New user, will create: {email}")
-            pass
-        except User.MultipleObjectsReturned:
-            print(f"⚠️ Multiple users found with email: {email}")
-            # Use the first one
-            existing_user = User.objects.filter(email__iexact=email).first()
-            if not sociallogin.is_existing:
-                sociallogin.connect(request, existing_user)
-
-    def is_auto_signup_allowed(self, request, sociallogin):
-        """Allow automatic signup for Google OAuth"""
-        return True
-    
     def save_user(self, request, sociallogin, form=None):
         """
-        Save the user from Google OAuth data
+        Enhanced user creation from Google OAuth
         """
         try:
             user = sociallogin.user
             extra_data = sociallogin.account.extra_data
             
-            # Get email from Google data
-            email = extra_data.get('email', '').strip().lower()
+            print(f"=== SAVE_USER CALLED ===", flush=True)
+            print(f"  Email: {user.email}", flush=True)
+            print(f"  Name from Google: {extra_data.get('name', 'N/A')}", flush=True)
+            sys.stdout.flush()
             
-            if not email:
-                # Fallback: create a temporary email
-                uid = sociallogin.account.uid
-                email = f"google_{uid}@oauth.temp"
-                print(f"⚠️ No email from Google, using: {email}")
-            
-            user.email = email
-            
-            # Get name from Google data
-            name = extra_data.get('name', '').strip()
-            if not name:
-                given_name = extra_data.get('given_name', '')
-                family_name = extra_data.get('family_name', '')
-                name = f"{given_name} {family_name}".strip() or 'Google User'
-            
-            user.name = name
+            # Set name from Google data
+            if not user.name or user.name == '':
+                user.name = extra_data.get('name', user.email.split('@')[0])
             
             # Set default role if not set
             if not hasattr(user, 'role') or not user.role:
                 user.role = 'CUSTOMER'
             
+            # Save the user
             user.save()
             
-            print(f"✓ Successfully saved user:")
-            print(f"  - Email: {user.email}")
-            print(f"  - Name: {user.name}")
-            print(f"  - Role: {user.role}")
+            print(f"✓ User saved successfully", flush=True)
+            print(f"  ID: {user.id}", flush=True)
+            print(f"  Email: {user.email}", flush=True)
+            print(f"  Name: {user.name}", flush=True)
+            print(f"  Role: {user.role}", flush=True)
+            sys.stdout.flush()
             
             return user
             
         except Exception as e:
-            print(f"✗ ERROR in save_user: {str(e)}")
-            print(f"  Google data: {sociallogin.account.extra_data}")
+            print(f"✗ ERROR in save_user: {str(e)}", flush=True)
+            print(f"  Google data: {sociallogin.account.extra_data}", flush=True)
+            sys.stdout.flush()
             raise
     
     def get_login_redirect_url(self, request):
         """
         CRITICAL: Generate JWT tokens and redirect to frontend with tokens in URL
         """
+        print("\n" + "="*60, flush=True)
+        print("GET_LOGIN_REDIRECT_URL CALLED", flush=True)
+        print("="*60, flush=True)
+        sys.stdout.flush()
+        
         try:
             user = request.user
             
+            print(f"User authenticated: {user.is_authenticated}", flush=True)
+            print(f"User object: {user}", flush=True)
+            sys.stdout.flush()
+            
             if not user or not user.is_authenticated:
-                print("✗ No authenticated user for redirect")
+                print("✗ No authenticated user for redirect", flush=True)
+                sys.stdout.flush()
                 return f'{settings.FRONTEND_BASE_URL}/login?error=no_user'
             
-            print(f"✓ Generating JWT tokens for user: {user.email}")
+            print(f"✓ Generating JWT tokens for user: {user.email}", flush=True)
+            sys.stdout.flush()
             
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
@@ -176,14 +135,20 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
                 f"&email={user.email}"
             )
             
-            print(f"✓ Redirecting to frontend with tokens")
-            print(f"  - Access token length: {len(access_token)}")
-            print(f"  - Refresh token length: {len(refresh_token)}")
+            print(f"✓ JWT Tokens generated successfully!", flush=True)
+            print(f"  - Access token length: {len(access_token)}", flush=True)
+            print(f"  - Refresh token length: {len(refresh_token)}", flush=True)
+            print(f"  - Redirect URL: {redirect_url[:100]}...", flush=True)
+            print("="*60 + "\n", flush=True)
+            sys.stdout.flush()
             
             return redirect_url
             
         except Exception as e:
-            print(f"✗ ERROR generating tokens: {str(e)}")
+            print(f"✗ ERROR generating tokens: {str(e)}", flush=True)
+            import traceback
+            traceback.print_exc()
+            sys.stdout.flush()
             return f'{settings.FRONTEND_BASE_URL}/login?error=token_generation_failed'
     
     def get_connect_redirect_url(self, request, socialaccount):
@@ -191,3 +156,55 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         Redirect URL after connecting a social account
         """
         return self.get_login_redirect_url(request)
+    
+    def pre_social_login(self, request, sociallogin):
+        """
+        Auto-link social account to existing user by verified email
+        """
+        if request.user.is_authenticated:
+            print(f"✓ User already authenticated: {request.user.email}", flush=True)
+            sys.stdout.flush()
+            return
+
+        email = (sociallogin.user.email or '').strip().lower()
+        if not email:
+            print("⚠️ No email provided in social login", flush=True)
+            sys.stdout.flush()
+            return
+
+        # Check if email is verified from Google
+        email_verified = bool(
+            sociallogin.account.extra_data.get('email_verified', False) or
+            sociallogin.account.extra_data.get('verified_email', False)
+        )
+
+        if not email_verified:
+            print(f"⚠️ Email not verified: {email}", flush=True)
+            sys.stdout.flush()
+            return
+
+        # Try to find existing user with this email
+        try:
+            existing_user = User.objects.get(email__iexact=email)
+            print(f"✓ Found existing user: {existing_user.email}", flush=True)
+            sys.stdout.flush()
+            
+            # Connect social account to existing user
+            if not sociallogin.is_existing:
+                sociallogin.connect(request, existing_user)
+                print(f"✓ Connected social account to existing user", flush=True)
+                sys.stdout.flush()
+                
+        except User.DoesNotExist:
+            print(f"✓ New user, will create: {email}", flush=True)
+            sys.stdout.flush()
+            pass
+        except User.MultipleObjectsReturned:
+            print(f"⚠️ Multiple users found with email: {email}", flush=True)
+            sys.stdout.flush()
+            # Use first user found
+            existing_user = User.objects.filter(email__iexact=email).first()
+            if existing_user and not sociallogin.is_existing:
+                sociallogin.connect(request, existing_user)
+                print(f"✓ Connected to first matching user", flush=True)
+                sys.stdout.flush()
