@@ -1,20 +1,17 @@
-# ecom_project/urls.py - Fixed without duplicates or recursion
+# ecom_project/urls.py - FIXED VERSION
 
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from users.admin_views import admin_dashboard
-from users.views import redirect_third_party_signup, mobile_google_callback
-from users.google_callback import custom_google_callback
+from users.views import redirect_third_party_signup
 from users.google_login_view import custom_google_login
 
 # Customize admin site
 admin.site.site_header = "TechVerse Administration"
 admin.site.site_title = "TechVerse Admin"
 admin.site.index_title = "Welcome to TechVerse Administration"
-
-# Custom admin index view
 admin.site.index_template = 'admin/index.html'
 
 urlpatterns = [
@@ -31,11 +28,9 @@ urlpatterns = [
     
     # Custom Google OAuth (BEFORE allauth URLs)
     path('auth/google/login/', custom_google_login, name='custom_google_login'),
-    path('accounts/google/login/callback/', custom_google_callback, name='google_callback'),
-    path('accounts/google/mobile/callback/', mobile_google_callback, name='mobile_google_callback'),
     path('accounts/3rdparty/signup/', redirect_third_party_signup, name='redirect_3rdparty_signup'),
     
-    # Allauth URLs (ONLY ONCE!)
+    # Allauth URLs
     path('accounts/', include('allauth.urls')),
     
     # App URLs

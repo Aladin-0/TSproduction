@@ -116,7 +116,29 @@ SOCIALACCOUNT_EMAIL_REQUIRED = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_STORE_TOKENS = True
 SOCIALACCOUNT_QUERY_EMAIL = True
-SOCIALACCOUNT_LOGIN_ON_GET = True
+
+# CRITICAL CHANGES - These prevent the intermediate page
+SOCIALACCOUNT_LOGIN_ON_GET = True  # Changed back to True - but with process set to login
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+            'prompt': 'select_account',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+        'VERIFIED_EMAIL': True,
+        'VERSION': 'v2',
+        'REDIRECT_URI_PROTOCOL': 'http',
+        'APP': {
+            'client_id': None,
+            'secret': None,
+        }
+    }
+}
 
 # ============= REST FRAMEWORK =============
 REST_FRAMEWORK = {
@@ -125,12 +147,11 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # Allow unauthenticated for OAuth
+        'rest_framework.permissions.AllowAny',
     ],
 }
 
 # ============= DJ-REST-AUTH SETTINGS =============
-# Tell dj-rest-auth to use our custom serializer that doesn't require username
 REST_AUTH = {
     'REGISTER_SERIALIZER': 'users.serializers.CustomRegisterSerializer',
     'USER_DETAILS_SERIALIZER': 'users.serializers.UserSerializer',
@@ -172,31 +193,11 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # ============= REDIRECT URLs =============
-LOGIN_REDIRECT_URL = 'http://localhost:5173/?login=success'
+# REMOVED: LOGIN_REDIRECT_URL - Let adapter handle it
+# LOGIN_REDIRECT_URL = 'http://localhost:5173/?login=success'
 ACCOUNT_LOGOUT_REDIRECT_URL = 'http://localhost:5173/'
 FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:5173')
-
-# ============= GOOGLE OAUTH PROVIDER =============
-SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
-        'AUTH_PARAMS': {
-            'access_type': 'online',
-            'prompt': 'select_account',  # Force account selection every time
-        },
-        'OAUTH_PKCE_ENABLED': True,
-        'VERIFIED_EMAIL': True,
-        'VERSION': 'v2',
-        'REDIRECT_URI_PROTOCOL': 'http',
-        'APP': {
-            'client_id': None,
-            'secret': None,
-        }
-    }
-}
+LOGIN_REDIRECT_URL = None  # Don't use default redirect, force adapter
 
 SOCIALACCOUNT_ADAPTER = 'users.adapter.CustomSocialAccountAdapter'
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = False

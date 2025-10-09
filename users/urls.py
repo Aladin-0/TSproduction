@@ -1,8 +1,9 @@
-# users/urls.py - Fixed version without the missing function
+# users/urls.py - FIXED
 
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
+from .google_login_view import custom_google_login
 
 urlpatterns = [
     # Template views
@@ -20,14 +21,7 @@ urlpatterns = [
     path('change-password/', views.ChangePasswordView.as_view(), name='api-change-password'),
     path('delete-account/', views.DeleteAccountView.as_view(), name='api-delete-account'),
     
-    # Google OAuth JWT endpoints
-    path('google-jwt/', views.GoogleJWTTokenView.as_view(), name='google-jwt-token'),
-    path('google-login-success/', views.google_login_success, name='google-login-success'),
+    # Debug endpoints
     path('debug-auth/', views.DebugAuthView.as_view(), name='debug-auth'),
     path('create-from-google/', views.create_user_from_google, name='create-from-google'),
-    
-    # REMOVED DUPLICATE: path('google-login-success/', views.google_login_success, name='google_login_success'),
-    
-    # REMOVED: This function doesn't exist in views.py
-    # path('google-auth-callback/', views.google_auth_callback, name='google_auth_callback'),
 ]
