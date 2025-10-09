@@ -25,4 +25,10 @@ urlpatterns = [
     path('google-login-success/', views.google_login_success, name='google-login-success'),
     path('debug-auth/', views.DebugAuthView.as_view(), name='debug-auth'),
     path('create-from-google/', views.create_user_from_google, name='create-from-google'),
+    
+    # Google OAuth success handler
+    path('google-login-success/', views.google_login_success, name='google_login_success'),
+    
+    # Alternative callback for mobile apps
+    path('google-auth-callback/', views.google_auth_callback, name='google_auth_callback'),
 ]

@@ -1,22 +1,15 @@
-# ecom_project/settings.py
+# ecom_project/settings.py - CRITICAL FIXES FOR GOOGLE OAUTH
 
 from pathlib import Path
 from datetime import timedelta
 import os
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-jbx!=0@9n*(ptklw&c4y#as-yw3yzsd80d8vi9nv!rj+31^^mt'
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-# FIXED: Add allowed hosts for both localhost and 127.0.0.1
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -76,7 +69,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ecom_project.wsgi.application'
 
-# Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -84,7 +76,6 @@ DATABASES = {
     }
 }
 
-# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -92,31 +83,20 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
-
-# Media files (user uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# --- Project Specific Settings ---
-
-# Custom User Model
 AUTH_USER_MODEL = 'users.CustomUser'
-
-# Site ID for Allauth
 SITE_ID = 1
 
-# Account settings
+# ============= CRITICAL: ACCOUNT SETTINGS =============
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
@@ -137,25 +117,27 @@ SOCIALACCOUNT_STORE_TOKENS = True
 SOCIALACCOUNT_QUERY_EMAIL = True
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
-# REST Framework
+# ============= REST FRAMEWORK =============
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',  # CHANGED: Allow unauthenticated for OAuth
     ],
 }
 
-# SIMPLE JWT SETTINGS
+# ============= SIMPLE JWT SETTINGS =============
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': False,  # CHANGED: Disable blacklist for now
+    'UPDATE_LAST_LOGIN': True,
 }
 
-# CORS Settings
+# ============= CRITICAL: CORS SETTINGS =============
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
@@ -175,18 +157,18 @@ CORS_ALLOWED_HEADERS = [
     'cache-control',
 ]
 
-# Allauth Settings
+# ============= AUTHENTICATION BACKENDS =============
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-# Redirect URLs
+# ============= REDIRECT URLs =============
 LOGIN_REDIRECT_URL = 'http://localhost:5173/?login=success'
 ACCOUNT_LOGOUT_REDIRECT_URL = 'http://localhost:5173/'
 FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:5173')
 
-# Google OAuth Provider
+# ============= GOOGLE OAUTH PROVIDER =============
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': [
@@ -207,40 +189,24 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-# Add this after SOCIALACCOUNT_PROVIDERS
 SOCIALACCOUNT_ADAPTER = 'users.adapter.CustomSocialAccountAdapter'
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
-
-# Prevent duplicate OAuth callback processing
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http'
 
-# REST_AUTH SETTINGS
-REST_AUTH = {
-    'USE_JWT': True,
-    'JWT_AUTH_COOKIE': 'techverse-auth',
-    'JWT_AUTH_REFRESH_COOKIE': 'techverse-refresh',
-    'REGISTER_SERIALIZER': 'users.serializers.CustomRegisterSerializer',
-    'REGISTER_PERMISSION_CLASSES': ('rest_framework.permissions.AllowAny',),
-    'USER_DETAILS_SERIALIZER': 'users.serializers.UserSerializer',
-}
-
-
-# Session settings - MOBILE CRITICAL
-SESSION_COOKIE_SAMESITE = 'Lax'  # MUST be None for cross-origin OAuth
-SESSION_COOKIE_SECURE = False     # Set True in production with HTTPS
-SESSION_COOKIE_HTTPONLY = True
+# ============= CRITICAL: SESSION SETTINGS =============
+SESSION_COOKIE_SAMESITE = None  # CHANGED: Must be None for OAuth
+SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_HTTPONLY = False  # CHANGED: Allow JS access
 SESSION_COOKIE_DOMAIN = None
 SESSION_COOKIE_AGE = 86400
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-
-# CRITICAL: Add this to allow session cookies in iframes/mobile
 SESSION_COOKIE_NAME = 'techverse_session'
 SESSION_COOKIE_PATH = '/'
 
-# CSRF settings
-CSRF_COOKIE_SAMESITE = 'Lax'     # MUST be None 
+# ============= CRITICAL: CSRF SETTINGS =============
+CSRF_COOKIE_SAMESITE = None  # CHANGED: Must be None for OAuth
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
 CSRF_USE_SESSIONS = False
@@ -252,7 +218,20 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8000",
 ]
 
-# Logging for debugging OAuth issues
+# ============= REST AUTH SETTINGS =============
+REST_AUTH = {
+    'USE_JWT': True,
+    'JWT_AUTH_COOKIE': 'techverse-auth',
+    'JWT_AUTH_REFRESH_COOKIE': 'techverse-refresh',
+    'JWT_AUTH_HTTPONLY': False,  # CHANGED: Allow JS access
+    'JWT_AUTH_SAMESITE': None,  # CHANGED: None for OAuth
+    'REGISTER_SERIALIZER': 'users.serializers.CustomRegisterSerializer',
+    'REGISTER_PERMISSION_CLASSES': ('rest_framework.permissions.AllowAny',),
+    'USER_DETAILS_SERIALIZER': 'users.serializers.UserSerializer',
+    'SESSION_LOGIN': True,  # ADDED: Enable session login
+}
+
+# ============= LOGGING =============
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
