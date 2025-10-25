@@ -1,5 +1,5 @@
-// ==================== CORRECTED PART 1 START ====================
-
+// LandingPage.tsx
+// ==================== IMPORTS ====================
 import React, { useRef, useEffect, Suspense, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { styled, ThemeProvider, createTheme } from '@mui/material/styles';
@@ -13,10 +13,10 @@ import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import { LoginSuccessHandler } from '../components/LoginSuccessHandler'; 
 import { Footer } from '../components/Footer';
 
-// A single theme for consistent breakpoints
+// ==================== THEME CONFIGURATION ====================
 const theme = createTheme();
 
-// Main wrapper for the entire page
+// ==================== BASE PAGE STYLES ====================
 const PageWrapper = styled(Box)({
   backgroundColor: '#0a0a0a',
   color: 'white',
@@ -26,27 +26,27 @@ const PageWrapper = styled(Box)({
   overflowX: 'hidden',
 });
 
-// Hero section styles - KEEP BACKGROUND IMAGE
+// ==================== HERO SECTION STYLES ====================
+// Main hero section wrapper with background image
 const HeroSection = styled(Box)({
   backgroundImage: 'url("/src/assets/hero-bg.png")',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',
   position: 'relative',
-  minHeight: '60vh',
+  minHeight: '100vh',
   width: '100%',
   display: 'flex',
   flexDirection: 'column',
   backgroundColor: '#0a0a0a',
   '@media (max-width:900px)': {
     minHeight: '75vh',
-    backgroundImage: 'url("/src/assets/hero-bg.png")', // KEEP IT ON MOBILE
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   },
 });
 
-// Navigation styles - PROFESSIONAL MOBILE NAV
+// Navigation bar styles
 const Nav = styled(Box)({
   position: 'relative',
   zIndex: 10,
@@ -62,6 +62,7 @@ const Nav = styled(Box)({
   },
 });
 
+// Logo text styling
 const Logo = styled(Typography)({
   fontSize: '14px',
   fontWeight: 700,
@@ -73,6 +74,7 @@ const Logo = styled(Typography)({
   },
 });
 
+// Navigation button styling
 const BlankButton = styled(Button)({
   background: 'transparent',
   border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -96,7 +98,7 @@ const BlankButton = styled(Button)({
   },
 });
 
-// Hero container styles - MOBILE OPTIMIZED
+// Hero content container
 const HeroContainer = styled(Box)({
   position: 'relative',
   zIndex: 5,
@@ -115,6 +117,7 @@ const HeroContainer = styled(Box)({
   },
 });
 
+// Left side hero content (text and buttons)
 const HeroLeft = styled(Box)({
   flex: '0 0 45%',
   paddingTop: '20px',
@@ -130,10 +133,12 @@ const HeroLeft = styled(Box)({
   },
 });
 
+// Main hero title
 const HeroTitle = styled(Typography)({
+  fontFamily: "'Nevera', sans-serif",
   fontSize: '64px',
-  fontWeight: 700,
-  letterSpacing: '-0.5px',
+  fontWeight: 400,
+  letterSpacing: '0.15px',
   marginBottom: '14px',
   color: '#ffffff',
   lineHeight: 1,
@@ -146,12 +151,14 @@ const HeroTitle = styled(Typography)({
   },
 });
 
+// Hero subtitle/tagline
 const HeroSubtitle = styled(Typography)({
+  fontFamily: "'Nevera', sans-serif",
   fontSize: '25px',
+  letterSpacing: '0.08em',
   color: 'rgba(255, 255, 255, 0.45)',
   fontWeight: 400,
   marginBottom: '28px',
-  letterSpacing: '0.1px',
   marginLeft: '-60px',
   '@media (max-width:900px)': {
     fontSize: '14px',
@@ -162,6 +169,7 @@ const HeroSubtitle = styled(Typography)({
   },
 });
 
+// Explore button styling
 const ExploreButton = styled(Button)({
   background: 'transparent',
   border: '1px solid rgba(255, 255, 255, 0.18)',
@@ -190,6 +198,7 @@ const ExploreButton = styled(Button)({
   },
 });
 
+// Arrow navigation buttons for 3D model carousel
 const ArrowButton = styled(IconButton)({
   border: '1px solid rgba(255, 255, 255, 0.2)',
   color: 'rgba(255, 255, 255, 0.7)',
@@ -203,9 +212,10 @@ const ArrowButton = styled(IconButton)({
   },
 });
 
+// 3D Canvas wrapper (right side of hero)
 const CanvasWrapper = styled(Box)({
   position: 'absolute',
-  top: '80%',
+  top: '120%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
   width: '290%',
@@ -223,7 +233,10 @@ const CanvasWrapper = styled(Box)({
   },
 });
 
-// CATEGORY SECTION - 3 CARDS PER ROW ON MOBILE
+// ==================== END HERO SECTION STYLES ====================
+
+// ==================== CATEGORY SECTION STYLES ====================
+// Category section wrapper
 const CategorySection = styled(Box)({
   padding: '100px 55px',
   background: 'radial-gradient(circle at 50% 0%, #1a1a1a 0%, #0a0a0a 40%)',
@@ -235,6 +248,7 @@ const CategorySection = styled(Box)({
   },
 });
 
+// Section header container
 const SectionHeader = styled(Box)({
   textAlign: 'center',
   marginBottom: '64px',
@@ -243,9 +257,11 @@ const SectionHeader = styled(Box)({
   },
 });
 
+// Section title text
 const SectionTitle = styled(Typography)({
+  fontFamily: "'Nevera', sans-serif",
   fontSize: '32px',
-  fontWeight: 700,
+  fontWeight: 400,
   marginBottom: '16px',
   color: 'rgba(255, 255, 255, 0.95)',
   '@media (max-width:900px)': {
@@ -255,7 +271,7 @@ const SectionTitle = styled(Typography)({
   },
 });
 
-// UPDATED: 4 columns desktop, 3 columns mobile (600px+), 2 columns small mobile
+// Category cards grid layout
 const CategoryGrid = styled(Box)({
   display: 'grid',
   gridTemplateColumns: 'repeat(4, 1fr)',
@@ -267,15 +283,16 @@ const CategoryGrid = styled(Box)({
     gap: '30px 16px',
   },
   '@media (max-width:900px)': {
-    gridTemplateColumns: 'repeat(3, 1fr)', // 3 CARDS PER ROW
+    gridTemplateColumns: 'repeat(3, 1fr)',
     gap: '24px 10px',
   },
   '@media (max-width:500px)': {
-    gridTemplateColumns: 'repeat(2, 1fr)', // 2 cards on very small screens
+    gridTemplateColumns: 'repeat(2, 1fr)',
     gap: '20px 10px',
   },
 });
 
+// Individual category card wrapper
 const CategoryItemWrapper = styled(Box)({
   display: 'flex',
   flexDirection: 'column',
@@ -288,6 +305,7 @@ const CategoryItemWrapper = styled(Box)({
   },
 });
 
+// Animated card container base
 const AnimatedCardBase = a(Box);
 const AnimatedCardContainer = styled(AnimatedCardBase)({
     position: 'relative',
@@ -306,6 +324,7 @@ const AnimatedCardContainer = styled(AnimatedCardBase)({
     },
 });
 
+// Product image within card
 const ProductImage = styled('img')({
     position: 'absolute',
     top: 0,
@@ -326,6 +345,7 @@ const ProductImage = styled('img')({
     },
 });
 
+// Card glow effect on hover
 const CardGlow = styled(Box)({
     position: 'absolute',
     top: 0,
@@ -345,6 +365,7 @@ const CardGlow = styled(Box)({
     },
 });
 
+// Category overlay on hover
 const CategoryOverlay = styled(Box)({
     position: 'absolute',
     top: 0,
@@ -365,6 +386,7 @@ const CategoryOverlay = styled(Box)({
     },
 });
 
+// Placeholder for missing images
 const PlaceholderBox = styled(Box)({
     position: 'absolute',
     top: 0,
@@ -387,6 +409,7 @@ const PlaceholderBox = styled(Box)({
     },
 });
 
+// Category name text below card
 const CategoryName = styled(Typography)({
     fontWeight: 600,
     color: 'rgba(255, 255, 255, 0.5)',
@@ -406,7 +429,9 @@ const CategoryName = styled(Typography)({
     },
 });
 
-// ABOUT SECTION - MOBILE OPTIMIZED
+// ==================== END CATEGORY SECTION STYLES ====================
+
+// ==================== ABOUT SECTION STYLES ====================
 const AboutSection = styled(Box)({
   background: 'linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)',
   borderRadius: '24px',
@@ -600,141 +625,9 @@ const StatLabel = styled(Typography)({
   },
 });
 
-// 3D Model components
-function GamingLaptop(props) {
-  const { scene } = useGLTF('/gaming_laptop.glb');
-  return <primitive object={scene} scale={2.0} position={[0, 1, 0]} {...props} />;
-}
+// ==================== END ABOUT SECTION STYLES ====================
 
-function MechanicalKeyboard(props) {
-  const { scene } = useGLTF('/aula_f75_mechanical_keyboard.glb');
-  return <primitive object={scene} scale={1.0} position={[0, 2, 0]} {...props} />;
-}
-
-function GamingHeadphone(props) {
-  const { scene } = useGLTF('/gaming_headphone.glb');
-  return <primitive object={scene} scale={20.0} position={[0, -1, 0]} {...props} />;
-}
-
-// Data for categories
-const categories = [
-    { name: 'Laptop / PC', image: '/src/assets/laptop.jpg', hoverColor: 'rgba(59, 130, 246, 0.1)' },
-    { name: 'Printer', image: '/src/assets/Printer.png', hoverColor: 'rgba(16, 185, 129, 0.1)' },
-    { name: 'Keyboard', image: '/src/assets/Keyboard.png', hoverColor: 'rgba(139, 92, 246, 0.1)' },
-    { name: 'Mouse', image: '/src/assets/Mouse.jpeg', hoverColor: 'rgba(245, 101, 101, 0.1)' },
-    { name: 'Monitor', image: '/src/assets/Monitor.jpg', hoverColor: 'rgba(251, 191, 36, 0.1)' },
-    { name: 'CCTV / Analog', image: '/src/assets/CCTV.jpg', hoverColor: 'rgba(236, 72, 153, 0.1)' },
-    { name: 'Headphones', image: '/src/assets/Headphones.jpg', hoverColor: 'rgba(6, 182, 212, 0.1)' },
-    { name: 'Refurbished', image: '/src/assets/Refurbished.jpg', hoverColor: 'rgba(34, 197, 94, 0.1)' },
-];
-
-const AnimatedCategoryCard = ({ category }) => {
-    const navigate = useNavigate();
-    const [hovered, setHovered] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
-    
-    useEffect(() => {
-      const checkMobile = () => setIsMobile(window.innerWidth <= 900);
-      checkMobile();
-      window.addEventListener('resize', checkMobile);
-      return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
-    const [props, api] = useSpringWeb(() => ({
-        scale: 1,
-        rotateX: 0,
-        rotateY: 0,
-        rotateZ: 0,
-        config: { mass: 0.8, tension: 280, friction: 35 },
-    }));
-
-    const handleMouseMove = (e) => {
-        if (!hovered || isMobile) return;
-        const { clientX, clientY, currentTarget } = e;
-        const { left, top, width, height } = currentTarget.getBoundingClientRect();
-        const centerX = left + width / 2;
-        const centerY = top + height / 2;
-        const rotateX = (clientY - centerY) / 8;
-        const rotateY = (centerX - clientX) / 8;
-        const rotateZ = (clientX - centerX) / 25;
-        
-        api.start({ 
-            rotateX: Math.max(-25, Math.min(25, rotateX)), 
-            rotateY: Math.max(-25, Math.min(25, rotateY)),
-            rotateZ: Math.max(-10, Math.min(10, rotateZ))
-        });
-    };
-
-    const handleMouseEnter = () => { 
-        if (isMobile) return;
-        setHovered(true); 
-        api.start({ scale: 1.08 }); 
-    };
-    
-    const handleMouseLeave = () => { 
-        if (isMobile) return;
-        setHovered(false); 
-        api.start({ scale: 1, rotateX: 0, rotateY: 0, rotateZ: 0 }); 
-    };
-
-    const handleCategoryClick = () => {
-        const target = encodeURIComponent(category.name);
-        navigate(`/store?category=${target}`);
-    };
-
-    return (
-        <CategoryItemWrapper>
-            <AnimatedCardContainer
-                onMouseMove={handleMouseMove}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                onClick={handleCategoryClick}
-                style={isMobile ? {} : {
-                    transform: 'perspective(1200px)',
-                    scale: props.scale,
-                    rotateX: props.rotateX.to(val => `${val}deg`),
-                    rotateY: props.rotateY.to(val => `${val}deg`),
-                    rotateZ: props.rotateZ.to(val => `${val}deg`),
-                }}
-            >
-                {category.image && (
-                  <ProductImage 
-                    src={category.image}
-                    alt={category.name}
-                    style={{ 
-                      opacity: hovered ? 1 : 0.95,
-                      transform: hovered && !isMobile ? 'translateZ(6px) scale(1.02)' : 'translateZ(0px) scale(1)',
-                      filter: hovered && !isMobile ? 'brightness(0.95) contrast(1.05)' : 'brightness(0.85) contrast(1.08)'
-                    }}
-                  />
-                )}
-                
-                <CardGlow 
-                    style={{ 
-                        opacity: hovered && !isMobile ? 1 : 0,
-                        background: hovered ? category.hoverColor : 'rgba(255, 255, 255, 0.05)'
-                    }} 
-                />
-                
-                <CategoryOverlay style={{ opacity: hovered && !isMobile ? 0.6 : 0 }} />
-            </AnimatedCardContainer>
-            
-            <CategoryName 
-                style={{ 
-                    opacity: hovered && !isMobile ? 1 : 0.7, 
-                    transform: hovered && !isMobile ? 'translateY(0px)' : 'translateY(10px)',
-                    color: hovered && !isMobile ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.5)'
-                }}
-            >
-                {category.name}
-            </CategoryName>
-        </CategoryItemWrapper>
-    );
-};
-
-// ==================== PART 1 END - Confirm before Part 2 ====================
-// ==================== CORRECTED PART 2 START ====================
-
+// ==================== FEATURED SECTION STYLES ====================
 const SendButton = styled(Button)({ 
   background: 'linear-gradient(135deg, #f8f8f8, #ffffff)', 
   color: '#0a0a0a', 
@@ -1008,17 +901,172 @@ const AuthorRole = styled(Typography)({
   },
 });
 
-// Main Component
+// ==================== END FEATURED SECTION STYLES ====================
+
+// ==================== 3D MODEL COMPONENTS ====================
+// Gaming Laptop 3D Model
+function GamingLaptop(props) {
+  const { scene } = useGLTF('/gaming_laptop.glb');
+  return <primitive object={scene} scale={2.0} position={[0, 1, 0]} {...props} />;
+}
+
+// Mechanical Keyboard 3D Model
+function MechanicalKeyboard(props) {
+  const { scene } = useGLTF('/keyboard.glb');
+  return <primitive object={scene} scale={1.0} position={[0, 2, 0]} {...props} />;
+}
+
+// Gaming Headphone 3D Model
+function GamingHeadphone(props) {
+  const { scene } = useGLTF('/gaming_headphone.glb');
+  return <primitive object={scene} scale={20.0} position={[0, -1, 0]} {...props} />;
+}
+// Gaming PC 3D Model with Animation
+function GamingPC(props) {
+  const { scene } = useGLTF('/pc_gamer_animation.glb');
+  return <primitive object={scene} scale={7.0} position={[0, -0.3, 0]} {...props} />;
+}
+// ==================== END 3D MODEL COMPONENTS ====================
+
+// ==================== DATA CONFIGURATION ====================
+// Category data with images and hover colors
+const categories = [
+    { name: 'Laptop / PC', image: '/src/assets/laptop.jpg', hoverColor: 'rgba(59, 130, 246, 0.1)' },
+    { name: 'Printer', image: '/src/assets/Printer.png', hoverColor: 'rgba(16, 185, 129, 0.1)' },
+    { name: 'Keyboard', image: '/src/assets/Keyboard.png', hoverColor: 'rgba(139, 92, 246, 0.1)' },
+    { name: 'Mouse', image: '/src/assets/Mouse.jpeg', hoverColor: 'rgba(245, 101, 101, 0.1)' },
+    { name: 'Monitor', image: '/src/assets/Monitor.jpg', hoverColor: 'rgba(251, 191, 36, 0.1)' },
+    { name: 'CCTV / Analog', image: '/src/assets/CCTV.jpg', hoverColor: 'rgba(236, 72, 153, 0.1)' },
+    { name: 'Headphones', image: '/src/assets/Headphones.jpg', hoverColor: 'rgba(6, 182, 212, 0.1)' },
+    { name: 'Refurbished', image: '/src/assets/Refurbished.jpg', hoverColor: 'rgba(34, 197, 94, 0.1)' },
+];
+
+// ==================== END DATA CONFIGURATION ====================
+
+// ==================== ANIMATED CATEGORY CARD COMPONENT ====================
+const AnimatedCategoryCard = ({ category }) => {
+    const navigate = useNavigate();
+    const [hovered, setHovered] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    
+    // Check if device is mobile
+    useEffect(() => {
+      const checkMobile = () => setIsMobile(window.innerWidth <= 900);
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Spring animation configuration
+    const [props, api] = useSpringWeb(() => ({
+        scale: 1,
+        rotateX: 0,
+        rotateY: 0,
+        rotateZ: 0,
+        config: { mass: 0.8, tension: 280, friction: 35 },
+    }));
+
+    // Handle mouse movement for 3D tilt effect
+    const handleMouseMove = (e) => {
+        if (!hovered || isMobile) return;
+        const { clientX, clientY, currentTarget } = e;
+        const { left, top, width, height } = currentTarget.getBoundingClientRect();
+        const centerX = left + width / 2;
+        const centerY = top + height / 2;
+        const rotateX = (clientY - centerY) / 8;
+        const rotateY = (centerX - clientX) / 8;
+        const rotateZ = (clientX - centerX) / 25;
+        
+        api.start({ 
+            rotateX: Math.max(-25, Math.min(25, rotateX)), 
+            rotateY: Math.max(-25, Math.min(25, rotateY)),
+            rotateZ: Math.max(-10, Math.min(10, rotateZ))
+        });
+    };
+
+    const handleMouseEnter = () => { 
+        if (isMobile) return;
+        setHovered(true); 
+        api.start({ scale: 1.08 }); 
+    };
+    
+    const handleMouseLeave = () => { 
+        if (isMobile) return;
+        setHovered(false); 
+        api.start({ scale: 1, rotateX: 0, rotateY: 0, rotateZ: 0 }); 
+    };
+
+    const handleCategoryClick = () => {
+        const target = encodeURIComponent(category.name);
+        navigate(`/store?category=${target}`);
+    };
+
+    return (
+        <CategoryItemWrapper>
+            <AnimatedCardContainer
+                onMouseMove={handleMouseMove}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                onClick={handleCategoryClick}
+                style={isMobile ? {} : {
+                    transform: 'perspective(1200px)',
+                    scale: props.scale,
+                    rotateX: props.rotateX.to(val => `${val}deg`),
+                    rotateY: props.rotateY.to(val => `${val}deg`),
+                    rotateZ: props.rotateZ.to(val => `${val}deg`),
+                }}
+            >
+                {category.image && (
+                  <ProductImage 
+                    src={category.image}
+                    alt={category.name}
+                    style={{ 
+                      opacity: hovered ? 1 : 0.95,
+                      transform: hovered && !isMobile ? 'translateZ(6px) scale(1.02)' : 'translateZ(0px) scale(1)',
+                      filter: hovered && !isMobile ? 'brightness(0.95) contrast(1.05)' : 'brightness(0.85) contrast(1.08)'
+                    }}
+                  />
+                )}
+                
+                <CardGlow 
+                    style={{ 
+                        opacity: hovered && !isMobile ? 1 : 0,
+                        background: hovered ? category.hoverColor : 'rgba(255, 255, 255, 0.05)'
+                    }} 
+                />
+                
+                <CategoryOverlay style={{ opacity: hovered && !isMobile ? 0.6 : 0 }} />
+            </AnimatedCardContainer>
+            
+            <CategoryName 
+                style={{ 
+                    opacity: hovered && !isMobile ? 1 : 0.7, 
+                    transform: hovered && !isMobile ? 'translateY(0px)' : 'translateY(10px)',
+                    color: hovered && !isMobile ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.5)'
+                }}
+            >
+                {category.name}
+            </CategoryName>
+        </CategoryItemWrapper>
+    );
+};
+
+// ==================== END ANIMATED CATEGORY CARD COMPONENT ====================
+
+// ==================== MAIN LANDING PAGE COMPONENT ====================
 export const LandingPage = () => {
+  // State for 3D model carousel
   const [currentModel, setCurrentModel] = useState(0);
   const [animating, setAnimating] = useState(false);
-  const models = [GamingLaptop, MechanicalKeyboard, GamingHeadphone];
+  const models = [GamingLaptop, MechanicalKeyboard, GamingHeadphone, GamingPC];
 
+  // Spring animation for model transitions
   const [slideProps, slideApi] = useSpring3d(() => ({
     position: [0, -0.5, 0],
     config: { mass: 1, tension: 170, friction: 26 },
   }));
 
+  // Continuous rotation animation
   const { rotation } = useSpring3d({
     from: { rotation: [0, 0, 0] },
     to: { rotation: [0, Math.PI * 2, 0] },
@@ -1028,6 +1076,7 @@ export const LandingPage = () => {
 
   const DISPLAY_TIME = 5000;
 
+  // Animate model transitions
   const runAnimation = useCallback(async (direction) => {
     if (animating) return;
     setAnimating(true);
@@ -1041,6 +1090,7 @@ export const LandingPage = () => {
     setAnimating(false);
   }, [animating, slideApi, models.length]);
 
+  // Auto-advance carousel
   useEffect(() => {
     if (animating) return;
     const timer = setTimeout(() => runAnimation('next'), DISPLAY_TIME);
@@ -1052,16 +1102,24 @@ export const LandingPage = () => {
   return (
     <ThemeProvider theme={theme}>
     <PageWrapper>
+      
+      {/* ==================== HERO SECTION ==================== */}
       <HeroSection>
+        {/* Navigation Bar */}
         <Nav>
-          <Logo>TECHVERSE</Logo>
-          <BlankButton>BLANK</BlankButton>
+          {/* <Logo>TECHVERSE</Logo> */}
+          <BlankButton>Get Started</BlankButton>
         </Nav>
+
+        {/* Hero Content */}
         <HeroContainer>
+          {/* Left Side - Text & CTAs */}
           <HeroLeft>
             <HeroTitle>TECHVERSE</HeroTitle>
             <HeroSubtitle>Your Gateway to Innovation</HeroSubtitle>
             <ExploreButton>Explore Now</ExploreButton>
+            
+            {/* 3D Model Navigation Arrows */}
             <Box sx={{ 
               display: 'flex', 
               gap: 2, 
@@ -1077,6 +1135,8 @@ export const LandingPage = () => {
               </ArrowButton>
             </Box>
           </HeroLeft>
+
+          {/* Right Side - 3D Model Canvas */}
           <CanvasWrapper>
             <Canvas
               style={{ width: '100%', height: '100%', overflow: 'visible' }}
@@ -1084,8 +1144,10 @@ export const LandingPage = () => {
             >
               <Suspense fallback={null}>
                 <OrbitControls
-                  enableZoom={false} enablePan={false}
-                  minPolarAngle={Math.PI / 2.5} maxPolarAngle={Math.PI / 1.8}
+                  enableZoom={false} 
+                  enablePan={false}
+                  minPolarAngle={Math.PI / 2.5} 
+                  maxPolarAngle={Math.PI / 1.8}
                 />
                 <a3.group position={slideProps.position}>
                   <a3.group rotation={rotation}>
@@ -1097,11 +1159,18 @@ export const LandingPage = () => {
                 <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
               </Suspense>
             </Canvas>
+
+            {/* Model Indicator Dots */}
             <div style={{
-              position: 'absolute', bottom: '10px', left: '50%',
-              transform: 'translateX(-50%)', display: 'flex',
-              flexDirection: 'column', alignItems: 'center',
-              gap: '10px', zIndex: 10
+              position: 'absolute', 
+              bottom: '10px', 
+              left: '50%',
+              transform: 'translateX(-50%)', 
+              display: 'flex',
+              flexDirection: 'column', 
+              alignItems: 'center',
+              gap: '10px', 
+              zIndex: 10
             }}>
               <div style={{ display: 'flex', gap: '8px', marginTop: '5px' }}>
                 {models.map((_, index) => (
@@ -1126,7 +1195,9 @@ export const LandingPage = () => {
           </CanvasWrapper>
         </HeroContainer>
       </HeroSection>
-      
+      {/* ==================== END HERO SECTION ==================== */}
+
+      {/* ==================== CATEGORY SECTION ==================== */}
       <CategorySection>
         <SectionHeader>
             <SectionTitle>Shop by Category</SectionTitle>
@@ -1137,8 +1208,11 @@ export const LandingPage = () => {
             ))}
         </CategoryGrid>
       </CategorySection>
+      {/* ==================== END CATEGORY SECTION ==================== */}
 
+      {/* ==================== ABOUT SECTION ==================== */}
       <AboutSection>
+        {/* About Content */}
         <AboutContent>
           <Typography variant="h3">About TechVerse</Typography>
           <Typography>
@@ -1149,6 +1223,8 @@ export const LandingPage = () => {
             With years of experience in the tech industry, we curate only the finest products that meet our strict quality standards.
           </Typography>
         </AboutContent>
+
+        {/* Services */}
         <ServicesWrapper>
           <ServiceBox>
             <ServiceIconBox>🔧</ServiceIconBox>
@@ -1163,6 +1239,8 @@ export const LandingPage = () => {
             <ServiceText>Premium Support</ServiceText>
           </ServiceBox>
         </ServicesWrapper>
+
+        {/* Statistics */}
         <StatsSection>
           <Typography variant="h3">Our Impact</Typography>
           <Typography className="subtext">Numbers that speak for themselves</Typography>
@@ -1186,9 +1264,12 @@ export const LandingPage = () => {
           </StatsGrid>
         </StatsSection>
       </AboutSection>
+      {/* ==================== END ABOUT SECTION ==================== */}
 
+      {/* ==================== FEATURED SECTION ==================== */}
       <FeaturedWrapper>
         <FeaturedContainer>
+          {/* Left Side - Contact Form */}
           <FeaturedLeft>
             <Typography variant="h2">Featured Technology</Typography>
             <Typography>
@@ -1203,40 +1284,76 @@ export const LandingPage = () => {
               <SendButton>Send Message</SendButton>
             </ContactBox>
           </FeaturedLeft>
+
+          {/* Right Side - Featured Cards */}
           <FeaturedRight>
             <FeaturedCard className="featured-card">
               <FeaturedImg>🎧</FeaturedImg>
               <FeaturedDetails>
                 <FeaturedTitle>Premium Audio</FeaturedTitle>
-                <FeaturedDesc>Experience crystal-clear sound quality with our premium headphone collection. Featuring noise cancellation, wireless connectivity, and studio-grade audio performance for professionals and enthusiasts alike.</FeaturedDesc>
-                <AuthorInfo><AuthorAvatar /><AuthorDetails><AuthorName>Sarah Chen</AuthorName><AuthorRole>Audio Specialist</AuthorRole></AuthorDetails></AuthorInfo>
+                <FeaturedDesc>
+                  Experience crystal-clear sound quality with our premium headphone collection. Featuring noise cancellation, 
+                  wireless connectivity, and studio-grade audio performance for professionals and enthusiasts alike.
+                </FeaturedDesc>
+                <AuthorInfo>
+                  <AuthorAvatar />
+                  <AuthorDetails>
+                    <AuthorName>Sarah Chen</AuthorName>
+                    <AuthorRole>Audio Specialist</AuthorRole>
+                  </AuthorDetails>
+                </AuthorInfo>
               </FeaturedDetails>
             </FeaturedCard>
+
             <FeaturedCard className="featured-card">
               <FeaturedImg>💻</FeaturedImg>
               <FeaturedDetails>
                 <FeaturedTitle>High-Performance Computing</FeaturedTitle>
-                <FeaturedDesc>Unleash your productivity with our latest laptop and desktop solutions. Featuring cutting-edge processors, advanced graphics, and lightning-fast storage for gaming, creative work, and professional applications.</FeaturedDesc>
-                <AuthorInfo><AuthorAvatar /><AuthorDetails><AuthorName>Marcus Rodriguez</AuthorName><AuthorRole>Tech Consultant</AuthorRole></AuthorDetails></AuthorInfo>
+                <FeaturedDesc>
+                  Unleash your productivity with our latest laptop and desktop solutions. Featuring cutting-edge processors, 
+                  advanced graphics, and lightning-fast storage for gaming, creative work, and professional applications.
+                </FeaturedDesc>
+                <AuthorInfo>
+                  <AuthorAvatar />
+                  <AuthorDetails>
+                    <AuthorName>Marcus Rodriguez</AuthorName>
+                    <AuthorRole>Tech Consultant</AuthorRole>
+                  </AuthorDetails>
+                </AuthorInfo>
               </FeaturedDetails>
             </FeaturedCard>
+
             <FeaturedCard className="featured-card">
               <FeaturedImg>📱</FeaturedImg>
               <FeaturedDetails>
                 <FeaturedTitle>Smart Accessories</FeaturedTitle>
-                <FeaturedDesc>Enhance your tech setup with our collection of smart accessories. From wireless charging solutions to ergonomic peripherals, discover products that seamlessly integrate into your digital ecosystem.</FeaturedDesc>
-                <AuthorInfo><AuthorAvatar /><AuthorDetails><AuthorName>Emily Zhang</AuthorName><AuthorRole>Product Manager</AuthorRole></AuthorDetails></AuthorInfo>
+                <FeaturedDesc>
+                  Enhance your tech setup with our collection of smart accessories. From wireless charging solutions to 
+                  ergonomic peripherals, discover products that seamlessly integrate into your digital ecosystem.
+                </FeaturedDesc>
+                <AuthorInfo>
+                  <AuthorAvatar />
+                  <AuthorDetails>
+                    <AuthorName>Emily Zhang</AuthorName>
+                    <AuthorRole>Product Manager</AuthorRole>
+                  </AuthorDetails>
+                </AuthorInfo>
               </FeaturedDetails>
             </FeaturedCard>
           </FeaturedRight>
         </FeaturedContainer>
       </FeaturedWrapper>
+      {/* ==================== END FEATURED SECTION ==================== */}
+
+      {/* ==================== FOOTER ==================== */}
       <Footer />
+      {/* ==================== END FOOTER ==================== */}
+
     </PageWrapper>
     </ThemeProvider>
   );
 };
 
-export default LandingPage;
+// ==================== END MAIN COMPONENT ====================
 
-// ==================== PART 2 END ====================
+export default LandingPage;

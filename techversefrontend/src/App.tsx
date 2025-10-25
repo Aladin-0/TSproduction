@@ -5,7 +5,7 @@ import { useUserStore } from './stores/userStore';
 import { useCartStore } from './stores/cartStore';
 import { LoginSuccessHandler } from './components/LoginSuccessHandler';
 import { NavBar } from './components/NavBar';
-import { LandingPage } from './pages/LandingPage';
+import  LandingPage from './pages/LandingPage';
 import { StorePage } from './pages/StorePage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
 import { ServiceCategoryPage } from './pages/ServiceCategoryPage';
